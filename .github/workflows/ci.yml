@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+  # On pourra changer les branches si quelqu'un le veut sur sa branche dev
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  frontend:
+    runs-on: ubuntu-24.04
+
+    steps:
+    # Installation de node.js
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+    # Installation des dependances qui sont precises dans /frontend/package.json
+      - name: Install frontend dependencies
+        run: npm install
+        working-directory: frontend
+
+    # Installation de ESLint qui permet de verifier le code javascript et JSX
+      - name: Lint frontend
+        run: npm run lint
+        working-directory: frontend
+
+    # Compilation du frontend
+      - name: Build frontend
+        run: npm run build
+        working-directory: frontend
+
+    # Creation de l'image 
+      - name: Build frontend Docker image
+        run: docker build -t transcendence-frontend ./frontend
+
+  backend:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install backend dependencies
+        run: npm install
+        working-directory: backend
+
+      - name: Lint backend
+        run: npm run lint
+        working-directory: backend
+
+      - name: Build backend
+        run: npm run build
+        working-directory: backend
+
+      - name: Build backend Docker image
+        run: docker build -t transcendence-backend ./backend
