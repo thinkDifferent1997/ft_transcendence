@@ -39,7 +39,12 @@ jobs:
     # Creation de l'image 
       - name: Build frontend Docker image
         run: docker build -t transcendence-frontend ./frontend
-
+     
+    # Va chercher la batterie de test dans frontend/test
+      - name: Test battery
+        run: npm test
+        working-directory: frontend
+    
   backend:
     runs-on: ubuntu-24.04
 
@@ -64,3 +69,8 @@ jobs:
 
       - name: Build backend Docker image
         run: docker build -t transcendence-backend ./backend
+
+    # Va chercher la batterie de test dans backend/test
+      - name: Test battery
+        run: npm test
+        working-directory: backend
