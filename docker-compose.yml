@@ -1,0 +1,93 @@
+name: transcendence
+
+services:
+  # ------------------------------------------------------------------------ #
+  #                               PostgreSQL                                 #
+  # ------------------------------------------------------------------------ #
+  postgres:
+    build:
+      context: ./postgres
+    container_name: postgres
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - transcend_net
+    restart: unless-stopped
+
+  # ------------------------------------------------------------------------ #
+  #                           Backend                                        #
+  #  (Reached via nginx. Waits for postgres to be healthy before starting)   #
+  # ------------------------------------------------------------------------ #
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: backend
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - transcend_net
+    restart: unless-stopped
+
+  # ------------------------------------------------------------------------ #
+  # Frontend: multi-stage build (Vite build -> nginx serving dist/).         #
+  # Internal only — fronted by the reverse proxy above.                      #
+  # ------------------------------------------------------------------------ #
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend
+    networks:
+      - transcend_net
+    restart: unless-stopped
+
+  # ------------------------------------------------------------------------ #
+  # Reverse proxy: HTTPS entry point, routes / to frontend, /api and         #
+  # /ws to the backend. The only service exposed to the host (cf inception)  #
+  # ------------------------------------------------------------------------ #
+  nginx:
+    build:
+      context: ./nginx
+    container_name: nginx
+    ports:
+      - "443:443"
+    volumes:
+      - ./nginx/certs:/etc/nginx/certs:ro
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - transcend_net
+    restart: unless-stopped
+
+# -------------------------------------------------------------------------- #
+#                             Volume                                         #
+#               (Permanent. Wiped only by 'make clean')                      #
+# -------------------------------------------------------------------------- #
+volumes:
+  postgres_data:
+    name: postgres_data
+
+# -------------------------------------------------------------------------- #
+#                             Network                                        #
+#               (Only nginx is reachable from the host)                      #
+# -------------------------------------------------------------------------- #
+networks:
+  transcend_net:
+    name: transcend_net
+    driver: bridge
