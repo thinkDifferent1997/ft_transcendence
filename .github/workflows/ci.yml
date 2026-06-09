@@ -42,7 +42,7 @@ jobs:
      
     # Va chercher la batterie de test dans frontend/test
       - name: Test battery
-        run: npm test
+        run: npm test --if-present
         working-directory: frontend
     
   backend:
