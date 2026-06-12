@@ -1,0 +1,22 @@
+# ============================================================
+#   Frontend dev image — ft_transcendence
+#
+#   Runs the Vite dev server with HMR. Source code is bind-
+#   mounted from the host (see docker-compose.dev.yml), so
+#   only dependencies live inside this image.
+# ============================================================
+
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install deps based on lockfile only. Source code arrives
+# at runtime via the bind mount.
+COPY package.json package-lock.json* ./
+RUN npm ci
+
+# Vite defaults to port 5173
+EXPOSE 5173
+
+# CMD is set in docker-compose.dev.yml so it can be tweaked
+# without rebuilding the image.
