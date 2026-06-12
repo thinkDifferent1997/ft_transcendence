@@ -3,93 +3,42 @@ name: Pull Request Reminder
 on:
   schedule:
     - cron: '0 */3 * * *'
-  workflow_dispatch:
 
 jobs:
-  remind-open-prs:
-    runs-on: ubuntu-latest
-
-    permissions:
-      pull-requests: read
-
+  remind:
+    runs-on: ubuntu-24.04
     steps:
-      - name: Check open PRs
-        uses: actions/github-script@v7
-        id: prs
+      - uses: actions/github-script@v7
+        env:
+          WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
         with:
-          result-encoding: string
           script: |
-            const now = new Date();
-            const reminders = [];
-
-            const { data: prs } = await github.rest.pulls.list({
+            const prs = await github.rest.pulls.list({
               owner: context.repo.owner,
               repo: context.repo.repo,
               state: 'open'
             });
 
-            for (const pr of prs) {
-              const created = new Date(pr.created_at);
-              const ageHours = (now - created) / (1000 * 60 * 60);
+            for (const pr of prs.data) {
+              const age =
+                (Date.now() - new Date(pr.created_at)) / 3600000;
 
-              if (ageHours < 3)
+              if (age < 3)
                 continue;
 
-              const { data: reviewers } =
-                await github.rest.pulls.listRequestedReviewers({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  pull_number: pr.number
-                });
+              const message = {
+                content:
+                  `⏰ PR en attente depuis ${Math.floor(age)}h\n\n` +
+                  `Auteur: ${pr.user.login}\n` +
+                  `Titre: ${pr.title}\n` +
+                  `${pr.html_url}`
+              };
 
-              reminders.push({
-                title: pr.title,
-                url: pr.html_url,
-                author: pr.user.login,
-                age: Math.floor(ageHours),
-                reviewers: reviewers.users.map(u => u.login)
+              await fetch(process.env.WEBHOOK, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(message)
               });
             }
-
-            return JSON.stringify(reminders);
-
-      - name: Send reminders
-        env:
-          PRS: ${{ steps.prs.outputs.result }}
-          WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
-        run: |
-          if [ "$PRS" = "[]" ]; then
-            echo "No pending PRs"
-            exit 0
-          fi
-
-          echo "$PRS" > prs.json
-
-          jq -c '.[]' prs.json | while read pr
-          do
-            TITLE=$(echo "$pr" | jq -r '.title')
-            URL=$(echo "$pr" | jq -r '.url')
-            AUTHOR=$(echo "$pr" | jq -r '.author')
-            AGE=$(echo "$pr" | jq -r '.age')
-
-            REVIEWERS=$(echo "$pr" | jq -r '.reviewers[]?' | sed 's/^/- /')
-
-            if [ -z "$REVIEWERS" ]; then
-              REVIEWERS="Aucun reviewer assigné"
-            fi
-
-            MESSAGE="⏰ Pull Request en attente depuis ${AGE}h
-
-👤 Auteur : ${AUTHOR}
-📋 Titre : ${TITLE}
-
-👀 Reviewers :
-${REVIEWERS}
-
-🔗 ${URL}"
-
-            curl -H "Content-Type: application/json" \
-              -X POST \
-              -d "$(jq -n --arg content "$MESSAGE" '{content:$content}')" \
-              "$WEBHOOK"
-          done
