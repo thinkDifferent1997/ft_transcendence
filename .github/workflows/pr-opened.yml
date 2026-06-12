@@ -1,0 +1,22 @@
+name: Pull Request Opened
+
+on:
+  pull_request:
+    types:
+      - opened
+
+jobs:
+  notify-discord:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Send Discord notification
+        run: |
+          curl -H "Content-Type: application/json" \
+          -X POST \
+          -d "$(jq -n \
+            --arg title "${{ github.event.pull_request.title }}" \
+            --arg url "${{ github.event.pull_request.html_url }}" \
+            --arg author "${{ github.event.pull_request.user.login }}" \
+            '{content: "📢 Nouvelle Pull Request créée\n\n👤 Auteur : **" + $author + "**\n📋 Titre : **" + $title + "**\n🔗 " + $url}')" \
+          "${{ secrets.DISCORD_WEBHOOK_URL }}"
