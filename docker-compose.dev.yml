@@ -1,0 +1,56 @@
+# ============================================================
+#   ft_transcendence — development overrides
+#
+#   Used together with docker-compose.yml:
+#     docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+#   Or simply:
+#     make dev
+#
+#   Differences from production:
+#     - Frontend and backend use Dockerfile.dev (dev servers, not optimized builds)
+#     - Source code is bind-mounted into the containers for hot reload
+#     - node_modules is kept inside the container (anonymous volume) so the
+#       host's node_modules — possibly built for a different OS — doesn't
+#       shadow the Alpine-compiled ones inside the container
+#     - NODE_ENV is overridden to "development"
+# ============================================================
+
+services:
+
+  frontend:
+    #Added ports when there was no nginx.dev.conf file
+    #ports:
+    #  - "5173:5173"
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: ft_frontend_dev
+    command: npm run dev -- --host 0.0.0.0
+    volumes:
+      - ./frontend:/app:Z
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      # Vite needs this to detect file changes on bind mounts
+      # (some systems don't deliver inotify events through the mount)
+      - CHOKIDAR_USEPOLLING=true
+
+  backend:
+    #Added ports when there was no nginx.dev.conf file
+    #ports:
+    #  - "3000:3000"
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: ft_backend_dev
+    command: npm run start:dev
+    volumes:
+      - ./backend:/app:Z
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+
+  nginx:
+    volumes:
+      - ./nginx/certs:/etc/nginx/certs:ro,Z
+      - ./nginx/nginx.dev.conf:/etc/nginx/conf.d/default.conf:ro,Z

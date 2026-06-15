@@ -1,18 +1,48 @@
-name: Discord notification
+name: Discord Notifications
 
 on:
   push:
     branches:
       - main
+  pull_request:
+    branches: # Added to ensure you only get pings for PRs targeting main
+      - main
+    types:
+      - opened
 
 jobs:
   notify-discord:
     runs-on: ubuntu-24.04
 
     steps:
-      - name: Send Discord notification
+      - name: Send Notification
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          EVENT_NAME: ${{ github.event_name }}
+          ACTOR: ${{ github.actor }}
+          
+          # Push specific variables
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+          COMMIT_SHA: ${{ github.sha }} # FIXED: Changed from github.event.sha
+          
+          # PR specific variables
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
         run: |
-          curl -H "Content-Type: application/json" \
-          -X POST \
-          -d "{\"content\": \"🚀 Nouveau commit push sur main par **${{ github.actor }}**\nCommit: ${{ github.sha }}\nMessage: ${{ github.event.head_commit.message }}\"}" \
-          "${{ secrets.DISCORD_WEBHOOK_URL }}"
+          MESSAGE=""
+
+          # --- 1. DETECT IF IT IS A PUSH OR A PR ---
+          if [ "$EVENT_NAME" == "push" ]; then
+            MESSAGE="🚀 **Nouveau commit push sur main par $ACTOR**\nCommit: $COMMIT_SHA\nMessage: $COMMIT_MSG"
+          
+          elif [ "$EVENT_NAME" == "pull_request" ]; then
+            MESSAGE="📢 **Nouvelle Pull Request créée**\n\n👤 Auteur : **$ACTOR**\n📋 Titre : **$PR_TITLE**\n🔗 $PR_URL"
+          fi
+
+          # --- 2. ENVOI À DISCORD ---
+          if [ ! -z "$MESSAGE" ]; then
+            curl -H "Content-Type: application/json" \
+                 -X POST \
+                 -d "{\"content\": \"$MESSAGE\"}" \
+                 "$DISCORD_WEBHOOK"
+          fi

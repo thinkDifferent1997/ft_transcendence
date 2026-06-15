@@ -1,0 +1,30 @@
+# ============================================================
+#   Backend dev image — ft_transcendence
+#
+#   Runs NestJS in watch mode (`npm run start:dev`). Source
+#   code is bind-mounted from the host, so the build only
+#   needs to install deps and generate the Prisma client.
+# ============================================================
+
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Build tools needed for some native deps (bcrypt, etc.) and
+# OpenSSL/libc6-compat needed by Prisma.
+RUN apk add --no-cache python3 make g++ libc6-compat openssl
+
+# Install all deps (dev + prod) — watch mode needs them
+COPY package.json package-lock.json* ./
+RUN npm ci
+
+# Generate the Prisma client. The schema is bind-mounted at
+# runtime, but generating once during build means the client
+# is ready before the source mount arrives. The dev entrypoint
+# re-runs this if the schema changes.
+COPY prisma ./prisma
+RUN npx prisma generate
+
+EXPOSE 3000
+
+# CMD is set in docker-compose.dev.yml
