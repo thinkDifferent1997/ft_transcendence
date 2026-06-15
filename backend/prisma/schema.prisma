@@ -6,3 +6,14 @@ datasource db {
 generator client {
   provider = "prisma-client-js"
 }
+
+model User {
+  id                  String  @id @default(uuid())
+  email               String  @unique
+  username            String  @unique
+  passwordHash        String?
+  twoFactorSecret     String?
+  isTwoFactorEnabled  Boolean @default(false)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+}
