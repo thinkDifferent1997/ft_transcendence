@@ -1,4 +1,9 @@
 import { useState, useEffect } from "react";
+import { questions } from "../data/questions";
+import ScoreBoard from "../components/ScoreBoard";
+import QuestionCard from "../components/QuestionCard";
+import WaitingScreen from "../components/WaitingScreen";
+import GameOverScreen from "../components/GameOverScreen";
 
 export default function QuizPage()
 {
@@ -8,19 +13,6 @@ export default function QuizPage()
 	const [time_left, set_time_left] = useState(20);
 	const [answered, set_answered] = useState(false);
 
-	const questions =
-		[
-		{
-			question: "Quelle est la capitale de la France ?",
-			answers: ["Paris", "Rome", "Berlin", "Madrid"],
-			correct: "Paris",
-		},
-		{
-			question: "2 + 2 = ?",
-				answers: ["2", "3", "4", "5"],
-			correct: "4",
-		},
-	];
 
 	const	current_quest = questions[quest_index];
 
@@ -45,8 +37,6 @@ export default function QuizPage()
 		
 		if (answer === current_quest.correct)
 			setScore(score + 1);
-
-		next_question();
 	}
 
 	useEffect(() =>
@@ -68,27 +58,35 @@ export default function QuizPage()
 	if (game_over)
 		{
 			return (
+				<GameOverScreen
+					didWin = {score >= questions.length / 2}
+					score = {score}
+					masScore{questions.length}
+				/>
+			);
+		}
+		
+		if (answered)
+		{
+			return (
 				<div>
-				<h1>Fin de Partie !</h1>
-				<p>
-				Score final : {score} / {questions.length}
-				</p>
+					<WaitingScreen
+						score = {score}
+						time_left = {time_left}
+					/>
 				</div>
 			);
 		}
 		return (
 			<div>
-			<p>Score : {score} Temps restant : {time_left}</p>
-			<h1>{current_quest.question}</h1>
-
-
-			{current_quest.answers.map((answer) => (
-				<button key={answer}
-				onClick={() => handle_answer(answer)}
-				>
-				{answer}
-				</button>
-			))}
+				<ScoreBoard
+					score = {score}
+					time_left = {time_left}
+				/>
+				<QuestionCard
+					question={current_quest}
+					onAnswer={handle_answer}
+				/>
 			</div>
 		);
 }
