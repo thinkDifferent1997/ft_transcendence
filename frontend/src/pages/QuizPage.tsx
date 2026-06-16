@@ -61,7 +61,7 @@ export default function QuizPage()
 				<GameOverScreen
 					didWin = {score >= questions.length / 2}
 					score = {score}
-					masScore{questions.length}
+					maxScore = {questions.length}
 				/>
 			);
 		}
