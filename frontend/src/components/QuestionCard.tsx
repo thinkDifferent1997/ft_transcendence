@@ -3,6 +3,7 @@ import type { Question } from "../types/question";
 type QuestionCardProps =
 {
 	question: Question;
+	answers: string[];
 	onAnswer: (answer: string) => void;
 };
 
@@ -10,6 +11,7 @@ export default function QuestionCard
 (
 	{
 		question,
+		answers,
 		onAnswer,
 	}: QuestionCardProps
 )
@@ -18,7 +20,7 @@ export default function QuestionCard
 	return (
 		<div>
 			<h1>{question.question}</h1>
-			{question.answers.map((answer) =>
+			{answers.map((answer) =>
 			(
 				<button
 				key = {answer}

@@ -2,8 +2,8 @@ import ScoreBoard from "./ScoreBoard";
 
 type WaitingScreenProps = 
 {
-	score,
-	time_left,
+	score: number,
+	time_left: number,
 };
 
 export default function WaitingScreen
@@ -19,6 +19,7 @@ export default function WaitingScreen
 		<div>
 			<ScoreBoard
 				score = {score}
+				enemyScore = {score}
 				time_left = {time_left}
 			/>
 

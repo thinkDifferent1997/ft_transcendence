@@ -4,39 +4,60 @@ import ScoreBoard from "../components/ScoreBoard";
 import QuestionCard from "../components/QuestionCard";
 import WaitingScreen from "../components/WaitingScreen";
 import GameOverScreen from "../components/GameOverScreen";
+import PlayerBonusPanel from "../components/PlayerBonus";
+
+import { isCorrectAnswer } from "../game/answer";
+import { hasThreeChoiceBonus, updateCorrectStreak} from "../game/bonus";
+import { getDisplayedAnswers } from "../game/display";
 
 export default function QuizPage()
 {
 	const [score, setScore] = useState(0);
-	const [quest_index, set_quest_index] = useState(0);
+	const [questIndex, setQuestIndex] = useState(0);
 	const [game_over, set_game_over] = useState(false);
 	const [time_left, set_time_left] = useState(20);
 	const [answered, set_answered] = useState(false);
+	const [correctStreak, setCorrectStreak] = useState(0);
+	
+	const hideAnswer = false;
+	const doublePoint = false;
+	const threeChoice = hasThreeChoiceBonus(correctStreak);
 
-
-	const	current_quest = questions[quest_index];
-
+	const	currentQuestion = questions[questIndex];
 	
 	function	next_question()
 	{
-		if (quest_index + 1 >= questions.length)
+		if (questIndex + 1 >= questions.length)
 		{	
 			set_game_over(true);
 			return ;
 		}
 		set_time_left(20);
-		set_quest_index(quest_index + 1);
+		setQuestIndex(
+			(previousQuestIndex) => previousQuestIndex + 1);
 	}
 
 	function	handle_answer(answer: string)
 	{
 		if (answered)
-			return ;
+			return;
 
 		set_answered(true);
-		
-		if (answer === current_quest.correct)
-			setScore(score + 1);
+
+		const	isCorrect = isCorrectAnswer(
+			answer,
+			currentQuestion.correct
+		);
+
+		setCorrectStreak(
+			updateCorrectStreak(
+				correctStreak,
+				isCorrect,
+			),
+		);
+		if (isCorrect)
+			setScore(
+			(previousScore) => previousScore + 1);
 	}
 
 	useEffect(() =>
@@ -47,7 +68,7 @@ export default function QuizPage()
 					}, 1000);
 
 					return () => clearInterval(timer);
-		}, [quest_index]); //Le timer changera a chaque fois que quest_index est modifie
+		}, [questIndex]); //Le timer changera a chaque fois que questIndex est modifie
 	
 	useEffect(() =>
 			  {
@@ -74,17 +95,42 @@ export default function QuizPage()
 						score = {score}
 						time_left = {time_left}
 					/>
+					<PlayerBonusPanel
+						correctStreak={correctStreak}
+						threeChoice={threeChoice}
+						hideAnswer={hideAnswer}
+						doublePoint={doublePoint}
+					/>
 				</div>
 			);
 		}
+
+
+		// For bonus 3 choices : we take out the right answer, choose only 2 answers, put back the right answer
+
+
+		const displayedAnswers = getDisplayedAnswers(
+			currentQuestion.answers,
+			currentQuestion.correct,
+			threeChoice
+		);
+
 		return (
 			<div>
 				<ScoreBoard
 					score = {score}
+					enemyScore = {score}
 					time_left = {time_left}
 				/>
+				<PlayerBonusPanel
+          			correctStreak={correctStreak}
+					threeChoice={threeChoice}
+					hideAnswer={hideAnswer}
+					doublePoint={doublePoint}
+				/>
 				<QuestionCard
-					question={current_quest}
+					question={currentQuestion}
+					answers={displayedAnswers}
 					onAnswer={handle_answer}
 				/>
 			</div>
