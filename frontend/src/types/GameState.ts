@@ -1,13 +1,14 @@
 import type { PlayerState } from "./PlayerState";
+import type { Question } from "./question";
 
 export interface GameState
 {
-	score: number;
-	questionID: number;
+	currentQuestion: Question;
+	questionIndex: number;
 	time_left: number;
 
-	player1: PlayerState;
-	player2: PlayerState;
+	localPlayer: PlayerState;
+	enemyPlayer: PlayerState;
 
 	gameOver: boolean;
 }

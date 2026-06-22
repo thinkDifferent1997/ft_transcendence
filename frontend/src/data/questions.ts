@@ -11,4 +11,34 @@ export const questions: Question[] = [
         answers: ["2", "3", "4", "5"],
         correct: "4",
     },
+    {
+        question: "Quelle est la bonne reponse ?",
+        answers: ["A", "B", "C", "D, la reponse D."],
+        correct: "D, la reponse D.",
+    },
+    {
+        question: "Quelle est la bonne reponse ?",
+        answers: ["A", "B", "C", "D, la reponse D."],
+        correct: "D, la reponse D.",
+    },
+    {
+        question: "Quelle est la bonne reponse ?",
+        answers: ["A", "B", "C", "D, la reponse D."],
+        correct: "D, la reponse D.",
+    },
+    {
+        question: "Quelle est la bonne reponse ?",
+        answers: ["A", "B", "C", "D, la reponse D."],
+        correct: "D, la reponse D.",
+    },
+    {
+        question: "Quelle est la bonne reponse ?",
+        answers: ["A", "B", "C", "D, la reponse D."],
+        correct: "D, la reponse D.",
+    },
+    {
+        question: "Quelle est la bonne reponse ?",
+        answers: ["A", "B", "C", "D, la reponse D."],
+        correct: "D, la reponse D.",
+    },
 ];
