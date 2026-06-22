@@ -1,3 +1,5 @@
+//Game Result after each round
+
 export interface GameResult
 {
 	didWin: boolean;

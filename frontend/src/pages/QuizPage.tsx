@@ -33,8 +33,7 @@ export default function QuizPage()
 			return ;
 		}
 		set_time_left(20);
-		setQuestIndex(
-			(previousQuestIndex) => previousQuestIndex + 1);
+		setQuestIndex((previousQuestIndex) => previousQuestIndex + 1);
 	}
 
 	function	handle_answer(answer: string)
@@ -44,31 +43,24 @@ export default function QuizPage()
 
 		set_answered(true);
 
-		const	isCorrect = isCorrectAnswer(
-			answer,
-			currentQuestion.correct
-		);
+		const	isCorrect = isCorrectAnswer(answer, currentQuestion.correct);
 
-		setCorrectStreak(
-			updateCorrectStreak(
-				correctStreak,
-				isCorrect,
-			),
-		);
+		setCorrectStreak(updateCorrectStreak(correctStreak, isCorrect));
 		if (isCorrect)
-			setScore(
-			(previousScore) => previousScore + 1);
+			setScore((previousScore) => previousScore + 1);
 	}
 
 	useEffect(() =>
 		{
+			//set Interval will update eache time questIndex change
+			//set time left every 1000ms, means each sec
 			const timer = setInterval(() => 
 					{
 						set_time_left((previous_time) => previous_time - 1);
 					}, 1000);
 
 					return () => clearInterval(timer);
-		}, [questIndex]); //Le timer changera a chaque fois que questIndex est modifie
+		}, [questIndex]);
 	
 	useEffect(() =>
 			  {
@@ -78,6 +70,7 @@ export default function QuizPage()
 
 	if (game_over)
 		{
+			//return GameOver component
 			return (
 				<GameOverScreen
 					didWin = {score >= questions.length / 2}
@@ -109,11 +102,7 @@ export default function QuizPage()
 		// For bonus 3 choices : we take out the right answer, choose only 2 answers, put back the right answer
 
 
-		const displayedAnswers = getDisplayedAnswers(
-			currentQuestion.answers,
-			currentQuestion.correct,
-			threeChoice
-		);
+		const displayedAnswers = getDisplayedAnswers(currentQuestion.answers, currentQuestion.correct, threeChoice);
 
 		return (
 			<div>

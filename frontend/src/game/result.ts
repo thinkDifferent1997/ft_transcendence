@@ -1,3 +1,5 @@
+//Game Result in the end of the 1 vs 1
+
 export function didPlayerWin
 (
     playerScore: number,
