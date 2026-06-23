@@ -7,8 +7,6 @@ async function main() {
   console.log('🌱 Starting database seeding...');
 
   // 1. Clean existing tables to prevent duplicate ID crashes
-  // (Order matters: delete rooms before users if rooms rely on user foreign keys)
-  await prisma.room.deleteMany({});
   await prisma.user.deleteMany({});
   console.log('🧹 Cleaned existing tables.');
 
@@ -20,7 +18,7 @@ async function main() {
     data: {
       username: 'marvin',
       email: 'marvin@student.42.fr',
-      password: defaultPassword,
+      passwordHash: defaultPassword,
     },
   });
 
@@ -28,22 +26,13 @@ async function main() {
     data: {
       username: 'arthur',
       email: 'arthur@student.42.fr',
-      password: defaultPassword,
+      passwordHash: defaultPassword,
     },
   });
 
   console.log(`👤 Seeded users: ${user1.username}, ${user2.username}`);
 
-  // 4. Insert a Dummy Room
-  const room = await prisma.room.create({
-    data: {
-      // Ensure this matches Nicolas's schema (e.g., 'name', 'title', etc.)
-      name: 'General Chat', 
-    },
-  });
-
-  console.log(`🏠 Seeded room: "${room.name}"`);
-  console.log('✅ Seeding completed successfully!');
+    console.log('✅ Seeding completed successfully!');
 }
 
 main()
