@@ -13,7 +13,13 @@ import {
 } from '@nestjs/websockets';
 import { Socket } from 'socket.io';
 
-@WebSocketGateway({ path: '/ws' })
+@WebSocketGateway({ 
+	path: '/ws',
+	cors: {
+		origin: '*', //to be changed to later by our domain name. * allows everything
+		credentials: true,
+	},
+})
 export class EventsGateway {
   @SubscribeMessage('ping')
   handlePing(@ConnectedSocket() client: Socket): string {
