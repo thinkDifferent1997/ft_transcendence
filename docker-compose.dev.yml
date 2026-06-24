@@ -47,7 +47,7 @@ services:
     volumes:
       - ./backend:/app:Z
       - /app/node_modules
-      - ./nginx/certs:/etc/nginx/certs:ro,Z
+      - ./nginx/certs:/etc/nginx/certs:ro,z
     environment:
       - NODE_ENV=development
 
@@ -56,5 +56,5 @@ services:
       - "8080:80"   # 👈 Unprivileged HTTP port (No sudo needed)
       - "8443:443"
     volumes:
-      - ./nginx/certs:/etc/nginx/certs:ro,Z
+      - ./nginx/certs:/etc/nginx/certs:ro,z
       - ./nginx/nginx.dev.conf:/etc/nginx/conf.d/default.conf:ro,Z
