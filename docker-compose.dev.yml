@@ -47,7 +47,6 @@ services:
     volumes:
       - ./backend:/app:Z
       - /app/node_modules
-      - ./nginx/certs:/etc/nginx/certs:ro,z
     environment:
       - NODE_ENV=development
 
