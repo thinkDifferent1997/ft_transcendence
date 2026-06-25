@@ -65,7 +65,7 @@ services:
       context: ./nginx
     container_name: nginx
     ports:
-     - "443:443"
+     - "${HTTPS_PORT:-443}:443"
     volumes:
       - ./nginx/certs:/etc/nginx/certs:ro
     depends_on:
