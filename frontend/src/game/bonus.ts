@@ -5,10 +5,14 @@ export function updateCorrectStreak
 ): number
 
 {
-    if (isCorrect)
+    if (isCorrect && streak >= 0)
         return streak + 1;
-
-    return 0;
+	else if (isCorrect && streak < 0)
+		return 1;
+	else if (!isCorrect && streak >= 0)
+		return (-1);
+	else
+		return streak - 1;
 }
 
 export function hasThreeChoiceBonus

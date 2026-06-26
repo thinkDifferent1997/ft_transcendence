@@ -1,6 +1,6 @@
 type PlayerBonusProps =
 	{
-	correctStreak : number;
+	streak : number;
 	threeChoice : boolean;
 	hideAnswer : boolean;
 	doublePoint : boolean;
@@ -9,7 +9,7 @@ type PlayerBonusProps =
 export default function PlayerBonus
 (
 	{
-		correctStreak,
+		streak,
 		threeChoice,
 		hideAnswer,
 		doublePoint,
@@ -22,7 +22,7 @@ export default function PlayerBonus
             <h2>Bonus</h2>
 
             <p>
-                Série actuelle : {correctStreak}
+                Série actuelle : {streak}
             </p>
 
             <p>

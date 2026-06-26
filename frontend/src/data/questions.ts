@@ -2,7 +2,7 @@ import type { Question } from "../types/question";
 
 export const questions: Question[] = [
     {
-        question: "Quelle est la capitale de la France ?",
+        question: "Quelle est la capitale de la France ??????",
         answers: ["Paris", "Rome", "Berlin", "Madrid"],
         correct: "Paris",
     },

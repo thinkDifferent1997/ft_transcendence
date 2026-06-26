@@ -4,8 +4,7 @@ export interface PlayerState
 	answered: boolean;
 	totalTimeUsed: number;
 
-	correctStreak: number;
-	wrongStreak: number;
+	streak: number;
 
 	hideAnswer: boolean;
 	threeChoice: boolean;

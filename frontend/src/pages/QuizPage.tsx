@@ -19,8 +19,7 @@ export default function QuizPage()
 			score: 0,
 			answered: false,
 			totalTimeUsed: 0,
-			correctStreak: 0,
-			wrongStreak: 0,
+			streak: 0,
 			hideAnswer: false,
 			threeChoice: false,
 			doublePoint: false,
@@ -37,43 +36,37 @@ export default function QuizPage()
 		});
 
 
-	function	next_question()
+	function nextQuestion()
 	{
 		if (game.questionIndex + 1 >= questions.length)
-		{	
-			setGame((previousGame) => (
-				{
-					...previousGame,
-					gameOver: true,
-				}));
-			return ;
+		{
+			setGame((previousGame) => ({
+				...previousGame,
+				gameOver: true,
+			}));
+			return;
 		}
-		if (game.localPlayer.threeChoice)
 
-			setGame((previousGame) => (
+		setGame((previousGame) => ({
+			...previousGame,
+
+			questionIndex: previousGame.questionIndex + 1,
+			currentQuestion: questions[previousGame.questionIndex + 1],
+			time_left: 20,
+
+			localPlayer: {
+				...previousGame.localPlayer,
+
+				answered: false,
+				threeChoice: false,
+				hideAnswer: false,
+			},
+			enemyPlayer:
 			{
-				...previousGame,
-				currentQuestion: questions[game.questionIndex + 1],
-				questionIndex:game.questionIndex + 1,
-				time_left: 20,
-				localPlayer: {
-					...previousGame.localPlayer,
+					...previousGame.enemyPlayer,
 					answered: false,
-					threeChoice: false,
-				},
-			}));
-		else
-			setGame((previousGame) => (
-			{
-				...previousGame,
-				currentQuestion: questions[game.questionIndex + 1],
-				questionIndex: game.questionIndex + 1,
-				time_left: 20,
-				localPlayer: {
-					...previousGame.localPlayer,
-					answered: false,
-				},
-			}));
+			},
+		}));
 	}
 
 	function	handle_answer(answer: string)
@@ -81,19 +74,9 @@ export default function QuizPage()
 		if (game.localPlayer.answered)
 			return;
 
-		setGame((previousGame) => (
-		{
-			...previousGame,
-			localPlayer: {
-				...previousGame.localPlayer,
-				answered: true,
-			},
-		}));
-
 		const	isCorrect = isCorrectAnswer(answer, game.currentQuestion.correct);
 
-//		setCorrectStreak(updateCorrectStreak(correctStreak, isCorrect));
-		const newStreak = updateCorrectStreak(game.localPlayer.correctStreak, isCorrect);
+		const newStreak = updateCorrectStreak(game.localPlayer.streak, isCorrect);
 		let three = false;
 		let five = false;
 		let negatif = false;
@@ -107,19 +90,54 @@ export default function QuizPage()
 			negatif = true;
 
 		if (isCorrect)
-			new_score = game.localPlayer.score + 1;
+		{
+			if (game.localPlayer.doublePoint)
+			{
+				negatif = false;
+				new_score += 2;
+			}
+			else
+				new_score += 1;
+		}
+
+console.log(
+    "Ancien streak :", game.localPlayer.streak,
+    "Nouveau :", newStreak,
+);
 
 		setGame((previousGame) => (
 		{
 			...previousGame,
 			localPlayer: {
 				...previousGame.localPlayer,
+				answered: true,
+				streak: newStreak,
 				threeChoice: three,
 				doublePoint: negatif,
 				hideAnswer: five,
 				score: new_score,
 			},
 		}));
+		setTimeout(fakeEnemyAnswer, 500);
+	}
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+// !!FAKE IA QUI N'EST PAS OPTI DU TOUT C'EST JUSTE POUR TESTER!!
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+	function fakeEnemyAnswer()
+	{
+			const isCorrect = Math.random() < 0.7;
+
+			setGame((previousGame) => ({
+					...previousGame,
+					enemyPlayer: {
+							...previousGame.enemyPlayer,
+							answered: true,
+							score: isCorrect
+									? previousGame.enemyPlayer.score + 1
+									: previousGame.enemyPlayer.score,
+					},
+			}));
 	}
 
 	useEffect(() =>
@@ -141,7 +159,7 @@ export default function QuizPage()
 	useEffect(() =>
 			  {
 				  if (game.time_left  < 0)
-					  next_question();
+					  nextQuestion();
 			  }, [game.time_left]);
 
 	if (game.gameOver)
@@ -162,10 +180,11 @@ export default function QuizPage()
 				<div>
 					<WaitingScreen
 						score = {game.localPlayer.score}
+						enemyScore = {game.enemyPlayer.score}
 						time_left = {game.time_left}
 					/>
 					<PlayerBonusPanel
-						correctStreak={game.localPlayer.correctStreak}
+						streak={game.localPlayer.streak}
 						threeChoice={game.localPlayer.threeChoice}
 						hideAnswer={game.localPlayer.hideAnswer}
 						doublePoint={game.localPlayer.doublePoint}
@@ -184,11 +203,11 @@ export default function QuizPage()
 			<div>
 				<ScoreBoard
 					score = {game.localPlayer.score}
-					enemyScore = {game.localPlayer.score}
+					enemyScore = {game.enemyPlayer.score}
 					time_left = {game.time_left}
 				/>
 				<PlayerBonusPanel
-          			correctStreak={game.localPlayer.correctStreak}
+          			streak={game.localPlayer.streak}
 					threeChoice={game.localPlayer.threeChoice}
 					hideAnswer={game.localPlayer.hideAnswer}
 					doublePoint={game.localPlayer.doublePoint}
@@ -198,6 +217,13 @@ export default function QuizPage()
 					answers={displayedAnswers}
 					onAnswer={handle_answer}
 				/>
+				<p>
+					Adversaire :
+					{" "}
+					{game.enemyPlayer.answered
+							? "Answered."
+							: "Still thinking..."}
+				</p>
 			</div>
 		);
 }
