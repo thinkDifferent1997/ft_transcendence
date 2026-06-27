@@ -7,13 +7,117 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// ─── Utilisateur ───
+
 model User {
-  id                  String  @id @default(uuid())
-  email               String  @unique
-  username            String  @unique
+  id                  String   @id @default(uuid())
+  email               String   @unique
+  username            String   @unique
   passwordHash        String?
   twoFactorSecret     String?
-  isTwoFactorEnabled  Boolean @default(false)
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
+  isTwoFactorEnabled  Boolean  @default(false)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  participations RoomParticipant[]
+}
+
+// ─── Banque de questions ───
+
+model Category {
+  id        String     @id @default(uuid())
+  name      String     @unique
+  questions Question[]
+}
+
+model Question {
+  id            String         @id @default(uuid())
+  text          String
+  categoryId    String
+  category      Category       @relation(fields: [categoryId], references: [id])
+  choices       AnswerChoice[]
+  answers       Answer[]
+  roomQuestions RoomQuestion[]
+}
+
+model AnswerChoice {
+  id         String   @id @default(uuid())
+  text       String
+  isCorrect  Boolean  @default(false)
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id])
+}
+
+// ─── Tournoi ───
+
+model Tournament {
+  id        String     @id @default(uuid())
+  status    RoomStatus @default(WAITING)
+  createdAt DateTime   @default(now())
+  rooms     Room[]
+}
+
+// ─── Sessions de jeu ───
+
+enum RoomMode {
+  SOLO
+  DUEL
+  TOURNAMENT
+}
+
+enum RoomStatus {
+  WAITING
+  IN_PROGRESS
+  FINISHED
+}
+
+model Room {
+  id        String     @id @default(uuid())
+  mode      RoomMode
+  status    RoomStatus @default(WAITING)
+  createdAt DateTime   @default(now())
+
+  tournamentId String?
+  tournament   Tournament? @relation(fields: [tournamentId], references: [id])
+
+  participants RoomParticipant[]
+  questions    RoomQuestion[]
+}
+
+model RoomParticipant {
+  id      String   @id @default(uuid())
+  roomId  String
+  room    Room     @relation(fields: [roomId], references: [id])
+
+  userId  String?
+  user    User?    @relation(fields: [userId], references: [id])
+  isBot   Boolean  @default(false)
+
+  score   Int      @default(0)
+  answers Answer[]
+
+  @@unique([roomId, userId])
+}
+
+model RoomQuestion {
+  id         String   @id @default(uuid())
+  roomId     String
+  room       Room     @relation(fields: [roomId], references: [id])
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id])
+  order      Int
+
+  @@unique([roomId, order])
+}
+
+model Answer {
+  id          String   @id @default(uuid())
+  isCorrect   Boolean
+  timeTakenMs Int
+  createdAt   DateTime @default(now())
+
+  participantId String
+  participant   RoomParticipant @relation(fields: [participantId], references: [id])
+  questionId    String
+  question      Question @relation(fields: [questionId], references: [id])
 }
