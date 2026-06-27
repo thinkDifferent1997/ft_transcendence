@@ -64,8 +64,11 @@ services:
     build:
       context: ./nginx
     container_name: nginx
+    # Host port is configurable so rootless engines (podman at 42) can use a
+    # non-privileged port (>=1024). Defaults to 443 for Docker. Set HTTPS_PORT
+    # in .env (e.g. HTTPS_PORT=8443) on rootless setups.
     ports:
-      - "443:443"
+     - "${HTTPS_PORT:-443}:443"
     volumes:
       - ./nginx/certs:/etc/nginx/certs:ro
     depends_on:
