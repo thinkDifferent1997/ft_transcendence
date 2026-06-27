@@ -38,4 +38,15 @@ export class AuthService {
 
     return { id: user.id, email: user.email, username: user.username };
   }
+
+  async loginOrCreate42User(profile: any) {
+	  console.log('Profile :', profile);
+
+	  //fake return just for testing
+	  return {
+		  id: 1,
+		  username: profile.username || 'dummy',
+		  token: 'fake-jwt-token'
+	};
+  }
 }
