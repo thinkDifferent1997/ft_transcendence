@@ -40,13 +40,35 @@ export class AuthService {
   }
 
   async loginOrCreate42User(profile: any) {
-	  console.log('Profile :', profile);
+	  const rawId = profile?.fortyTwoID;
+	  if (!rawId){
+		  console.error("Error: the structure is not valid: ", profile);
+		  throw new Error("The 42 ID extraction from profile passport failed");
+		 }
+	  const fortyTwoIdString = rawId.toString();
+	  let user = await this.prisma.user.findUnique({
+		  where: { fortyTwoId: fortyTwoIdString },
+	  });
 
-	  //fake return just for testing
+	  if (!user) {
+		  user = await this.prisma.user.create({
+			  data: {
+				  fortyTwoId: fortyTwoIdString,
+				  username: profile.username || 'dummy_42',
+				  email: profile.email,
+				  avatar: profile.avatarUrl || null,
+				 },
+		  });
+		  console.log('New User created in: ', user.username);
+	  }
+	  else{
+		  console.log('Already existing user found: ', user.username);
+	  }
+
 	  return {
-		  id: 1,
-		  username: profile.username || 'dummy',
+		  id:user.id,
+		  username:user.username,
 		  token: 'fake-jwt-token'
-	};
-  }
+		};
+	}
 }
