@@ -1,5 +1,6 @@
+import { socket } from "../socket/socket";
 import { useState, useEffect } from "react";
-import { questions } from "../data/questions";
+import { fetchQuestions } from "../api/triviaDB";
 import ScoreBoard from "../components/ScoreBoard";
 import QuestionCard from "../components/QuestionCard";
 import WaitingScreen from "../components/WaitingScreen";
@@ -8,6 +9,7 @@ import PlayerBonusPanel from "../components/PlayerBonus";
 
 import type { PlayerState } from "../types/PlayerState";
 import type { GameState } from "../types/GameState";
+import type { Question } from "../types/question";
 
 import { isCorrectAnswer } from "../game/answer";
 import { updateCorrectStreak } from "../game/bonus";
@@ -24,6 +26,8 @@ export default function QuizPage()
 			threeChoice: false,
 			doublePoint: false,
 		};
+
+	const [questions, setQuestions] = useState<Question[]>([]);
 
 	const [game, setGame] = useState<GameState>(
 		{
@@ -58,8 +62,6 @@ export default function QuizPage()
 				...previousGame.localPlayer,
 
 				answered: false,
-				threeChoice: false,
-				hideAnswer: false,
 			},
 			enemyPlayer:
 			{
@@ -71,8 +73,6 @@ export default function QuizPage()
 
 	function	handle_answer(answer: string)
 	{
-		if (game.localPlayer.answered)
-			return;
 
 		const	isCorrect = isCorrectAnswer(answer, game.currentQuestion.correct);
 
@@ -88,6 +88,10 @@ export default function QuizPage()
 			five = true;
 		else if (newStreak <= -5)
 			negatif = true;
+		else if (three)
+			three = false;
+		else if (five)
+			five = false;
 
 		if (isCorrect)
 		{
@@ -99,11 +103,6 @@ export default function QuizPage()
 			else
 				new_score += 1;
 		}
-
-console.log(
-    "Ancien streak :", game.localPlayer.streak,
-    "Nouveau :", newStreak,
-);
 
 		setGame((previousGame) => (
 		{
@@ -141,6 +140,13 @@ console.log(
 	}
 
 	useEffect(() =>
+	{
+		socket.connect();
+
+		return () => socket.disconnect();
+	}, []);
+
+	useEffect(() =>
 		{
 			//set Interval will restart the timer each time the question changes
 			//set time left every 1000ms, means each sec
@@ -155,12 +161,50 @@ console.log(
 
 					return () => clearInterval(timer);
 		}, [game.questionIndex]);
-	
+
+		useEffect(() =>
+		{
+			async function loadQuestions()
+			{
+				const loadedQuestions = await fetchQuestions();
+
+				setQuestions(loadedQuestions);
+
+				setGame((previousGame) => ({
+					...previousGame,
+					currentQuestion: loadedQuestions[0],
+				}));
+			}
+
+			loadQuestions();
+		}, []);
+
 	useEffect(() =>
 			  {
-				  if (game.time_left  < 0)
-					  nextQuestion();
+				  if (game.time_left < 0)
+{
+        if (!game.localPlayer.answered)
+        {
+			let timeStreak =  updateCorrectStreak(game.localPlayer.streak, false);
+			if (timeStreak >= 0)
+				timeStreak = -1;
+
+                setGame((previousGame) => ({
+                        ...previousGame,
+                        localPlayer: {
+                                ...previousGame.localPlayer,
+                                streak: timeStreak,
+                        },
+                }));
+        }
+        nextQuestion();
+}
 			  }, [game.time_left]);
+
+	if (questions.length === 0)
+	{
+    	return <h1>Loading ...</h1>;
+	}
 
 	if (game.gameOver)
 		{
@@ -192,10 +236,6 @@ console.log(
 				</div>
 			);
 		}
-
-
-		// For bonus 3 choices : we take out the right answer, choose only 2 answers, put back the right answer
-
 
 		const displayedAnswers = getDisplayedAnswers(game.currentQuestion.answers, game.currentQuestion.correct, game.localPlayer.threeChoice);
 
