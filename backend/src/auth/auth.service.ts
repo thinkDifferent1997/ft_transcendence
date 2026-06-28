@@ -6,7 +6,7 @@
  * base (via PrismaService). Séparé du contrôleur pour être
  * réutilisable et testable indépendamment du HTTP.
  */
-import { Injectable, ConflictException } from '@nestjs/common';
+import { Injectable, ConflictException, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { HashingService } from './hashing.service';
 import { RegisterDto } from './dto/register.dto';
@@ -23,7 +23,7 @@ export class AuthService {
       where: { OR: [{ email: dto.email }, { username: dto.username }] },
     });
     if (existing) {
-      throw new ConflictException('Email ou pseudo déjà utilisé.');
+      throw new ConflictException('email or pseudo already used!.');
     }
 
     const passwordHash = await this.hashing.hash(dto.password);
@@ -37,6 +37,28 @@ export class AuthService {
     });
 
     return { id: user.id, email: user.email, username: user.username };
+  }
+
+
+  async	login(dto:any) {
+	  const user = await this.prisma.user.findUnique({
+		  where: { email: dto.email },
+	});
+	if (!user || !user.passwordHash) {
+		throw new UnauthorizedException('Incorrect Credentials');
+	}
+
+	const isPasswordValid = await this.hashing.verify(user.passwordHash, dto.password);
+	if (!isPasswordValid) {
+		throw new UnauthorizedException('Incorrect Credentials');
+	}
+	console.log(`Connexion succesfull: ${user.username}`);
+
+	return {
+		id:user.id,
+		username:user.username,
+		token: 'fake-jwt-token',
+	};
   }
 
   async loginOrCreate42User(profile: any) {
