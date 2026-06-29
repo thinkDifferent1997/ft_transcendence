@@ -1,6 +1,5 @@
-import { socket } from "../socket/socket";
+//import { socket } from "../socket/socket";
 import { useState, useEffect } from "react";
-import { fetchQuestions } from "../api/triviaDB";
 import ScoreBoard from "../components/ScoreBoard";
 import QuestionCard from "../components/QuestionCard";
 import WaitingScreen from "../components/WaitingScreen";
@@ -140,13 +139,6 @@ export default function QuizPage()
 	}
 
 	useEffect(() =>
-	{
-		socket.connect();
-
-		return () => socket.disconnect();
-	}, []);
-
-	useEffect(() =>
 		{
 			//set Interval will restart the timer each time the question changes
 			//set time left every 1000ms, means each sec
@@ -166,7 +158,8 @@ export default function QuizPage()
 		{
 			async function loadQuestions()
 			{
-				const loadedQuestions = await fetchQuestions();
+				const response = await fetch("/api/trivia/questions");
+				const loadedQuestions = await response.json();
 
 				setQuestions(loadedQuestions);
 
