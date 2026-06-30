@@ -5,7 +5,7 @@
  * Définit les routes (POST /auth/register, POST /auth/login, ...),
  * reçoit les requêtes, délègue à AuthService et renvoie la réponse.
  */
-import { Controller, Post, Body, Get, UseGuards, Req, Res } from '@nestjs/common';
+import { Controller, Post, Body, Get, UseGuards, Req, Res, HttpCode, HttpStatus } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport'
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
@@ -18,6 +18,13 @@ export class AuthController {
   register(@Body() dto: RegisterDto) {
     return this.authService.register(dto);
   }
+
+  @Post('login')
+  @HttpCode(HttpStatus.OK)
+  login(@Body() dto: any) {
+	  return this.authService.login(dto);
+  }
+
 
   /********************** OAUTH 42 API *******************************/
 
@@ -38,5 +45,6 @@ export class AuthController {
 
 	  return res.redirect('https://localhost:8443/quiz');
   }
+  /********************************** *******************************/
 
 }

@@ -11,10 +11,12 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { HashingService } from './hashing.service';
 import { FortyTwoStrategy } from './fortytwo.strategy';
+import { PrismaModule } from '../prisma/prisma.module';
 
 @Module({
 	imports: [
 		PassportModule.register({ defaultStrategy: '42'}),
+		PrismaModule,
 	],
   controllers: [AuthController],
   providers: [ 
