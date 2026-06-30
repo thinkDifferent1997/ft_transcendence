@@ -1,9 +1,12 @@
 import { useState } from 'react';
-import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link, useNavigate } from 'react-router-dom';
 import QuizPage from './pages/QuizPage';
+import AccountPage from './pages/AccountPage';
+import TwoFactorChallengePage from './pages/TwoFactorChallengePage';
 import './App.css';
 
 function AuthForms() {
+  const navigate = useNavigate();
   const [isRegistering, setIsRegistering] = useState(false);
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
@@ -11,18 +14,19 @@ function AuthForms() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Choose the right route depending on whether we are signing up or signing in
     const endpoint = isRegistering ? '/api/auth/register' : '/api/auth/login';
-    const payload = isRegistering 
-      ? { email, username, password } 
+    const payload = isRegistering
+      ? { email, username, password }
       : { email, password };
 
     try {
       console.log(`Sending request to ${endpoint}...`);
-      
-      const response = await fetch(`https://localhost:8443${endpoint}`, {
+
+      const response = await fetch(endpoint, {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -31,11 +35,23 @@ function AuthForms() {
 
       const data = await response.json();
 
-      if (response.ok) {
-        alert(`Success! Backend says: ${JSON.stringify(data)}`);
-        // When auth is officially done , we can add a programmatic redirect here
-      } else {
+      if (!response.ok) {
         alert(`Request Failed: ${data.message || response.statusText}`);
+        return;
+      }
+
+      if (isRegistering) {
+        alert('Account created! You can now sign in.');
+        setIsRegistering(false);
+        return;
+      }
+
+      // Login succeeded. If 2FA is enabled, a pending cookie was set and
+      // we must clear the challenge before the session becomes usable.
+      if (data.twoFactorRequired) {
+        navigate('/2fa');
+      } else {
+        navigate('/account');
       }
     } catch (error) {
       console.error("Network Error:", error);
@@ -49,7 +65,7 @@ function AuthForms() {
       <p style={{ color: '#aaa', fontSize: '14px' }}>Please authenticate to access the quiz arena.</p>
 
       {/* 42 OAuth Strategy Button */}
-      <a href="https://localhost:8443/api/auth/42" style={{ textDecoration: 'none' }}>
+      <a href="/api/auth/42" style={{ textDecoration: 'none' }}>
         <button type="button" style={{ width: '100%', padding: '12px', marginBottom: '20px', fontSize: '16px', backgroundColor: '#00babc', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
           🔒 Login with 42 Intra
         </button>
@@ -59,32 +75,32 @@ function AuthForms() {
 
       {/* Credentials Form */}
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-        <input 
-          type="email" 
-          placeholder="Email Address" 
+        <input
+          type="email"
+          placeholder="Email Address"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          required 
+          required
           style={{ padding: '10px', borderRadius: '4px', border: '1px solid #444', backgroundColor: '#2a2a2a', color: 'white' }}
         />
-        
+
         {isRegistering && (
-          <input 
-            type="text" 
-            placeholder="Username" 
+          <input
+            type="text"
+            placeholder="Username"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            required 
+            required
             style={{ padding: '10px', borderRadius: '4px', border: '1px solid #444', backgroundColor: '#2a2a2a', color: 'white' }}
           />
         )}
 
-        <input 
-          type="password" 
-          placeholder="Password" 
+        <input
+          type="password"
+          placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          required 
+          required
           style={{ padding: '10px', borderRadius: '4px', border: '1px solid #444', backgroundColor: '#2a2a2a', color: 'white' }}
         />
 
@@ -96,8 +112,8 @@ function AuthForms() {
       {/* Toggle Button between Login and Register views */}
       <p style={{ marginTop: '20px', fontSize: '14px' }}>
         {isRegistering ? 'Already have an account? ' : "Don't have an account? "}
-        <span 
-          onClick={() => setIsRegistering(!isRegistering)} 
+        <span
+          onClick={() => setIsRegistering(!isRegistering)}
           style={{ color: '#00babc', cursor: 'pointer', textDecoration: 'underline' }}
         >
           {isRegistering ? 'Sign In here' : 'Create an account'}
@@ -121,6 +137,8 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<AuthForms />} />
+        <Route path="/2fa" element={<TwoFactorChallengePage />} />
+        <Route path="/account" element={<AccountPage />} />
         <Route path="/quiz" element={<QuizPage />} />
       </Routes>
     </BrowserRouter>

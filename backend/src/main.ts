@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
+import cookieParser from 'cookie-parser';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -14,6 +15,9 @@ async function bootstrap() {
 	const app = await NestFactory.create(AppModule, {
 		httpsOptions,
 	});
+
+	// Parse cookies so the JWT strategy can read the access-token cookie.
+	app.use(cookieParser());
 
 	app.useGlobalPipes(
 		new ValidationPipe({
