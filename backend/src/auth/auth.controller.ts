@@ -7,12 +7,17 @@
  */
 import { Controller, Post, Body, Get, UseGuards, Req, Res, HttpCode, HttpStatus } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport'
+import type { Response } from 'express';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
+import { JwtTokenService } from './jwt/jwt-token.service';
 
 @Controller('api/auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly tokens: JwtTokenService,
+  ) {}
 
   @Post('register')
   register(@Body() dto: RegisterDto) {
@@ -21,8 +26,13 @@ export class AuthController {
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  login(@Body() dto: any) {
-	  return this.authService.login(dto);
+  async login(@Body() dto: any, @Res({ passthrough: true }) res: Response) {
+	  const user = await this.authService.login(dto);
+	  // Sets a pending-token cookie when the user has 2FA enabled (the
+	  // client must then complete POST /api/auth/2fa/login), otherwise a
+	  // full-token cookie.
+	  const { twoFactorRequired } = this.tokens.issueLoginCookie(res, user);
+	  return { twoFactorRequired };
   }
 
 
@@ -38,12 +48,18 @@ export class AuthController {
   @Get('42/callback')
   @UseGuards(AuthGuard('42'))
   async fortyTwoAuthCallback(@Req() req, @Res() res) {
-	  
-	  const userWithToken = await this.authService.loginOrCreate42User(req.user);
 
-	  // here attach the JWT in a secure cookie (ex: res.cookie('jwt'))
+	  const user = await this.authService.loginOrCreate42User(req.user);
 
-	  return res.redirect('https://localhost:8443/quiz');
+	  // Issue the JWT cookie (pending if 2FA is enabled, full otherwise)
+	  // and route the user to the 2FA challenge when required.
+	  const { twoFactorRequired } = this.tokens.issueLoginCookie(res, user);
+
+	  return res.redirect(
+		  twoFactorRequired
+			  ? 'https://localhost:8443/2fa'
+			  : 'https://localhost:8443/quiz',
+	  );
   }
   /********************************** *******************************/
 
