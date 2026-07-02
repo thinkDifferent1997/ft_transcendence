@@ -55,9 +55,9 @@ export class AuthService {
 	console.log(`Connexion succesfull: ${user.username}`);
 
 	return {
-		id:user.id,
-		username:user.username,
-		token: 'fake-jwt-token',
+		id: user.id,
+		username: user.username,
+		isTwoFactorEnabled: user.isTwoFactorEnabled,
 	};
   }
 
@@ -88,9 +88,9 @@ export class AuthService {
 	  }
 
 	  return {
-		  id:user.id,
-		  username:user.username,
-		  token: 'fake-jwt-token'
+		  id: user.id,
+		  username: user.username,
+		  isTwoFactorEnabled: user.isTwoFactorEnabled,
 		};
 	}
 }
