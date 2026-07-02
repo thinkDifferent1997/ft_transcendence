@@ -2,8 +2,9 @@ import { Trophy, Users, Clock, ArrowLeft, Crown, Sparkles } from "lucide-react";
 import { useState, useEffect } from "react";
 
 interface TournamentLobbyProps {
-  onBack?: () => void;
-  onStartGame?: () => void;
+	username: string;
+	onBack?: () => void;
+	onStartGame?: () => void;
 }
 
 interface Player {
@@ -14,10 +15,10 @@ interface Player {
   isReady: boolean;
 }
 
-export default function TournamentLobby({ onBack, onStartGame }: TournamentLobbyProps) {
+export default function TournamentLobby({ username, onBack, onStartGame }: TournamentLobbyProps) {
   const maxPlayers = 8;
   const [players, setPlayers] = useState<Player[]>([
-    { id: 1, name: "Manewa", avatar: "😊", level: 15, isReady: true },
+    { id: 1, name: username, avatar: "😊", level: 15, isReady: true },
     { id: 2, name: "Alex", avatar: "🎨", level: 12, isReady: true },
     { id: 3, name: "Sam", avatar: "🚀", level: 18, isReady: false },
   ]);

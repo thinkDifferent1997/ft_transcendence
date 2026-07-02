@@ -2,15 +2,16 @@ import { Trophy, Target, TrendingUp, Star, Camera, Award, Zap } from "lucide-rea
 import { useState } from "react";
 
 interface ProfilePageProps {
-  onBack?: () => void;
+	username: string;
+	onBack?: () => void;
 }
 
-export default function ProfilePage({ onBack }: ProfilePageProps) {
+export default function ProfilePage({ username, onBack }: ProfilePageProps) {
   const [avatar, setAvatar] = useState("😊");
 
   // Mock user data
   const userData = {
-    name: "Manewa",
+    name: username,
     level: 15,
     totalGames: 127,
     globalAccuracy: 78,

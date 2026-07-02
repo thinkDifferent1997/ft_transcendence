@@ -8,8 +8,9 @@ import {
   Send,
   X,
   Minus,
+  LogOut,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import LoginPage from "./components/LoginPage";
 import ProfilePage from "./components/ProfilePage";
 import TournamentLobby from "./components/TournamentLobby";
@@ -18,6 +19,7 @@ import TournamentGame from "./components/TournamentGame";
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [username, setUsername] = useState("Joueur");
   const [currentPage, setCurrentPage] = useState<"home" | "profile" | "tournament" | "game">("home");
   const [gameMode, setGameMode] = useState<"solo" | "ai" | "party" | "tournament">("solo");
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -97,20 +99,72 @@ export default function App() {
     }
   };
 
+  useEffect(() => {
+    const isQuizRoute = window.location.pathname === "/quiz";
+
+    // Si on arrive sur /quiz, on demande au backend de lire le cookie 42
+    if (isQuizRoute) {
+      fetch("https://localhost:8443/api/auth/me", {
+        credentials: 'include',
+      })
+        .then((res) => {
+          if (res.ok) return res.json();
+          throw new Error("Session invalide");
+        })
+        .then((data) => {
+          if (data && data.username) {
+            setUsername(data.username);
+            setIsLoggedIn(true);
+
+            // On nettoie l'URL
+            window.history.replaceState({}, document.title, "/");
+          }
+        })
+        .catch((err) => {
+          console.error(err);
+          setIsLoggedIn(false);
+        });
+    }
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      // On prévient le backend pour qu'il détruise le cookie
+      await fetch("https://localhost:8443/api/auth/logout", {
+        method: "POST",
+        credentials: 'include', // Important pour que le backend sache quel cookie supprimer
+      });
+    } catch (err) {
+      console.error("Erreur lors de la déconnexion backend :", err);
+    } finally {
+      // Quoi qu'il arrive (même si le réseau flanche), on déconnecte le front
+      setIsLoggedIn(false);
+      setCurrentPage("home");
+    }
+  };
+
   // Show login page if not logged in
   if (!isLoggedIn) {
-    return <LoginPage onLogin={() => setIsLoggedIn(true)} />;
+	  return (
+      <LoginPage
+        onLogin={(name?: string) => {
+          if (name) setUsername(name);
+          setIsLoggedIn(true);
+        }}
+      />
+    );
   }
 
   // Show profile page
   if (currentPage === "profile") {
-    return <ProfilePage onBack={() => setCurrentPage("home")} />;
+	return <ProfilePage username={username} onBack={() => setCurrentPage("home")} />; 
   }
 
   // Show tournament lobby
   if (currentPage === "tournament") {
     return (
       <TournamentLobby
+	  	username={username}
         onBack={() => setCurrentPage("home")}
         onStartGame={() => {
           setGameMode("tournament");
@@ -123,7 +177,7 @@ export default function App() {
   // Show game page
   if (currentPage === "game") {
     if (gameMode === "tournament") {
-      return <TournamentGame onBack={() => setCurrentPage("home")} />;
+		return <TournamentGame onBack={() => setCurrentPage("home")} />;
     }
     return <GamePage mode={gameMode} onBack={() => setCurrentPage("home")} />;
   }
@@ -131,27 +185,45 @@ export default function App() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-violet-100 via-pink-50 to-cyan-100">
       {/* Top Navigation Bar */}
+
+	  {/* Top Navigation Bar */}
       <nav className="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-md border-b border-gray-200 shadow-sm z-40">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+
+          {/* Bloc de Gauche : Logo et Titre */}
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center">
               <Sparkles className="w-6 h-6 text-white" />
             </div>
-            <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent font-bold">
               Culture Quiz
             </span>
           </div>
 
-          {/* User Avatar */}
-          <button
-            onClick={() => setCurrentPage("profile")}
-            className="group flex items-center gap-3 px-4 py-2 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 transition-all shadow-md hover:shadow-lg"
-          >
-            <span className="text-white">Manewa</span>
-            <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-2xl ring-2 ring-white/50">
-              😊
-            </div>
-          </button>
+          {/* Bloc de Droite : Profil et Déconnexion */}
+          <div className="flex items-center gap-4">
+
+            {/* Bouton Profil */}
+            <button
+              onClick={() => setCurrentPage("profile")}
+              className="group flex items-center gap-3 px-4 py-2 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 transition-all shadow-md hover:shadow-lg"
+            >
+              <span className="text-white font-medium">{username}</span>
+              <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-2xl ring-2 ring-white/50">
+                😊
+              </div>
+            </button>
+
+            {/* VRAI BOUTON DÉCONNEXION FIGMA STYLE */}
+            <button
+              onClick={handleLogout}
+              className="flex items-center justify-center w-10 h-10 rounded-full bg-white/80 border border-gray-200 text-gray-500 hover:text-red-500 hover:bg-red-50 transition-all shadow-sm hover:shadow-md"
+              title="Logout"
+            >
+              <LogOut className="w-5 h-5" />
+            </button>
+
+          </div>
         </div>
       </nav>
 
