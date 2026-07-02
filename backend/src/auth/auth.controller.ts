@@ -41,9 +41,7 @@ export class AuthController {
 	  
 	  const userWithToken = await this.authService.loginOrCreate42User(req.user);
 
-	  // here attach the JWT in a secure cookie (ex: res.cookie('jwt'))
-
-	  return res.redirect('https://localhost:8443/quiz');
+	  return res.redirect(`https://localhost:8443/?username=${userWithToken.username}`);
   }
   /********************************** *******************************/
 
