@@ -256,7 +256,7 @@ export class TournamentService {
     // Récupérer des questions aléatoires de la base de données
     const questions = await this.prisma.question.findMany({
       take: questionCount,
-      // Pour vraiment du random, tu peux utiliser ORDER BY RANDOM()
+      // Pour vraiment du random, utiliser ORDER BY RANDOM()
       // mais Prisma ne le supporte pas directement, donc on prend les N premières
     });
 

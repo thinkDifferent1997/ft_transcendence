@@ -88,7 +88,7 @@ model Room {
   status        RoomStatus      @default(WAITING)
   createdAt     DateTime        @default(now())
 
-  round         TournamentRound
+  round         TournamentRound?
   tournamentId  String?
   tournament    Tournament?     @relation(fields: [tournamentId], references: [id])
 
