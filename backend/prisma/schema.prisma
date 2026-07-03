@@ -52,12 +52,20 @@ model AnswerChoice {
 }
 
 // ─── Tournoi ───
+enum TournamentRound {
+  QUARTER_FINAL
+  SEMI_FINAL
+  FINAL
+}
 
 model Tournament {
-  id        String     @id @default(uuid())
-  status    RoomStatus @default(WAITING)
-  createdAt DateTime   @default(now())
-  rooms     Room[]
+  id         String          @id @default(uuid())
+  status     RoomStatus      @default(WAITING)
+  createdAt  DateTime        @default(now())
+
+  rooms      Room[]
+  championId String?         @unique
+  champion   RoomParticipant? @relation("TournamentChampion", fields: [championId], references: [id])
 }
 
 // ─── Sessions de jeu ───
@@ -75,16 +83,21 @@ enum RoomStatus {
 }
 
 model Room {
-  id        String     @id @default(uuid())
-  mode      RoomMode
-  status    RoomStatus @default(WAITING)
-  createdAt DateTime   @default(now())
+  id            String          @id @default(uuid())
+  mode          RoomMode
+  status        RoomStatus      @default(WAITING)
+  createdAt     DateTime        @default(now())
 
-  tournamentId String?
-  tournament   Tournament? @relation(fields: [tournamentId], references: [id])
+  round         TournamentRound?
+  tournamentId  String?
+  tournament    Tournament?     @relation(fields: [tournamentId], references: [id])
 
-  participants RoomParticipant[]
-  questions    RoomQuestion[]
+  nextRoomId    String?
+  nextRoom      Room?           @relation("RoomNext", fields: [nextRoomId], references: [id])
+  previousRoom  Room[]           @relation("RoomNext")
+
+  participants  RoomParticipant[]
+  questions     RoomQuestion[]
 }
 
 model RoomParticipant {
@@ -98,6 +111,8 @@ model RoomParticipant {
 
   score   Int      @default(0)
   answers Answer[]
+
+  championOf Tournament[] @relation("TournamentChampion")
 
   @@unique([roomId, userId])
 }
