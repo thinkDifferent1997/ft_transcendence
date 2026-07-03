@@ -146,13 +146,17 @@ export default function App() {
   // Show login page if not logged in
   if (!isLoggedIn) {
 	  return (
-      <LoginPage
-        onLogin={(name?: string) => {
-          if (name) setUsername(name);
-          setIsLoggedIn(true);
-        }}
-      />
-    );
+		  <LoginPage
+		  force2FA={window.location.pathname === "/2fa"}
+		  onLogin={(name?: string) => {
+			  if (name) setUsername(name);
+			  setIsLoggedIn(true);
+			  if (window.location.pathname === "/2fa") {
+				  window.history.replaceState({}, document.title, "/");
+			  }
+		  }}
+		  />
+	  );
   }
 
   // Show profile page

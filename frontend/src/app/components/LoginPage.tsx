@@ -1,21 +1,21 @@
 import { Sparkles, Mail, Lock, User, AlertCircle, Key } from "lucide-react";
-import { useState, useEffect } from "react"; // 🔴 AJOUT DE useEffect ICI
+import { useState, useEffect } from "react";
 
 interface LoginPageProps {
   onLogin?: (username?: string) => void;
+  force2FA?: boolean;
 }
 
-export default function LoginPage({ onLogin }: LoginPageProps) {
+export default function LoginPage({ onLogin, force2FA = false }: LoginPageProps) {
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   
-  const [is2FARequired, setIs2FARequired] = useState(false);
+  const [is2FARequired, setIs2FARequired] = useState(force2FA);
   const [twoFactorCode, setTwoFactorCode] = useState("");
 
-  // 🔴 NOUVEAU : L'ANTENNE POUR CAPTER LE RETOUR DE 42
   useEffect(() => {
     // Si l'URL est /quiz, on vient d'être redirigé par le backend après le login 42
     if (window.location.pathname === "/quiz") {
@@ -49,11 +49,11 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
     setErrorMsg("");
 
     const endpoint = is2FARequired 
-      ? '/api/auth/2fa/verify' 
+      ? '/api/auth/2fa/login' 
       : (isSignUp ? '/api/auth/register' : '/api/auth/login');
       
     const payload = is2FARequired 
-      ? { code: twoFactorCode } 
+      ? { token: twoFactorCode } 
       : (isSignUp ? { email, username, password } : { email, password });
 
     try {
