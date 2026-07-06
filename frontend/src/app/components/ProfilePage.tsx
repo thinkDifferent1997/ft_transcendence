@@ -50,7 +50,7 @@ export default function ProfilePage({ username, onBack }: ProfilePageProps) {
 
       const data = await res.json();
       
-      if (data && data.qrCodeDataUrl) { // 🔴 Esteban a appelé la variable "qrCodeDataUrl"
+      if (data && data.qrCodeDataUrl) { 
         setQrCodeUrl(data.qrCodeDataUrl); 
         setShow2FAModal(true);
       } else {
