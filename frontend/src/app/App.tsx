@@ -104,7 +104,7 @@ export default function App() {
 
     // Si on arrive sur /quiz, on demande au backend de lire le cookie 42
     if (isQuizRoute) {
-      fetch("https://localhost:8443/api/auth/me", {
+      fetch("/api/auth/me", {
         credentials: 'include',
       })
         .then((res) => {
@@ -130,7 +130,7 @@ export default function App() {
   const handleLogout = async () => {
     try {
       // On prévient le backend pour qu'il détruise le cookie
-      await fetch("https://localhost:8443/api/auth/logout", {
+      await fetch("/api/auth/logout", {
         method: "POST",
         credentials: 'include', // Important pour que le backend sache quel cookie supprimer
       });

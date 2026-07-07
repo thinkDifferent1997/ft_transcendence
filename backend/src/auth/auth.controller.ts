@@ -11,6 +11,7 @@ import type { Response } from 'express';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { JwtTokenService } from './jwt/jwt-token.service';
+import { PUBLIC_URL } from '../config/public-url';
 
 @Controller('api/auth')
 export class AuthController {
@@ -57,8 +58,8 @@ export class AuthController {
 
 	  return res.redirect(
 		  twoFactorRequired
-			  ? 'https://localhost:8443/2fa'
-			  : 'https://localhost:8443/quiz',
+			  ? `${PUBLIC_URL}/2fa`
+			  : `${PUBLIC_URL}/quiz`,
 	  );
   }
 
