@@ -41,7 +41,6 @@ export class GameManager
         this.games.set(roomId, game);
 
 		console.log("Game created:", roomId);
-		console.log(this.games);
 
         this.waitingPlayer = null;
 
@@ -82,28 +81,16 @@ export class GameManager
 				: game.player2HideAnswer;
 
 		if (game.player1ThreeChoice)
-		{
-			console.log("Consume P1 ThreeChoice");
 			game.player1ThreeChoice = false;
-		}
 
 		if (game.player2ThreeChoice)
-		{
-			console.log("Consume P2 ThreeChoice");
 			game.player2ThreeChoice = false;
-		}
 
 		if (game.player1HideAnswer)
-		{
-			console.log("Consume P1 Hide");
 			game.player1HideAnswer = false;
-		}
 
 		if (game.player2HideAnswer)
-		{
-			console.log("Consume P2 Hide");
 			game.player2HideAnswer = false;
-		}
 
 		if (player.id === game.player1.id)
 		{
@@ -120,24 +107,6 @@ export class GameManager
 			);
 		}
 
-		/*if (game.player1Streak === 3)
-			game.player1ThreeChoice = true;
-
-		if (game.player1Streak <= -5)
-			game.player1DoublePoint = true;
-
-		if (game.player2Streak === 3)
-			game.player2ThreeChoice = true;
-
-		if (game.player2Streak <= -5)
-			game.player2DoublePoint = true;
-
-		if (game.player1HideAnswer && game.player2HiddenAnswer === -1)
-			game.player2HiddenAnswer = Math.floor(Math.random() * 3);
-
-		if (game.player2HideAnswer && game.player1HiddenAnswer === -1)
-			game.player1HiddenAnswer = Math.floor(Math.random() * 3);*/
-
 		if (isCorrect)
 		{
 			if (player.id === game.player1.id)
@@ -151,20 +120,22 @@ export class GameManager
 					game.player1Score++;
 			}
 			else
-				game.player2Score++;
+			{
+				if (game.player2DoublePoint)
+				{
+					game.player2Score += 2;
+					game.player2DoublePoint = false;
+				}
+				else
+					game.player2Score++;
+			}
 		}
-		console.log(
-			`Score : ${game.player1Score} - ${game.player2Score}`,
-		);
+		
 		if (player.id === game.player1.id)
 			game.player1Answered = true;
 		else
 			game.player2Answered = true;
 
-		console.log(
-			game.player1Answered,
-			game.player2Answered,
-		);
 		if (game.player1Answered && game.player2Answered)
 		{
 			game.currentQuestion++;
@@ -186,10 +157,7 @@ export class GameManager
 					game.player1ThreeChoice = false;
 
 				if (hadHideAnswer)
-				{
 					game.player1HideAnswer = false;
-					//game.player2HiddenAnswer = -1;
-				}
 			}
 			else
 			{
@@ -197,16 +165,9 @@ export class GameManager
 					game.player2ThreeChoice = false;
 
 				if (hadHideAnswer)
-				{
 					game.player2HideAnswer = false;
-					//game.player1HiddenAnswer = -1;
-				}
 			}
-			console.log("Before next_question");
-console.log({
-    p1Hide: game.player1HideAnswer,
-    p2Hide: game.player2HideAnswer,
-});
+
 			return {
 				nextQuestion: true,
 				gameOver: false,
@@ -223,8 +184,6 @@ console.log({
 				player2HideAnswer: game.player2HideAnswer,
 				player1DoublePoint: game.player1DoublePoint,
 				player2DoublePoint: game.player2DoublePoint,
-		//		player1HiddenAnswer: game.player1HiddenAnswer,
-		//		player2HiddenAnswer: game.player2HiddenAnswer,
 			};
 		}
 
@@ -254,8 +213,6 @@ console.log({
 			player2HideAnswer: game.player2HideAnswer,
 			player1DoublePoint: game.player1DoublePoint,
 			player2DoublePoint: game.player2DoublePoint,
-		//	player1HiddenAnswer: game.player1HiddenAnswer,
-		//	player2HiddenAnswer: game.player2HiddenAnswer,
 		};
 	}
 
@@ -326,42 +283,8 @@ console.log({
 		return -1;
 	}
 
-/*	private updateBonuses(
-		game: GameSession,
-		player: number,
-	)
-	{
-
-		if (player === 1)
-		{
-			if (game.player1Streak === 3)
-				game.player1ThreeChoice = true;
-			if (game.player1Streak === 5)
-				game.player1HideAnswer = true;
-			if (game.player1Streak <= -5)
-				game.player1DoublePoint = true;
-		}
-		else
-		{
-			if (game.player2Streak === 3)
-				game.player2ThreeChoice = true;
-			if (game.player2Streak === 5)
-				game.player2HideAnswer = true;
-			if (game.player2Streak <= -5)
-				game.player2DoublePoint = true;
-		}
-		console.log("UPDATE BONUS");
-	}*/
-
 	private activateBonuses(game: GameSession)
 	{
-		console.log("Activate bonuses");
-console.log({
-    p1Streak: game.player1Streak,
-    p1Hide: game.player1HideAnswer,
-    p2Streak: game.player2Streak,
-    p2Hide: game.player2HideAnswer,
-});
 		if (game.player1Streak === 3)
 			game.player1ThreeChoice = true;
 

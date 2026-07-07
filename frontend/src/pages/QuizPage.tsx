@@ -10,8 +10,6 @@ import type { PlayerState } from "../types/PlayerState";
 import type { GameState } from "../types/GameState";
 import type { Question } from "../types/question";
 
-//import { getDisplayedAnswers } from "../game/display";
-
 export default function QuizPage()
 {
 	const player: PlayerState = {
@@ -20,7 +18,6 @@ export default function QuizPage()
 			totalTimeUsed: 0,
 			streak: 0,
 			hideAnswer: false,
-			//hiddenAnswerIndex: -1,
 			threeChoice: false,
 			doublePoint: false,
 		};
@@ -150,11 +147,6 @@ export default function QuizPage()
 					? data.player1HideAnswer
 					: data.player2HideAnswer;
 
-		/*	const localHiddenAnswer =
-				previousGame.isPlayer1
-					? data.player1HiddenAnswer
-					: data.player2HiddenAnswer;*/
-
 			const localDoublePoint = previousGame.isPlayer1
 					? data.player1DoublePoint
 					: data.player2DoublePoint;
@@ -177,7 +169,6 @@ export default function QuizPage()
 						streak: localStreak,
 						threeChoice: localThreeChoice,
 						hideAnswer: localHideAnswer,
-						//hiddenAnswerIndex: localHiddenAnswer,
 						doublePoint: localDoublePoint,
 					},
 
@@ -199,7 +190,6 @@ export default function QuizPage()
 					streak: localStreak,
 					threeChoice: localThreeChoice,
 					hideAnswer: localHideAnswer,
-					//hiddenAnswerIndex: localHiddenAnswer,
 					doublePoint: localDoublePoint,
 				},
 
@@ -261,7 +251,6 @@ export default function QuizPage()
 
 	if (game.gameOver)
 		{
-			//return GameOver component
 			return (
 				<GameOverScreen
 					didWin = {game.localPlayer.score >= questions.length / 2}
@@ -290,10 +279,6 @@ export default function QuizPage()
 			);
 		}
 
-/*		const displayedAnswers = getDisplayedAnswers(game.currentQuestion.answers,
-			game.currentQuestion.correct, game.localPlayer.threeChoice,
-			game.localPlayer.hideAnswer, game.localPlayer.hiddenAnswerIndex);*/
-
 		return (
 			<div>
 				<ScoreBoard
@@ -310,7 +295,6 @@ export default function QuizPage()
 				<QuestionCard
 					question={game.currentQuestion}
 					answers={game.currentQuestion.answers}
-					//answers={displayedAnswers}
 					onAnswer={handle_answer}
 				/>
 				<p>
