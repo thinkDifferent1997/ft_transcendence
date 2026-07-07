@@ -9,4 +9,5 @@ export interface PlayerState
 	hideAnswer: boolean;
 	threeChoice: boolean;
 	doublePoint: boolean;
+//	hiddenAnswerIndex: number;
 }

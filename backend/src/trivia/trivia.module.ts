@@ -5,5 +5,6 @@ import { TriviaService } from "./trivia.service";
 @Module({
     controllers: [TriviaController],
     providers: [TriviaService],
+	exports: [TriviaService]
 })
 export class TriviaModule {}

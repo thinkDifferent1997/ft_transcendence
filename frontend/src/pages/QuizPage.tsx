@@ -1,4 +1,4 @@
-//import { socket } from "../socket/socket";
+import { socket } from "../socket/socket";
 import { useState, useEffect } from "react";
 import ScoreBoard from "../components/ScoreBoard";
 import QuestionCard from "../components/QuestionCard";
@@ -10,9 +10,7 @@ import type { PlayerState } from "../types/PlayerState";
 import type { GameState } from "../types/GameState";
 import type { Question } from "../types/question";
 
-import { isCorrectAnswer } from "../game/answer";
-import { updateCorrectStreak } from "../game/bonus";
-import { getDisplayedAnswers } from "../game/display";
+//import { getDisplayedAnswers } from "../game/display";
 
 export default function QuizPage()
 {
@@ -22,6 +20,7 @@ export default function QuizPage()
 			totalTimeUsed: 0,
 			streak: 0,
 			hideAnswer: false,
+			//hiddenAnswerIndex: -1,
 			threeChoice: false,
 			doublePoint: false,
 		};
@@ -36,107 +35,197 @@ export default function QuizPage()
 			localPlayer: { ...player},
 			enemyPlayer: { ...player},
 			gameOver: false,
+			isPlayer1: false,
 		});
 
-
-	function nextQuestion()
+	function	handle_answer(answer: string)
 	{
-		if (game.questionIndex + 1 >= questions.length)
+		socket.emit("answer", {
+			roomId: game.roomId,
+			answer,
+		});
+		console.log(game.roomId);
+	}
+
+	useEffect(() =>
+	{
+		socket.on("connect", () =>
 		{
-			setGame((previousGame) => ({
-				...previousGame,
-				gameOver: true,
-			}));
-			return;
+			console.log("Connected :", socket.id);
+		});
+
+		socket.connect();
+
+		if (!socket.connected)
+		{
+			socket.once("connect", () =>
+			{
+				socket.emit("join_queue");
+			});
 		}
+		else
+		{
+			socket.emit("join_queue");
+		}
+
+		socket.on("connect_error", (error) =>
+		{
+			console.log("Error :", error);
+		});
+
+		
+		socket.on("match_found", (data) =>
+		{
+			console.log("Match found !");
+			setGame(previousGame => ({
+				...previousGame,
+				roomId: data.roomId,
+				isPlayer1: socket.id === data.player1Id,
+			}));
+			console.log(
+				"socket.id =", socket.id,
+				"player1Id =", data.player1Id,
+				"isPlayer1 =", socket.id === data.player1Id,
+			);
+		});
+
+		socket.on("game_started", (data) =>
+		{
+			console.log("Questions :", data.questions);
+
+			setQuestions(data.questions);
+			setGame((previousGame) => ({
+            ...previousGame,
+            currentQuestion: data.questions[0],
+        }));
+    });
+	socket.on("next_question", (data) =>
+	{
+		console.log("Next question received");
 
 		setGame((previousGame) => ({
 			...previousGame,
-
-			questionIndex: previousGame.questionIndex + 1,
-			currentQuestion: questions[previousGame.questionIndex + 1],
+			currentQuestion: data.question,
 			time_left: 20,
 
 			localPlayer: {
 				...previousGame.localPlayer,
-
 				answered: false,
 			},
-			enemyPlayer:
-			{
-					...previousGame.enemyPlayer,
-					answered: false,
+
+			enemyPlayer: {
+				...previousGame.enemyPlayer,
+				answered: false,
 			},
 		}));
-	}
+	});
 
-	function	handle_answer(answer: string)
+	socket.on("player_answered", (data) =>
 	{
-
-		const	isCorrect = isCorrectAnswer(answer, game.currentQuestion.correct);
-
-		const newStreak = updateCorrectStreak(game.localPlayer.streak, isCorrect);
-		let three = false;
-		let five = false;
-		let negatif = false;
-		let new_score = game.localPlayer.score;
-
-		if (newStreak === 3)
-			three = true;
-		else if (newStreak === 5)
-			five = true;
-		else if (newStreak <= -5)
-			negatif = true;
-		else if (three)
-			three = false;
-		else if (five)
-			five = false;
-
-		if (isCorrect)
+		console.log("PLAYER ANSWERED");
+		
+		setGame(previousGame =>
 		{
-			if (game.localPlayer.doublePoint)
+			const localScore = previousGame.isPlayer1
+				? data.player1Score
+				: data.player2Score;
+
+			const enemyScore = previousGame.isPlayer1
+				? data.player2Score
+				: data.player1Score;
+
+			const localStreak = previousGame.isPlayer1
+				? data.player1Streak
+				: data.player2Streak;
+
+			const enemyStreak = previousGame.isPlayer1
+				? data.player2Streak
+				: data.player1Streak;
+
+			const localThreeChoice = previousGame.isPlayer1
+					? data.player1ThreeChoice
+					: data.player2ThreeChoice;
+
+			const localHideAnswer = previousGame.isPlayer1
+					? data.player1HideAnswer
+					: data.player2HideAnswer;
+
+		/*	const localHiddenAnswer =
+				previousGame.isPlayer1
+					? data.player1HiddenAnswer
+					: data.player2HiddenAnswer;*/
+
+			const localDoublePoint = previousGame.isPlayer1
+					? data.player1DoublePoint
+					: data.player2DoublePoint;
+
+
+					console.log({
+    localHide: localHideAnswer,
+    localStreak: localStreak,
+});
+
+			if (data.playerId === socket.id)
 			{
-				negatif = false;
-				new_score += 2;
-			}
-			else
-				new_score += 1;
-		}
-
-		setGame((previousGame) => (
-		{
-			...previousGame,
-			localPlayer: {
-				...previousGame.localPlayer,
-				answered: true,
-				streak: newStreak,
-				threeChoice: three,
-				doublePoint: negatif,
-				hideAnswer: five,
-				score: new_score,
-			},
-		}));
-		setTimeout(fakeEnemyAnswer, 500);
-	}
-// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-// !!FAKE IA QUI N'EST PAS OPTI DU TOUT C'EST JUSTE POUR TESTER!!
-// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-	function fakeEnemyAnswer()
-	{
-			const isCorrect = Math.random() < 0.7;
-
-			setGame((previousGame) => ({
+				return {
 					...previousGame,
-					enemyPlayer: {
-							...previousGame.enemyPlayer,
-							answered: true,
-							score: isCorrect
-									? previousGame.enemyPlayer.score + 1
-									: previousGame.enemyPlayer.score,
+
+					localPlayer: {
+						...previousGame.localPlayer,
+						answered: true,
+						score: localScore,
+						streak: localStreak,
+						threeChoice: localThreeChoice,
+						hideAnswer: localHideAnswer,
+						//hiddenAnswerIndex: localHiddenAnswer,
+						doublePoint: localDoublePoint,
 					},
-			}));
-	}
+
+					enemyPlayer: {
+						...previousGame.enemyPlayer,
+						score: enemyScore,
+						streak: enemyStreak,
+					},
+				};
+			}
+
+			return {
+				...previousGame,
+				time_left: Math.min(previousGame.time_left, 3),
+
+				localPlayer: {
+					...previousGame.localPlayer,
+					score: localScore,
+					streak: localStreak,
+					threeChoice: localThreeChoice,
+					hideAnswer: localHideAnswer,
+					//hiddenAnswerIndex: localHiddenAnswer,
+					doublePoint: localDoublePoint,
+				},
+
+				enemyPlayer: {
+					...previousGame.enemyPlayer,
+					answered: true,
+					score: enemyScore,
+					streak: enemyStreak,
+				},
+			};
+		});
+	});
+
+		socket.connect();
+
+		return () =>
+		{
+			socket.off("connect");
+			socket.off("connect_error");
+			socket.off("match_found");
+			socket.off("game_started");
+			socket.off("next_question");
+			socket.off("player_answered");
+			socket.disconnect();
+		};
+	}, []);
 
 	useEffect(() =>
 		{
@@ -151,48 +240,19 @@ export default function QuizPage()
 							}));
 					}, 1000);
 
-					return () => clearInterval(timer);
+				return () => clearInterval(timer);
 		}, [game.questionIndex]);
 
-		useEffect(() =>
-		{
-			async function loadQuestions()
-			{
-				const response = await fetch("/api/trivia/questions");
-				const loadedQuestions = await response.json();
-
-				setQuestions(loadedQuestions);
-
-				setGame((previousGame) => ({
-					...previousGame,
-					currentQuestion: loadedQuestions[0],
-				}));
-			}
-
-			loadQuestions();
-		}, []);
-
 	useEffect(() =>
-			  {
-				  if (game.time_left < 0)
-{
-        if (!game.localPlayer.answered)
-        {
-			let timeStreak =  updateCorrectStreak(game.localPlayer.streak, false);
-			if (timeStreak >= 0)
-				timeStreak = -1;
-
-                setGame((previousGame) => ({
-                        ...previousGame,
-                        localPlayer: {
-                                ...previousGame.localPlayer,
-                                streak: timeStreak,
-                        },
-                }));
-        }
-        nextQuestion();
-}
-			  }, [game.time_left]);
+			{
+				if (game.time_left < 0)
+				{
+					socket.emit("answer", {
+						roomId: game.roomId,
+						answer: null,
+					});
+				}
+			}, [game.time_left]);
 
 	if (questions.length === 0)
 	{
@@ -206,15 +266,15 @@ export default function QuizPage()
 				<GameOverScreen
 					didWin = {game.localPlayer.score >= questions.length / 2}
 					score = {game.localPlayer.score}
-					maxScore = {questions.length}
-				/>
-			);
-		}
-		
-		if (game.localPlayer.answered)
-		{
-			return (
-				<div>
+				maxScore = {questions.length}
+			/>
+		);
+	}
+	
+	if (game.localPlayer.answered)
+	{
+		return (
+			<div>
 					<WaitingScreen
 						score = {game.localPlayer.score}
 						enemyScore = {game.enemyPlayer.score}
@@ -230,7 +290,9 @@ export default function QuizPage()
 			);
 		}
 
-		const displayedAnswers = getDisplayedAnswers(game.currentQuestion.answers, game.currentQuestion.correct, game.localPlayer.threeChoice);
+/*		const displayedAnswers = getDisplayedAnswers(game.currentQuestion.answers,
+			game.currentQuestion.correct, game.localPlayer.threeChoice,
+			game.localPlayer.hideAnswer, game.localPlayer.hiddenAnswerIndex);*/
 
 		return (
 			<div>
@@ -247,7 +309,8 @@ export default function QuizPage()
 				/>
 				<QuestionCard
 					question={game.currentQuestion}
-					answers={displayedAnswers}
+					answers={game.currentQuestion.answers}
+					//answers={displayedAnswers}
 					onAnswer={handle_answer}
 				/>
 				<p>
