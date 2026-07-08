@@ -19,7 +19,7 @@ export default function LoginPage({ onLogin, force2FA = false }: LoginPageProps)
   useEffect(() => {
     // Si l'URL est /quiz, on vient d'être redirigé par le backend après le login 42
     if (window.location.pathname === "/quiz") {
-      fetch("https://localhost:8443/api/users/me", {
+      fetch("/api/users/me", {
         credentials: 'include', // On envoie le cookie JWT fraîchement reçu
       })
         .then(async (res) => {
@@ -57,7 +57,7 @@ export default function LoginPage({ onLogin, force2FA = false }: LoginPageProps)
       : (isSignUp ? { email, username, password } : { email, password });
 
     try {
-      const response = await fetch(`https://localhost:8443${endpoint}`, {
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -224,7 +224,7 @@ export default function LoginPage({ onLogin, force2FA = false }: LoginPageProps)
               </div>
 
               <a
-                href="https://localhost:8443/api/auth/42"
+                href="/api/auth/42"
                 className="w-full flex items-center justify-center gap-3 py-4 px-6 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-decoration-none text-white font-semibold shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5"
               >
                 <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center font-bold shadow-sm">

@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
+import { PUBLIC_URL } from '../config/public-url';
 const Strategy = require('passport-42').Strategy;
 
 @Injectable()
@@ -8,7 +9,7 @@ export class FortyTwoStrategy extends PassportStrategy(Strategy as any, '42') {
 		super({
 			clientID: process.env.FORTYTWO_CLIENT_ID || 'dummy_client_id',
 			clientSecret: process.env.FORTYTWO_CLIENT_SECRET || 'dummy_secret',
-			callbackURL: 'https://localhost:8443/api/auth/42/callback',
+			callbackURL: `${PUBLIC_URL}/api/auth/42/callback`,
 			scope: ['public'],
 			
 		});

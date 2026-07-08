@@ -38,7 +38,7 @@ export default function ProfilePage({ username, onBack }: ProfilePageProps) {
   // Demander le QR Code au backend
   const handleSetup2FA = async () => {
     try {
-      const res = await fetch("https://localhost:8443/api/auth/2fa/setup", {
+      const res = await fetch("/api/auth/2fa/setup", {
         method: "POST", // 🔴 MODIFIÉ ICI : POST au lieu de GET
         credentials: "include",
       });
@@ -66,7 +66,7 @@ export default function ProfilePage({ username, onBack }: ProfilePageProps) {
   const handleEnable2FA = async () => {
     setError2FA("");
     try {
-      const res = await fetch("https://localhost:8443/api/auth/2fa/enable", {
+      const res = await fetch("/api/auth/2fa/enable", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
