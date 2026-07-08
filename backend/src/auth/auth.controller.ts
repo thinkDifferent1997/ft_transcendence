@@ -61,6 +61,27 @@ export class AuthController {
 			  : 'https://localhost:8443/quiz',
 	  );
   }
+
+  @Get('me')
+  @UseGuards(AuthGuard('jwt'))
+  getProfile(@Req() req){
+	  return req.user;
+  
+  }
+
+  @Post('logout')
+  @HttpCode(HttpStatus.OK)
+  async logout(@Res({ passthrough: true }) res: Response) {
+       // On écrase le cookie de session par un cookie vide qui expire immédiatement
+       res.cookie('jwt', '', {
+           httpOnly: true,
+           secure: true,
+           sameSite: 'strict',
+           expires: new Date(0), // expiraton at 1/1 1970 = instantly expired
+       });
+       return { message: 'Déconnexion réussie' };
+  }
+
   /********************************** *******************************/
 
 }
