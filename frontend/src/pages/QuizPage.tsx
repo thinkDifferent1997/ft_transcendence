@@ -1,9 +1,12 @@
 import { socket } from "../socket/socket";
+
+import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
+import { useRef } from "react";
+
 import ScoreBoard from "../components/ScoreBoard";
 import QuestionCard from "../components/QuestionCard";
 import WaitingScreen from "../components/WaitingScreen";
-import GameOverScreen from "../components/GameOverScreen";
 import PlayerBonusPanel from "../components/PlayerBonus";
 
 import type { PlayerState } from "../types/PlayerState";
@@ -22,8 +25,10 @@ export default function QuizPage()
 			doublePoint: false,
 		};
 
-	const [questions, setQuestions] = useState<Question[]>([]);
+	const navigate = useNavigate();
 
+	const [questions, setQuestions] = useState<Question[]>([]);
+	const [gameStarted, setGameStarted] = useState(false);
 	const [game, setGame] = useState<GameState>(
 		{
 			currentQuestion: questions[0],
@@ -35,14 +40,22 @@ export default function QuizPage()
 			isPlayer1: false,
 		});
 
+	// Keep stable values inside Socket.IO callbacks with useRef.
+
+	const roomIdRef = useRef("");
+	const isPlayer1Ref = useRef(false);
+
 	function	handle_answer(answer: string)
 	{
 		socket.emit("answer", {
 			roomId: game.roomId,
 			answer,
+			timeLeft: game.time_left,
 		});
-		console.log(game.roomId);
 	}
+
+	// Socket events
+	// Register every Socket.IO listener once when the component mounts.
 
 	useEffect(() =>
 	{
@@ -73,32 +86,36 @@ export default function QuizPage()
 		
 		socket.on("match_found", (data) =>
 		{
-			console.log("Match found !");
+			isPlayer1Ref.current = socket.id === data.player1Id;
 			setGame(previousGame => ({
 				...previousGame,
 				roomId: data.roomId,
 				isPlayer1: socket.id === data.player1Id,
 			}));
-			console.log(
-				"socket.id =", socket.id,
-				"player1Id =", data.player1Id,
-				"isPlayer1 =", socket.id === data.player1Id,
-			);
+			roomIdRef.current = data.roomId;
 		});
 
 		socket.on("game_started", (data) =>
 		{
-			console.log("Questions :", data.questions);
-
 			setQuestions(data.questions);
 			setGame((previousGame) => ({
             ...previousGame,
             currentQuestion: data.questions[0],
         }));
+
+		socket.emit("questions_loaded",
+		{
+			roomId: roomIdRef.current,
+		});
     });
+
+	socket.on("start_game", () =>
+	{
+		setGameStarted(true);
+	});
+
 	socket.on("next_question", (data) =>
 	{
-		console.log("Next question received");
 
 		setGame((previousGame) => ({
 			...previousGame,
@@ -117,10 +134,10 @@ export default function QuizPage()
 		}));
 	});
 
+	// Update scores, streaks and bonuses after every answer.
+
 	socket.on("player_answered", (data) =>
 	{
-		console.log("PLAYER ANSWERED");
-		
 		setGame(previousGame =>
 		{
 			const localScore = previousGame.isPlayer1
@@ -150,12 +167,6 @@ export default function QuizPage()
 			const localDoublePoint = previousGame.isPlayer1
 					? data.player1DoublePoint
 					: data.player2DoublePoint;
-
-
-					console.log({
-    localHide: localHideAnswer,
-    localStreak: localStreak,
-});
 
 			if (data.playerId === socket.id)
 			{
@@ -203,7 +214,32 @@ export default function QuizPage()
 		});
 	});
 
-		socket.connect();
+	socket.on("game_over", (data) =>
+	{
+		const playerScore = isPlayer1Ref.current
+			? data.player1Score
+			: data.player2Score;
+
+		const enemyScore = isPlayer1Ref.current
+			? data.player2Score
+			: data.player1Score;
+
+		const victory =
+			(isPlayer1Ref.current && data.winner === 1) ||
+			(!isPlayer1Ref.current && data.winner === 2);
+
+		const draw = data.winner === 0;
+
+		navigate("/game-over", {
+			state:
+			{
+				playerScore,
+				enemyScore,
+				victory,
+				draw,
+			},
+		});
+	});
 
 		return () =>
 		{
@@ -217,10 +253,25 @@ export default function QuizPage()
 		};
 	}, []);
 
+	// Notify the backend that this client is ready.
+
+	useEffect(() =>
+	{
+		if (!game.roomId)
+			return;
+
+		socket.emit("player_ready", {
+			roomId: game.roomId,
+		});
+
+	}, [game.roomId]);
+
+	// Restart the timer whenever a new question starts.
+
 	useEffect(() =>
 		{
-			//set Interval will restart the timer each time the question changes
-			//set time left every 1000ms, means each sec
+			if (!gameStarted)
+   				return;
 			const timer = setInterval(() => 
 					{
 						setGame((previousGame) => (
@@ -231,7 +282,9 @@ export default function QuizPage()
 					}, 1000);
 
 				return () => clearInterval(timer);
-		}, [game.questionIndex]);
+		}, [game.questionIndex, gameStarted]);
+
+	// Automatically submit an empty answer when the timer expires.
 
 	useEffect(() =>
 			{
@@ -240,26 +293,25 @@ export default function QuizPage()
 					socket.emit("answer", {
 						roomId: game.roomId,
 						answer: null,
+					    timeLeft: 0,
 					});
 				}
 			}, [game.time_left]);
 
 	if (questions.length === 0)
 	{
-    	return <h1>Loading ...</h1>;
+    	return <h1>Loading questions...</h1>;
 	}
 
-	if (game.gameOver)
-		{
-			return (
-				<GameOverScreen
-					didWin = {game.localPlayer.score >= questions.length / 2}
-					score = {game.localPlayer.score}
-				maxScore = {questions.length}
-			/>
+	if (!gameStarted)
+	{
+		return (
+			<div>
+				<h1>Waiting for the other player...</h1>
+			</div>
 		);
 	}
-	
+
 	if (game.localPlayer.answered)
 	{
 		return (

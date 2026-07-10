@@ -11,9 +11,9 @@ export class GameManager
 
     private games = new Map<string, GameSession>();
 
-	// !!!!!!!!!!!!!!!!!!!!
-	// !!! MATCHMAKING !!!!
-	// !!!!!!!!!!!!!!!!!!!!
+// -----------------------------------------------------------------------------
+// Matchmaking
+// -----------------------------------------------------------------------------
 
     async createMatch(player: Socket): Promise<GameSession | null>
     {
@@ -47,24 +47,31 @@ export class GameManager
         return game;
     }
 	
-	// !!!!!!!!!!!!!!!!!!!!
-	// !!!!! GAMEPLAY !!!!!
-	// !!!!!!!!!!!!!!!!!!!!
+// -----------------------------------------------------------------------------
+// Gameplay
+// -----------------------------------------------------------------------------
 
 	submitAnswer(
 		roomId: string,
 		player: Socket,
-		answer: string,
+		answer: string | null,
+		timeLeft: number,
 	)
 
 	 {
         const game = this.games.get(roomId);
+		const usedTime = 20 - timeLeft;
 
         if (!game)
         {
             console.log("Game not found");
             return;
         }
+
+		if (player.id === game.player1.id)
+			game.player1Time += usedTime;
+		else
+			game.player2Time += usedTime;
 
         const question = game.questions[game.currentQuestion];
 
@@ -79,6 +86,8 @@ export class GameManager
 			player.id === game.player1.id
 				? game.player1HideAnswer
 				: game.player2HideAnswer;
+
+		// Bonuses are consumed as soon as the player answers.
 
 		if (game.player1ThreeChoice)
 			game.player1ThreeChoice = false;
@@ -106,6 +115,8 @@ export class GameManager
 				isCorrect,
 			);
 		}
+
+		//Update score for each player
 
 		if (isCorrect)
 		{
@@ -146,9 +157,31 @@ export class GameManager
 
 			if (game.currentQuestion >= game.questions.length)
 			{
+				// Decide the winner.
+				// Highest score wins.
+				// In case of a tie, the fastest player wins.
+
+				let winner: 0 | 1 | 2;
+
+				if (game.player1Score > game.player2Score)
+					winner = 1;
+				else if (game.player2Score > game.player1Score)
+					winner = 2;
+				else
+				{
+					// Draw score = 0
+					if (game.player1Time < game.player2Time)
+						winner = 1;
+					else if (game.player2Time < game.player1Time)
+						winner = 2;
+					else
+						winner = 0;
+				}
+
 				return {
 					nextQuestion: false,
 					gameOver: true,
+					winner,
 				};
 			}
 			if (player.id === game.player1.id)
@@ -216,6 +249,9 @@ export class GameManager
 		};
 	}
 
+	// Build the answers sent to a specific player.
+	// This is where gameplay bonuses modify the displayed answers.
+
 	public buildDisplayedAnswers(
 		question: {
 			question: string;
@@ -264,6 +300,9 @@ export class GameManager
 		return displayedAnswers;
 	}
 
+	// Build the answers sent to a specific player.
+	// This is where gameplay bonuses modify the displayed answers.
+
 	private updateCorrectStreak(
 		streak: number,
 		correct: boolean,
@@ -302,6 +341,45 @@ export class GameManager
 
 		if (game.player2Streak <= -5)
 			game.player2DoublePoint = true;
+	}
+
+	markPlayerReady(
+		roomId: string,
+		player: Socket,
+	): boolean
+	{
+		const game = this.games.get(roomId);
+
+		if (!game)
+			return false;
+
+		if (player.id === game.player1.id)
+			game.player1Ready = true;
+		else
+			game.player2Ready = true;
+
+		return game.player1Ready && game.player2Ready;
+	}
+
+	markQuestionsLoaded(
+		roomId: string,
+		player: Socket,
+	): boolean
+	{
+		const game = this.games.get(roomId);
+
+		if (!game)
+			return false;
+
+		if (player.id === game.player1.id)
+			game.player1QuestionsLoaded = true;
+		else
+			game.player2QuestionsLoaded = true;
+
+		return (
+			game.player1QuestionsLoaded &&
+			game.player2QuestionsLoaded
+		);
 	}
 
 // !!!!!!!!!!!!!!!!!!!!

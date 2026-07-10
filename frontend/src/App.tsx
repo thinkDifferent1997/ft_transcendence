@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Link, useNavigate } from 'react-router-do
 import QuizPage from './pages/QuizPage';
 import AccountPage from './pages/AccountPage';
 import TwoFactorChallengePage from './pages/TwoFactorChallengePage';
+import GameOverPage from './pages/GameOver';
 import './App.css';
 
 function AuthForms() {
@@ -140,6 +141,8 @@ export default function App() {
         <Route path="/2fa" element={<TwoFactorChallengePage />} />
         <Route path="/account" element={<AccountPage />} />
         <Route path="/quiz" element={<QuizPage />} />
+		<Route
+    path="/game-over" element={<GameOverPage />}/>
       </Routes>
     </BrowserRouter>
   );

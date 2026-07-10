@@ -16,11 +16,26 @@ export class GameSession
 
     currentQuestion = 0;
 
+	//Scoreboard
+
     player1Score = 0;
     player2Score = 0;
 
+	player1Time = 0;
+	player2Time = 0;
+	
+	//Match synchronization
+
 	player1Answered = false;
     player2Answered = false;
+
+	player1QuestionsLoaded = false;
+	player2QuestionsLoaded = false;
+
+	player1Ready = false;
+	player2Ready = false;
+
+	//Bonus
 
 	player1Streak = 0;
 	player2Streak = 0;
@@ -31,9 +46,7 @@ export class GameSession
 	player1HideAnswer = false;
 	player2HideAnswer = false;
 
-//	player1HiddenAnswer = -1;
-//	player2HiddenAnswer = -1;
-
 	player1DoublePoint = false;
 	player2DoublePoint = false;
+
 }

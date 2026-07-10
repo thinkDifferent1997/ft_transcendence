@@ -8,8 +8,8 @@ import { MessageBody } from "@nestjs/websockets";
 * -------------
 	* Porte d'entrée temps réel (WebSocket via Socket.IO).
 	* Équivalent d'un contrôleur, mais pour les événements temps réel.
-	* Pour l'instant : un simple ping/pong pour valider la connexion
-* de bout en bout (front -> nginx -> backend).
+	* Recoit tous les evenements, laisse la logique a Game Manager et renvoies les events appropries
+* aux clients
 	*/
 import {
 	WebSocketGateway,
@@ -37,26 +37,33 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 
 	@WebSocketServer()
 	server: Server;
-	
+
+// -----------------------------------------------------------------------------
+// Gameplay
+// -----------------------------------------------------------------------------
+
 	@SubscribeMessage("answer")
 	handleAnswer(
 		@ConnectedSocket() client: Socket,
-		@MessageBody() data: { roomId: string; answer: string },
+		@MessageBody() data: { roomId: string; answer: string | null; timeLeft: number;},
 	)
 	{
-		console.log("Answer received for room:", data.roomId);
 		const result = this.gameManager.submitAnswer(
 			data.roomId,
 			client,
 			data.answer,
+			data.timeLeft,
 		);
 		if (!result)
 			return;
-		console.log("Sending player answered");
-		console.log({
-			player1Streak: result.player1Streak,
-			player2Streak: result.player2Streak,
-		});
+
+		const game = this.gameManager.getGame(data.roomId);
+
+		if (!game)
+			return;
+
+		// Broadcast updated scores and bonus states after every answer.
+
 		this.server.to(data.roomId).emit("player_answered", {
 		    playerId: client.id,
 			correct: result.correct,
@@ -68,20 +75,15 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 			player2ThreeChoice: result.player2ThreeChoice,
 			player1HideAnswer: result.player1HideAnswer,
 			player2HideAnswer: result.player2HideAnswer,
-		//	player1HiddenAnswer: result.player1HiddenAnswer,
-		//	player2HiddenAnswer: result.player2HiddenAnswer,
 			player1DoublePoint: result.player1DoublePoint,
 			player2DoublePoint: result.player2DoublePoint,
 		});
 
+		// Send a personalized version of the next question to each player (Bonuses).
 
 		if (result.nextQuestion)
 		{
-			const game = this.gameManager.getGame(data.roomId);
 			const question = result.question!;
-
-			if (!game)
-				return;
 
 			game.player1.emit("next_question", {
 				question: {
@@ -108,8 +110,20 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 			});
 		}
 
+		// The match is over.
+		// Send the final result to both players.
+
 		if (result.gameOver)
-			this.server.to(data.roomId).emit("game_over");
+		{
+			this.server.to(data.roomId).emit("game_over", {
+											winner: result.winner,
+											player1Score: game.player1Score,
+											player2Score: game.player2Score,
+											player1Time: game.player1Time,
+											player2Time: game.player2Time,
+											});
+			return ;
+		}
 	}
 
 	handleConnection(client: Socket)
@@ -122,18 +136,76 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 		console.log(`${client.id} disconnected.`);
 	}
 
-	@SubscribeMessage("ping")
-	handlePing(@ConnectedSocket() client: Socket): string {
-		console.log(`ping reçu de ${client.id}`);
-		return 'pong';
+
+// -----------------------------------------------------------------------------
+// Matchmaking
+// -----------------------------------------------------------------------------
+
+	// Wait until both clients have mounted the QuizPage.
+
+	@SubscribeMessage("player_ready")
+	handlePlayerReady(
+		@ConnectedSocket() client: Socket,
+		@MessageBody() data: { roomId: string },
+	)
+	{
+		const ready = this.gameManager.markPlayerReady(
+			data.roomId,
+			client,
+		);
+
+		if (!ready)
+			return;
+
+		const game = this.gameManager.getGame(data.roomId);
+
+		if (!game)
+			return;
+
+
+		game.player1.emit("game_started", {
+			questions: game.questions.map(question => ({
+				...question,
+				answers: this.gameManager.buildDisplayedAnswers(
+					question,
+					false,
+					false,
+				),
+			})),
+		});
+
+		game.player2.emit("game_started", {
+			questions: game.questions.map(question => ({
+				...question,
+				answers: this.gameManager.buildDisplayedAnswers(
+					question,
+					false,
+					false,
+				),
+			})),
+		});
+	}
+
+	// Wait until both clients have received every question before starting the timers.
+
+	@SubscribeMessage("questions_loaded")
+	handleQuestionsLoaded(
+		@ConnectedSocket() client: Socket,
+		@MessageBody() data: { roomId: string },
+	)
+	{
+		const ready = this.gameManager.markQuestionsLoaded(
+			data.roomId,
+			client,
+		);
+
+		if (!ready)
+			return;
+
+		this.server.to(data.roomId).emit("start_game");
 	}
 
 	@SubscribeMessage("join_queue")
-
-//-----------------------
-//MATCHMAKING
-//-----------------------
-
 	async handleJoinQueue(
 	@ConnectedSocket() client: Socket,
 	)
@@ -157,30 +229,6 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 			roomId: game.roomId,
 			player1Id: game.player1.id,
     		player2Id: game.player2.id,
-		});
-		game.player1.emit("game_started", {
-			questions: [
-				{
-					...game.questions[0],
-					answers: this.gameManager.buildDisplayedAnswers(
-						game.questions[0],
-						false,
-						false,
-					),
-				},
-			],
-		});
-		game.player2.emit("game_started", {
-			questions: [
-				{
-					...game.questions[0],
-					answers: this.gameManager.buildDisplayedAnswers(
-						game.questions[0],
-						false,
-						false,
-					),
-				},
-			],
 		});
 	}
 }
