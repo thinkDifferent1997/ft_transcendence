@@ -39,6 +39,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    volumes:
+      - ./nginx/certs:/etc/nginx/certs:ro
     networks:
       - transcend_net
     restart: unless-stopped

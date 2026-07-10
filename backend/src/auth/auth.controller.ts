@@ -11,6 +11,7 @@ import type { Response } from 'express';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { JwtTokenService } from './jwt/jwt-token.service';
+import { PUBLIC_URL } from '../config/public-url';
 
 @Controller('api/auth')
 export class AuthController {
@@ -57,10 +58,31 @@ export class AuthController {
 
 	  return res.redirect(
 		  twoFactorRequired
-			  ? 'https://localhost:8443/2fa'
-			  : 'https://localhost:8443/quiz',
+			  ? `${PUBLIC_URL}/2fa`
+			  : `${PUBLIC_URL}/quiz`,
 	  );
   }
+
+  @Get('me')
+  @UseGuards(AuthGuard('jwt'))
+  getProfile(@Req() req){
+	  return req.user;
+  
+  }
+
+  @Post('logout')
+  @HttpCode(HttpStatus.OK)
+  async logout(@Res({ passthrough: true }) res: Response) {
+       // On écrase le cookie de session par un cookie vide qui expire immédiatement
+       res.cookie('jwt', '', {
+           httpOnly: true,
+           secure: true,
+           sameSite: 'strict',
+           expires: new Date(0), // expiraton at 1/1 1970 = instantly expired
+       });
+       return { message: 'Déconnexion réussie' };
+  }
+
   /********************************** *******************************/
 
 }
