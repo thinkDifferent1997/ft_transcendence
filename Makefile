@@ -60,6 +60,7 @@ up: env certs ## Build and start the stack in detached mode
 	@echo ""
 	@echo "  Stack is up. Open https://localhost"
 	@echo "  (Self-signed cert — your browser will warn, that's expected.)"
+	@chmod 644 $(CERT_KEY) $(CERT_CRT)
 	@echo ""
 
 down: ## Stop the stack (keeps volumes)
