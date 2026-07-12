@@ -12,6 +12,7 @@
 
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
+import { PUBLIC_URL } from '../config/public-url';
 const Strategy = require('passport-github2').Strategy;
 
 @Injectable()
@@ -20,9 +21,8 @@ export class GithubStrategy extends PassportStrategy(Strategy as any, 'github') 
 		super({
 			clientID: process.env.GITHUB_CLIENT_ID || 'dummy_client_id',
 			clientSecret: process.env.GITHUB_CLIENT_SECRET || 'dummy_secret',
-			callbackURL: 'https://localhost:8443/api/auth/github/callback',
+			callbackURL: `${PUBLIC_URL}/api/auth/github/callback`,
 			scope: ['user:email'],
-
 		});
 
 	}
