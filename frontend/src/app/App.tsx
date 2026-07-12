@@ -16,11 +16,12 @@ import ProfilePage from "./components/ProfilePage";
 import TournamentLobby from "./components/TournamentLobby";
 import GamePage from "./components/GamePage";
 import TournamentGame from "./components/TournamentGame";
+import QuizPage from "../pages/QuizPage";
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [username, setUsername] = useState("Joueur");
-  const [currentPage, setCurrentPage] = useState<"home" | "profile" | "tournament" | "game">("home");
+  const [currentPage, setCurrentPage] = useState<"home" | "profile" | "tournament" | "game" | "quiz">("home");
   const [gameMode, setGameMode] = useState<"solo" | "ai" | "party" | "tournament">("solo");
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [message, setMessage] = useState("");
@@ -186,6 +187,10 @@ export default function App() {
     return <GamePage mode={gameMode} onBack={() => setCurrentPage("home")} />;
   }
 
+  if (currentPage === "quiz") {
+	  return <QuizPage />;
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-violet-100 via-pink-50 to-cyan-100">
       {/* Top Navigation Bar */}
@@ -256,7 +261,9 @@ export default function App() {
                 onClick={() => {
                   if (mode.id === "tournament") {
                     setCurrentPage("tournament");
-                  } else {
+                  } else if (mode.id === "party") {
+					setCurrentPage("quiz");
+				  }else {
                     setGameMode(mode.id as "solo" | "ai" | "party");
                     setCurrentPage("game");
                   }
