@@ -1,4 +1,4 @@
-import { Sparkles, Mail, Lock, User, AlertCircle, Key } from "lucide-react";
+import { Sparkles, Mail, Lock, User, AlertCircle, Key, Github } from "lucide-react";
 import { useState, useEffect } from "react";
 
 interface LoginPageProps {
@@ -223,14 +223,20 @@ export default function LoginPage({ onLogin, force2FA = false }: LoginPageProps)
                 </div>
               </div>
 
-              <a
-                href="/api/auth/42"
+              <a href="/api/auth/42"
                 className="w-full flex items-center justify-center gap-3 py-4 px-6 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-decoration-none text-white font-semibold shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5"
               >
                 <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center font-bold shadow-sm">
                   <span className="bg-gradient-to-r from-cyan-500 to-blue-600 bg-clip-text text-transparent">42</span>
                 </div>
                 <span>Se connecter avec l'intra 42</span>
+              </a>
+
+              <a href="/api/auth/github"
+                className="w-full flex items-center justify-center gap-3 py-4 px-6 rounded-xl bg-gradient-to-r from-gray-800 to-gray-900 hover:from-gray-900 hover:to-black text-decoration-none text-white font-semibold shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5 mt-4"
+              >
+                <Github className="w-5 h-5" />
+                <span>Se connecter avec GitHub</span>
               </a>
 
               <div className="mt-6 text-center">

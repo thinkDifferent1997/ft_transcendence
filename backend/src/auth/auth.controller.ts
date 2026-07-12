@@ -28,12 +28,12 @@ export class AuthController {
   @Post('login')
   @HttpCode(HttpStatus.OK)
   async login(@Body() dto: any, @Res({ passthrough: true }) res: Response) {
-	  const user = await this.authService.login(dto);
-	  // Sets a pending-token cookie when the user has 2FA enabled (the
-	  // client must then complete POST /api/auth/2fa/login), otherwise a
-	  // full-token cookie.
-	  const { twoFactorRequired } = this.tokens.issueLoginCookie(res, user);
-	  return { twoFactorRequired };
+    const user = await this.authService.login(dto);
+    // Sets a pending-token cookie when the user has 2FA enabled (the
+    // client must then complete POST /api/auth/2fa/login), otherwise a
+    // full-token cookie.
+    const { twoFactorRequired } = this.tokens.issueLoginCookie(res, user);
+    return { twoFactorRequired };
   }
 
 
@@ -42,31 +42,31 @@ export class AuthController {
   @Get('42')
   @UseGuards(AuthGuard('42'))
   async fortTwoAuth() {
-	
-	  //empty because NestJS never goes inside, the Guard is taking control at this stage to redirect to the 42 Intranet
+  
+    //empty because NestJS never goes inside, the Guard is taking control at this stage to redirect to the 42 Intranet
   }
 
   @Get('42/callback')
   @UseGuards(AuthGuard('42'))
   async fortyTwoAuthCallback(@Req() req, @Res() res) {
 
-	  const user = await this.authService.loginOrCreate42User(req.user);
+    const user = await this.authService.loginOrCreate42User(req.user);
 
-	  // Issue the JWT cookie (pending if 2FA is enabled, full otherwise)
-	  // and route the user to the 2FA challenge when required.
-	  const { twoFactorRequired } = this.tokens.issueLoginCookie(res, user);
+    // Issue the JWT cookie (pending if 2FA is enabled, full otherwise)
+    // and route the user to the 2FA challenge when required.
+    const { twoFactorRequired } = this.tokens.issueLoginCookie(res, user);
 
-	  return res.redirect(
-		  twoFactorRequired
-			  ? `${PUBLIC_URL}/2fa`
-			  : `${PUBLIC_URL}/quiz`,
-	  );
+    return res.redirect(
+      twoFactorRequired
+        ? `${PUBLIC_URL}/2fa`
+        : `${PUBLIC_URL}/quiz`,
+    );
   }
 
   @Get('me')
   @UseGuards(AuthGuard('jwt'))
   getProfile(@Req() req){
-	  return req.user;
+    return req.user;
   
   }
 
@@ -85,4 +85,20 @@ export class AuthController {
 
   /********************************** *******************************/
 
+
+
+  // OAuth GitHub
+  @Get('github')
+  @UseGuards(AuthGuard('github'))
+  async githubAuth() {
+    // Intentionally empty: the guard performs the redirect to GitHub.
+  }
+
+  @Get('github/callback')
+  @UseGuards(AuthGuard('github'))
+  async githubAuthCallback(@Req() req, @Res() res: Response) {
+    const user = await this.authService.loginOrCreateGithubUser(req.user);
+    const { twoFactorRequired } = this.tokens.issueLoginCookie(res, user);
+    return res.redirect(twoFactorRequired ? `${PUBLIC_URL}/2fa` : `${PUBLIC_URL}/quiz`);
+  }
 }
