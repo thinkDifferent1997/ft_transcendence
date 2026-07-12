@@ -119,7 +119,7 @@ export class AuthService {
 				githubId: String(profile.githubID),
 				username,
 				email: profile.email,
-				avatarUrl: profile.avatarUrl,
+				avatar: profile.avatarUrl
 				},
 			});
 	}

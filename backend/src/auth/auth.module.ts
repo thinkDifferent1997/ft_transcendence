@@ -11,6 +11,7 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { HashingService } from './hashing.service';
 import { FortyTwoStrategy } from './fortytwo.strategy';
+import { GithubStrategy } from './github.strategy';
 import { PrismaModule } from '../prisma/prisma.module';
 import { TwoFactorModule } from './totp/two-factor.module';
 import { JwtAuthModule } from './jwt/jwt-auth.module';
@@ -27,6 +28,7 @@ import { JwtAuthModule } from './jwt/jwt-auth.module';
 	  AuthService,
 	  HashingService,
 	  FortyTwoStrategy,
+	  GithubStrategy
   ],
 })
 export class AuthModule {}

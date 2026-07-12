@@ -11,6 +11,6 @@
 #   the first time the data volume is empty.
 # ============================================================
 
-FROM postgres:16-alpine
+FROM docker.io/library/postgres:16-alpine
 
 # Pinned version above ensures reproducibility across the team.
