@@ -87,19 +87,18 @@ export class AuthController {
 
 
 
- // OAUth Github
- @Get('github')
-@UseGuards(AuthGuard('github'))
-async githubAuth() {
-}
+  // OAuth GitHub
+  @Get('github')
+  @UseGuards(AuthGuard('github'))
+  async githubAuth() {
+    // Intentionally empty: the guard performs the redirect to GitHub.
+  }
 
-@Get('github/callback')
-@UseGuards(AuthGuard('github'))
-async githubAuthCallback(@Req() req, @Res() res) {
-  const user = await this.authService.loginOrCreateGithubUser(req.user);
-  const { twoFactorRequired } = this.tokens.issueLoginCookie(res, user);
-  return res.redirect(
-    twoFactorRequired ? `${PUBLIC_URL}/2fa` : `${PUBLIC_URL}/quiz`,
-  );
-}
+  @Get('github/callback')
+  @UseGuards(AuthGuard('github'))
+  async githubAuthCallback(@Req() req, @Res() res: Response) {
+    const user = await this.authService.loginOrCreateGithubUser(req.user);
+    const { twoFactorRequired } = this.tokens.issueLoginCookie(res, user);
+    return res.redirect(twoFactorRequired ? `${PUBLIC_URL}/2fa` : `${PUBLIC_URL}/quiz`);
+  }
 }
