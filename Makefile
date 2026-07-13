@@ -135,7 +135,9 @@ clean: ## Stop everything and remove named volumes (wipes the DB!)
 	$(COMPOSE) $(COMPOSE_PROD) down -v
 
 fclean: clean ## Full clean: also remove certs and prune Docker images
-	rm -f $(CERT_DIR)/*.crt $(CERT_DIR)/*.key
+	rm -rf $(CERT_DIR)
+	rm -rf backend/node_modules frontend/node_modules
+	rm -rf backend/dist
 	docker system prune -af
 
 .PHONY: help env certs up down re dev dev-down migrate migrate-dev studio logs \
