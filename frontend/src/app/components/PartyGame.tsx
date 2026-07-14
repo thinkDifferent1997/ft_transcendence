@@ -1,13 +1,13 @@
-import { socket } from "../socket/socket";
+import { socket } from "../../socket/socket";
 
-import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useRef } from "react";
 
-import ScoreBoard from "../components/ScoreBoard";
-import QuestionCard from "../components/QuestionCard";
-import WaitingScreen from "../components/WaitingScreen";
-import PlayerBonusPanel from "../components/PlayerBonus";
+import QuestionCard from "./QuestionCard";
+import PlayerBonusPanel from "./PlayerBonus";
+import GamePage from "./GamePage";
+import MatchmakingScreen from "./MatchmakingScreen";
+import ResultsScreen from "./ResultScreen";
 
 import type { PlayerState } from "../types/PlayerState";
 import type { GameState } from "../types/GameState";
@@ -25,8 +25,6 @@ export default function QuizPage()
 			doublePoint: false,
 		};
 
-	const navigate = useNavigate();
-
 	const [questions, setQuestions] = useState<Question[]>([]);
 	const [gameStarted, setGameStarted] = useState(false);
 	const [game, setGame] = useState<GameState>(
@@ -38,7 +36,11 @@ export default function QuizPage()
 			enemyPlayer: { ...player},
 			gameOver: false,
 			isPlayer1: false,
+			mode: "party",
+			answeredQuestions: [],
 		});
+		const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+		const [revealed, setRevealed] = useState(false);
 
 	// Keep stable values inside Socket.IO callbacks with useRef.
 
@@ -47,6 +49,19 @@ export default function QuizPage()
 
 	function	handle_answer(answer: string)
 	{
+		setSelectedAnswer(answer);
+		setRevealed(true);
+		setGame(previousGame => ({
+			...previousGame,
+			answeredQuestions: [
+				...previousGame.answeredQuestions,
+				{
+					question: previousGame.currentQuestion,
+					playerAnswer: answer,
+					correct: false,
+				},
+			],
+		}));
 		socket.emit("answer", {
 			roomId: game.roomId,
 			answer,
@@ -120,6 +135,7 @@ export default function QuizPage()
 		setGame((previousGame) => ({
 			...previousGame,
 			currentQuestion: data.question,
+			questionIndex: previousGame.questionIndex + 1,
 			time_left: 20,
 
 			localPlayer: {
@@ -140,6 +156,15 @@ export default function QuizPage()
 	{
 		setGame(previousGame =>
 		{
+			const answeredQuestions = [...previousGame.answeredQuestions];
+
+			if (data.playerId === socket.id && answeredQuestions.length > 0)
+			{
+				answeredQuestions[answeredQuestions.length - 1] = {
+					...answeredQuestions[answeredQuestions.length - 1],
+					wasCorrect: data.correct,
+				};
+			}
 			const localScore = previousGame.isPlayer1
 				? data.player1Score
 				: data.player2Score;
@@ -157,21 +182,22 @@ export default function QuizPage()
 				: data.player1Streak;
 
 			const localThreeChoice = previousGame.isPlayer1
-					? data.player1ThreeChoice
-					: data.player2ThreeChoice;
+				? data.player1ThreeChoice
+				: data.player2ThreeChoice;
 
 			const localHideAnswer = previousGame.isPlayer1
-					? data.player1HideAnswer
-					: data.player2HideAnswer;
+				? data.player1HideAnswer
+				: data.player2HideAnswer;
 
 			const localDoublePoint = previousGame.isPlayer1
-					? data.player1DoublePoint
-					: data.player2DoublePoint;
+				? data.player1DoublePoint
+				: data.player2DoublePoint;
 
 			if (data.playerId === socket.id)
 			{
 				return {
 					...previousGame,
+					answeredQuestions,
 
 					localPlayer: {
 						...previousGame.localPlayer,
@@ -193,7 +219,8 @@ export default function QuizPage()
 
 			return {
 				...previousGame,
-				time_left: Math.min(previousGame.time_left, 3),
+				answeredQuestions,
+				time_left: Math.min(previousGame.time_left, 5),
 
 				localPlayer: {
 					...previousGame.localPlayer,
@@ -230,15 +257,20 @@ export default function QuizPage()
 
 		const draw = data.winner === 0;
 
-		navigate("/game-over", {
-			state:
-			{
-				playerScore,
-				enemyScore,
-				victory,
-				draw,
+		setGame(previousGame => ({
+			...previousGame,
+			gameOver: true,
+
+			    localPlayer: {
+				...previousGame.localPlayer,
+				score: playerScore,
 			},
-		});
+
+			enemyPlayer: {
+				...previousGame.enemyPlayer,
+				score: enemyScore,
+			},
+		}));
 	});
 
 		return () =>
@@ -298,64 +330,39 @@ export default function QuizPage()
 				}
 			}, [game.time_left]);
 
-	if (questions.length === 0)
+	if (game.gameOver)
 	{
-    	return <h1>Loading questions...</h1>;
+		return (
+			<ResultsScreen
+				game={game}
+				onBack={() => {
+					socket.emit("leave_queue");
+					// TODO : retour au lobby
+				}}
+			/>
+		);
 	}
-
+	
 	if (!gameStarted)
 	{
 		return (
-			<div>
-				<h1>Waiting for the other player...</h1>
-			</div>
+			<MatchmakingScreen
+				onCancel={() => {
+					socket.emit("leave_queue");
+					// TODO : retour au lobby
+				}}
+			/>
 		);
 	}
 
-	if (game.localPlayer.answered)
-	{
 		return (
-			<div>
-					<WaitingScreen
-						score = {game.localPlayer.score}
-						enemyScore = {game.enemyPlayer.score}
-						time_left = {game.time_left}
-					/>
-					<PlayerBonusPanel
-						streak={game.localPlayer.streak}
-						threeChoice={game.localPlayer.threeChoice}
-						hideAnswer={game.localPlayer.hideAnswer}
-						doublePoint={game.localPlayer.doublePoint}
-					/>
-				</div>
-			);
-		}
-
-		return (
-			<div>
-				<ScoreBoard
-					score = {game.localPlayer.score}
-					enemyScore = {game.enemyPlayer.score}
-					time_left = {game.time_left}
-				/>
-				<PlayerBonusPanel
-          			streak={game.localPlayer.streak}
-					threeChoice={game.localPlayer.threeChoice}
-					hideAnswer={game.localPlayer.hideAnswer}
-					doublePoint={game.localPlayer.doublePoint}
-				/>
-				<QuestionCard
-					question={game.currentQuestion}
-					answers={game.currentQuestion.answers}
+				<GamePage
+					game={game}
+					selectedAnswer={selectedAnswer}
+					revealed={revealed}
+					waitingForOpponent={game.localPlayer.answered}
 					onAnswer={handle_answer}
+					onBack={() => {}}
 				/>
-				<p>
-					Adversaire :
-					{" "}
-					{game.enemyPlayer.answered
-							? "Answered."
-							: "Still thinking..."}
-				</p>
-			</div>
 		);
 }
