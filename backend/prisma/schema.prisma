@@ -7,7 +7,13 @@ generator client {
   provider = "prisma-client-js"
 }
 
-// ─── Utilisateur ───
+// ─── Utilisateur: informations, oauth, profile avatar, status, friends, chat ───
+
+enum UserStatus {
+	OFFLINE
+	ONLINE
+	IN_GAME
+}
 
 model User {
   id                  String   @id @default(uuid())
@@ -22,6 +28,13 @@ model User {
   fortyTwoId          String? @unique
   githubId            String? @unique
   avatar              String?
+
+
+  status              UserStatus @default(OFFLINE)
+  
+  sentFriendRequests      Friendship[] @relation("SentFriendships")
+  receivedFriendRequests  Friendship[] @relation("ReceivedFriendships")
+  messages                GlobalMessage[]
 
   participations RoomParticipant[]
 }
