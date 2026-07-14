@@ -60,41 +60,85 @@ export class StatsService {
       return Math.round(result._avg.timeTakenMs ?? 0);
     }
 
-async getCategoryStats(userId: string) {
-  const answers = await this.prisma.answer.findMany({
-    where: {
-      participant: { userId },
-    },
-    include: {
-      question: {
-        include: {
-          category: true,
+    async getCategoryStats(userId: string) {
+      const answers = await this.prisma.answer.findMany({
+        where: {
+          participant: { userId },
         },
-      },
-    },
-  });
+        include: {
+          question: {
+            include: {
+              category: true,
+            },
+          },
+        },
+      });
 
-  const statsByCategory = new Map<string, CategoryStatEntry>();
+      const statsByCategory = new Map<string, CategoryStatEntry>();
 
-  for (const answer of answers) {
-    const categoryId = answer.question.categoryId;
-    const categoryName = answer.question.category.name;
+      for (const answer of answers) {
+        const categoryId = answer.question.categoryId;
+        const categoryName = answer.question.category.name;
 
-    if (!statsByCategory.has(categoryId)) {
-      statsByCategory.set(categoryId, { categoryName, correct: 0, total: 0 });
+        if (!statsByCategory.has(categoryId)) {
+          statsByCategory.set(categoryId, { categoryName, correct: 0, total: 0 });
+        }
+
+        const stats = statsByCategory.get(categoryId)!;
+        stats.total += 1;
+        if (answer.isCorrect) stats.correct += 1;
+      }
+
+      return Array.from(statsByCategory.entries()).map(([categoryId, stats]) => ({
+        categoryId,
+        categoryName: stats.categoryName,
+        correct: stats.correct,
+        total: stats.total,
+        successRate: Math.round((stats.correct / stats.total) * 100),
+      }));
     }
 
-    const stats = statsByCategory.get(categoryId)!;
-    stats.total += 1;
-    if (answer.isCorrect) stats.correct += 1;
-  }
+        async getWinLossStats(userId: string) {
+      const participations = await this.prisma.roomParticipant.findMany({
+        where: {
+          userId,
+          room: { status: RoomStatus.FINISHED },
+        },
+        include: {
+          room: {
+            include: { participants: true },
+          },
+        },
+      });
 
-  return Array.from(statsByCategory.entries()).map(([categoryId, stats]) => ({
-    categoryId,
-    categoryName: stats.categoryName,
-    correct: stats.correct,
-    total: stats.total,
-    successRate: Math.round((stats.correct / stats.total) * 100),
-  }));
-}
+      let wins = 0;
+      let losses = 0;
+      let draws = 0;
+
+      for (const participation of participations) {
+        const scores = participation.room.participants.map((p) => p.score);
+        const maxScore = Math.max(...scores);
+        const topScorers = participation.room.participants.filter(
+          (p) => p.score === maxScore,
+        );
+
+        if (topScorers.length > 1) {
+          draws += 1;
+        } else if (participation.score === maxScore) {
+          wins += 1;
+        } else {
+          losses += 1;
+        }
+      }
+
+      return { played: participations.length, wins, losses, draws };
+    }
+
+        async getTournamentsWon(userId: string): Promise<number> {
+      return this.prisma.tournament.count({
+        where: {
+          champion: { userId },
+        },
+      });
+    }
 }

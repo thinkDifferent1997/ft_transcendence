@@ -25,4 +25,15 @@ export class StatsController {
     async getCategoryStats(@Param('userId') userId: string) {
       return this.statsService.getCategoryStats(userId);
     }
+
+    @Get(':userId/win-loss')
+    async getWinLossStats(@Param('userId') userId: string) {
+      return this.statsService.getWinLossStats(userId);
+    }
+
+    @Get(':userId/tournaments-won')
+    async getTournamentsWon(@Param('userId') userId: string) {
+      const count = await this.statsService.getTournamentsWon(userId);
+      return { tournamentsWon: count };
+    }
 } 
