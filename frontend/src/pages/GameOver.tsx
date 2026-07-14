@@ -1,50 +1,30 @@
-import { useLocation, useNavigate } from "react-router-dom";
-
-export default function GameOverPage()
-{
-    const navigate = useNavigate();
-    const location = useLocation();
-
-    const state = location.state as
-    {
-        playerScore: number;
-        enemyScore: number;
+interface GameOverProps {
+	data: {
+		playerScore: number;
+		enemyScore: number;
 		victory: boolean;
-		draw:boolean;
-    };
+		draw: boolean;
+	};
+	onBack?: () => void;
+}
+
+export default function GameOverPage({ data, onBack }: GameOverProps) {
+    const { playerScore, enemyScore, victory, draw } = data;
 
     let result = "Defeat";
-
-	if (state.draw)
-		result = "Draw";
-	else if (state.victory)
-		result = "Victory!";
-	if (state.playerScore > state.enemyScore)
-		result = "Victory!";
-	else if (state.playerScore < state.enemyScore)
-		result = "Defeat";
+    if (draw) result = "Draw";
+    else if (victory) result = "Victory!";
+    
+    if (playerScore > enemyScore) result = "Victory!";
+    else if (playerScore < enemyScore) result = "Defeat";
 
     return (
-        <div
-            style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                marginTop: "80px",
-                gap: "20px",
-            }}
-        >
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: "80px", gap: "20px" }}>
             <h1>Game Over</h1>
-
             <h2>{result}</h2>
-
-            <h3>
-                {state.playerScore} - {state.enemyScore}
-            </h3>
-
-            <button
-                onClick={() => navigate("/")}
-            >
+            <h3>{playerScore} - {enemyScore}</h3>
+            
+            <button onClick={onBack} className="px-4 py-2 bg-purple-500 text-white rounded-lg">
                 Return to menu
             </button>
         </div>

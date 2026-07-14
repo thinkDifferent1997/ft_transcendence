@@ -147,8 +147,8 @@ export default function App() {
   // Show login page if not logged in
   if (!isLoggedIn) {
 	  return (
-		  <LoginPage
-		  force2FA={window.location.pathname === "/2fa"}
+    <LoginPage
+      force2FA={window.location.pathname === "/2fa"}
 		  onLogin={(name?: string) => {
 			  if (name) setUsername(name);
 			  setIsLoggedIn(true);
@@ -188,7 +188,7 @@ export default function App() {
   }
 
   if (currentPage === "quiz") {
-	  return <QuizPage />;
+	  return <QuizPage onBack={() => setCurrentPage("home")} />;
   }
 
   return (

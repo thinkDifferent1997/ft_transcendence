@@ -16,15 +16,14 @@ export default function GameOverScreen
 
 {
 	return (
-		<div>
-			<h1>
+	<div>
+		<h1>
 			{didWin ? "Victory !"
-					: "Defeat."}
-			</h1>
-
-			<p>
-				Final score : {score} / {maxScore}
-			</p>
+			"Defeat."}
+		</h1>
+		<p>
+			Final score : {score} / {maxScore}
+		</p>
 		</div>
 	);
 }

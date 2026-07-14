@@ -68,6 +68,11 @@ export class GameManager
             return;
         }
 
+		if (player.id === game.player1.id && game.player1Answered)
+			return;
+		if (player.id === game.player2.id && game.player2Answered)
+			return;
+
 		if (player.id === game.player1.id)
 			game.player1Time += usedTime;
 		else
