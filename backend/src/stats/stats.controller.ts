@@ -36,4 +36,9 @@ export class StatsController {
       const count = await this.statsService.getTournamentsWon(userId);
       return { tournamentsWon: count };
     }
+
+    @Get(':userId/summary')
+    async getSummary(@Param('userId') userId: string) {
+      return this.statsService.getSummary(userId);
+    }
 } 

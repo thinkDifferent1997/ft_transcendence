@@ -141,4 +141,18 @@ export class StatsService {
         },
       });
     }
+
+        async getSummary(userId: string) {
+      const [gamesPlayed, answers, avgResponseTime, categories, winLoss, tournamentsWon] =
+        await Promise.all([
+          this.getGamesPlayed(userId),
+          this.getAnswerStats(userId),
+          this.getAverageResponseTime(userId),
+          this.getCategoryStats(userId),
+          this.getWinLossStats(userId),
+          this.getTournamentsWon(userId),
+        ]);
+    
+      return { gamesPlayed, answers, avgResponseTime, categories, winLoss, tournamentsWon };
+    }
 }
