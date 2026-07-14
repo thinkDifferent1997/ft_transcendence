@@ -39,6 +39,40 @@ model User {
   participations RoomParticipant[]
 }
 
+
+// ─── Friendships and General Chat ───
+
+enum FriendshipStatus {
+	PENDING
+	ACCEPTED
+	DECLINED
+}
+
+model Friendship {
+	id                  String				@id @default(uuid())
+	status				FriendshipStatus	@default(PENDING)
+	createdAt			DateTime			@default(now())
+	updatedAt			DateTime			@updatedAt
+
+	senderId			String
+	sender				User @relation("SentFriendships", fields: [senderId], references: [id])
+
+	receiverId			String
+	receiver			User @relation("ReceivedFriendships", fields: [receiverId], references: [id])
+
+	@@unique([senderId, receiverId])
+}
+
+model GlobalMessage {
+	id                  String				@id @default(uuid())
+	content             String
+	createdAt			DateTime			@default(now())
+
+	authorId			String
+	author				User				@relation(fields: [authorId], references: [id])
+}
+
+
 // ─── Banque de questions ───
 
 model Category {
