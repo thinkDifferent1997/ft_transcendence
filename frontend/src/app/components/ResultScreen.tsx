@@ -106,39 +106,42 @@ export default function ResultsScreen({
                                 {entry.question.question}
                             </p>
 
-                            <div
-                                className={`flex items-center gap-3 mb-2 ${
-                                    entry.correct
-                                        ? "text-green-300"
-                                        : "text-red-300"
-                                }`}
-                            >
-                                {entry.correct ? (
-                                    <CheckCircle className="w-5 h-5" />
-                                ) : (
-                                    <XCircle className="w-5 h-5" />
-                                )}
+							{entry.correct ? (
+								<div className="flex items-center gap-3 text-green-300">
+									<CheckCircle className="w-5 h-5" />
 
-                                <span>
-                                    <span className="font-semibold">
-                                        Your answer:
-                                    </span>{" "}
-                                    {entry.playerAnswer ?? "No answer"}
-                                </span>
-                            </div>
+									<span>
+										<span className="font-semibold">
+											Your answer:
+										</span>{" "}
+										{entry.playerAnswer}
+									</span>
+								</div>
+							) : (
+								<>
+									<div className="flex items-center gap-3 mb-2 text-red-300">
+										<XCircle className="w-5 h-5" />
 
-                            <div className="flex items-center gap-3 text-green-300">
+										<span>
+											<span className="font-semibold">
+												Your answer:
+											</span>{" "}
+											{entry.playerAnswer ?? "No answer"}
+										</span>
+									</div>
 
-                                <CheckCircle className="w-5 h-5" />
+									<div className="flex items-center gap-3 text-green-300">
+										<CheckCircle className="w-5 h-5" />
 
-                                <span>
-                                    <span className="font-semibold">
-                                        Correct answer:
-                                    </span>{" "}
-                                    {entry.question.correct}
-                                </span>
-
-                            </div>
+										<span>
+											<span className="font-semibold">
+												Correct answer:
+											</span>{" "}
+											{entry.question.correct}
+										</span>
+									</div>
+								</>
+							)}
 
                         </div>
 

@@ -154,6 +154,7 @@ export default function QuizPage()
 
 	socket.on("player_answered", (data) =>
 	{
+		console.log("player_answered", data.correct);
 		setGame(previousGame =>
 		{
 			const answeredQuestions = [...previousGame.answeredQuestions];
@@ -162,7 +163,7 @@ export default function QuizPage()
 			{
 				answeredQuestions[answeredQuestions.length - 1] = {
 					...answeredQuestions[answeredQuestions.length - 1],
-					wasCorrect: data.correct,
+					correct: data.correct,
 				};
 			}
 			const localScore = previousGame.isPlayer1
@@ -243,6 +244,7 @@ export default function QuizPage()
 
 	socket.on("game_over", (data) =>
 	{
+		console.log("game_over", data.correct);
 		const playerScore = isPlayer1Ref.current
 			? data.player1Score
 			: data.player2Score;

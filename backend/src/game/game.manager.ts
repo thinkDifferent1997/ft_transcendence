@@ -181,6 +181,7 @@ export class GameManager
 				return {
 					nextQuestion: false,
 					gameOver: true,
+					correct: isCorrect,
 					winner,
 				};
 			}
