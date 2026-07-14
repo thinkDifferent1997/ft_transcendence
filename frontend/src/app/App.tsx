@@ -11,47 +11,31 @@ import {
   LogOut,
 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { io } from "socket.io-client";
 import LoginPage from "./components/LoginPage";
 import ProfilePage from "./components/ProfilePage";
 import TournamentLobby from "./components/TournamentLobby";
 import GamePage from "./components/GamePage";
 import TournamentGame from "./components/TournamentGame";
 
+const socket = io();
+
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [username, setUsername] = useState("Joueur");
+  const [username, setUsername] = useState("Joueur"); // Joueur a remplacer
+  const [userId, setUserId] = useState<string | null>(null);
+
   const [currentPage, setCurrentPage] = useState<"home" | "profile" | "tournament" | "game">("home");
   const [gameMode, setGameMode] = useState<"solo" | "ai" | "party" | "tournament">("solo");
   const [isChatOpen, setIsChatOpen] = useState(false);
+  
   const [message, setMessage] = useState("");
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      user: "Alex",
-      avatar: "🎨",
-      text: "Anyone up for a tournament?",
-      time: "2m ago",
-    },
-    {
-      id: 2,
-      user: "Sam",
-      avatar: "🚀",
-      text: "Just beat the AI in hard mode!",
-      time: "5m ago",
-    },
-    {
-      id: 3,
-      user: "Jordan",
-      avatar: "🌟",
-      text: "Looking for party mode players!",
-      time: "8m ago",
-    },
-  ]);
+  const [messages, setMessages] = useState<any[]>([]);
   const gameModes = [
     {
       id: "solo",
       title: "Solo",
-      description: "Test tes connaissances dans un mode solo",
+      description: "Test tes connaissances dans un mode solo", // mode a retirer: vu avec Nathan
       icon: Brain,
       color: "from-blue-500 to-cyan-500",
       hoverColor: "hover:from-blue-600 hover:to-cyan-600",
@@ -84,47 +68,56 @@ export default function App() {
   ];
 
   const handleSendMessage = () => {
-    if (message.trim()) {
-      setMessages([
-        ...messages,
-        {
-          id: messages.length + 1,
-          user: "You",
-          avatar: "😊",
-          text: message,
-          time: "Just now",
-        },
-      ]);
+    if (message.trim() && userId) {
+		socket.emit("send_message", {
+			authorId: userId,
+			content: message,
+		});
       setMessage("");
+    } else {
+        console.warn("Message vide ou joueur non identifié (userId manquant)");
     }
   };
 
   useEffect(() => {
-    const isQuizRoute = window.location.pathname === "/quiz";
+	  socket.on("receive_message", (newMessage) => {
+		  console.log("💌 Message reçu du serveur :", newMessage); // 👈 LE NOUVEAU MOUCHARD
+		  setMessages((prev) => [...prev, newMessage]);
+	  });
+	  return () => {
+		  socket.off("receive_message");
+	  };
+  }, []);
+
+  useEffect(() => {
+    //const isQuizRoute = window.location.pathname === "/quiz";
 
     // Si on arrive sur /quiz, on demande au backend de lire le cookie 42
-    if (isQuizRoute) {
-      fetch("/api/auth/me", {
-        credentials: 'include',
-      })
+  //  if (isQuizRoute) {
+		fetch("/api/auth/me", {
+        	credentials: 'include',
+		})
         .then((res) => {
           if (res.ok) return res.json();
           throw new Error("Session invalide");
         })
         .then((data) => {
-          if (data && data.username) {
+      		console.log("🕵️‍♂️ Données /me au chargement :", data); // 👈 LE MOUCHARD
+			const realId = data.id || data.userId || data.sub;
+          if (data && data.username && realId) {
             setUsername(data.username);
+			setUserId(realId);
             setIsLoggedIn(true);
 
             // On nettoie l'URL
-            window.history.replaceState({}, document.title, "/");
+            //window.history.replaceState({}, document.title, "/");
           }
         })
         .catch((err) => {
           console.error(err);
           setIsLoggedIn(false);
         });
-    }
+
   }, []);
 
   const handleLogout = async () => {
@@ -149,11 +142,28 @@ export default function App() {
 		  <LoginPage
 		  force2FA={window.location.pathname === "/2fa"}
 		  onLogin={(name?: string) => {
-			  if (name) setUsername(name);
-			  setIsLoggedIn(true);
-			  if (window.location.pathname === "/2fa") {
-				  window.history.replaceState({}, document.title, "/");
-			  }
+			  if (name)
+				  setUsername(name);
+
+			  fetch("/api/auth/me", { credentials: 'include' })
+			  	.then((res) => res.json())
+				.then((data) => {
+					console.log("🔥 Données /me après connexion :", data); // 👈 LE MOUCHARD
+					const realId = data.id || data.userId || data.sub;
+					if (realId)
+						setUserId(realId);
+					else
+						console.error("AUCU ID TROUVE DANS DATA");
+					setIsLoggedIn(true);
+					if (window.location.pathname === "/2fa") {
+						window.history.replaceState({}, document.title, "/");
+					}
+				})
+				.catch((err) => {
+					console.error("Impossible to get userId:", err);
+				//	setIsLoggedIn(true);
+				});
+			  			  
 		  }}
 		  />
 	  );
@@ -368,19 +378,23 @@ export default function App() {
                   className="flex gap-3 animate-in fade-in slide-in-from-bottom-2"
                 >
                   <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-purple-400 flex items-center justify-center flex-shrink-0 text-lg">
-                    {msg.avatar}
+                    {/* On affiche l'avatar de l'auteur, sinon le smiley par défaut */}
+                    {msg.author?.avatar || "😊"}
                   </div>
                   <div className="flex-1">
                     <div className="flex items-baseline gap-2">
-                      <span className="text-sm text-gray-900">
-                        {msg.user}
+                      <span className="text-sm font-bold text-gray-900">
+                        {/* On affiche le nom de l'auteur venant du backend */}
+                        {msg.author?.username || "Inconnu"}
                       </span>
                       <span className="text-xs text-gray-400">
-                        {msg.time}
+                        {/* On formate l'heure proprement */}
+                        {msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "Maintenant"}
                       </span>
                     </div>
                     <p className="text-sm text-gray-700 mt-1">
-                      {msg.text}
+                      {/* On affiche le 'content' du message, pas 'text' */}
+                      {msg.content}
                     </p>
                   </div>
                 </div>
