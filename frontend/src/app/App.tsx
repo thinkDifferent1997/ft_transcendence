@@ -67,7 +67,7 @@ export default function App() {
     },
   ];
 
-  const handleSendMessage = () => {
+  /*const handleSendMessage = () => {
     if (message.trim() && userId) {
 		socket.emit("send_message", {
 			authorId: userId,
@@ -76,6 +76,25 @@ export default function App() {
       setMessage("");
     } else {
         console.warn("Message vide ou joueur non identifié (userId manquant)");
+    }
+  };*/
+
+ const handleSendMessage = () => {
+    console.log("--- TENTATIVE D'ENVOI ---");
+    console.log("1. Contenu du message :", message);
+    console.log("2. ID du joueur (userId) :", userId);
+
+    if (message.trim() !== "" && userId !== null) {
+      console.log("✅ Conditions remplies, on envoie au backend !");
+      socket.emit("send_message", {
+          authorId: userId,
+          content: message,
+      });
+      setMessage(""); // On vide l'input
+    } else {
+      console.error("❌ Envoi bloqué ! Raison :");
+      if (message.trim() === "") console.error("-> Le message est vide !");
+      if (userId === null) console.error("-> L'ID joueur est nul !");
     }
   };
 
