@@ -18,19 +18,21 @@ import TournamentLobby from "./components/TournamentLobby";
 import GamePage from "./components/GamePage";
 import TournamentGame from "./components/TournamentGame";
 
-const socket = io();
+const socket = io({
+	withCredentials: true,
+
+});
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [username, setUsername] = useState("Joueur"); // Joueur a remplacer
   const [userId, setUserId] = useState<string | null>(null);
-
   const [currentPage, setCurrentPage] = useState<"home" | "profile" | "tournament" | "game">("home");
   const [gameMode, setGameMode] = useState<"solo" | "ai" | "party" | "tournament">("solo");
   const [isChatOpen, setIsChatOpen] = useState(false);
-  
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<any[]>([]);
+
   const gameModes = [
     {
       id: "solo",
@@ -67,52 +69,28 @@ export default function App() {
     },
   ];
 
-  /*const handleSendMessage = () => {
-    if (message.trim() && userId) {
-		socket.emit("send_message", {
-			authorId: userId,
-			content: message,
-		});
-      setMessage("");
-    } else {
-        console.warn("Message vide ou joueur non identifié (userId manquant)");
-    }
-  };*/
-
  const handleSendMessage = () => {
-    console.log("--- TENTATIVE D'ENVOI ---");
-    console.log("1. Contenu du message :", message);
-    console.log("2. ID du joueur (userId) :", userId);
 
     if (message.trim() !== "" && userId !== null) {
-      console.log("✅ Conditions remplies, on envoie au backend !");
       socket.emit("send_message", {
           authorId: userId,
           content: message,
       });
       setMessage(""); // On vide l'input
-    } else {
-      console.error("❌ Envoi bloqué ! Raison :");
-      if (message.trim() === "") console.error("-> Le message est vide !");
-      if (userId === null) console.error("-> L'ID joueur est nul !");
     }
   };
 
   useEffect(() => {
-	  socket.on("receive_message", (newMessage) => {
-		  console.log("💌 Message reçu du serveur :", newMessage); // 👈 LE NOUVEAU MOUCHARD
-		  setMessages((prev) => [...prev, newMessage]);
-	  });
-	  return () => {
-		  socket.off("receive_message");
-	  };
+      socket.on("receive_message", (newMessage) => {
+          setMessages((prev) => [...prev, newMessage]);
+      });
+
+      return () => {
+          socket.off("receive_message");
+      };
   }, []);
 
   useEffect(() => {
-    //const isQuizRoute = window.location.pathname === "/quiz";
-
-    // Si on arrive sur /quiz, on demande au backend de lire le cookie 42
-  //  if (isQuizRoute) {
 		fetch("/api/auth/me", {
         	credentials: 'include',
 		})
@@ -121,19 +99,14 @@ export default function App() {
           throw new Error("Session invalide");
         })
         .then((data) => {
-      		console.log("🕵️‍♂️ Données /me au chargement :", data); // 👈 LE MOUCHARD
 			const realId = data.id || data.userId || data.sub;
           if (data && data.username && realId) {
             setUsername(data.username);
 			setUserId(realId);
             setIsLoggedIn(true);
-
-            // On nettoie l'URL
-            //window.history.replaceState({}, document.title, "/");
           }
         })
         .catch((err) => {
-          console.error(err);
           setIsLoggedIn(false);
         });
 
@@ -167,7 +140,6 @@ export default function App() {
 			  fetch("/api/auth/me", { credentials: 'include' })
 			  	.then((res) => res.json())
 				.then((data) => {
-					console.log("🔥 Données /me après connexion :", data); // 👈 LE MOUCHARD
 					const realId = data.id || data.userId || data.sub;
 					if (realId)
 						setUserId(realId);
@@ -180,7 +152,6 @@ export default function App() {
 				})
 				.catch((err) => {
 					console.error("Impossible to get userId:", err);
-				//	setIsLoggedIn(true);
 				});
 			  			  
 		  }}
@@ -393,13 +364,21 @@ export default function App() {
             <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
               {messages.map((msg) => (
                 <div
-                  key={msg.id}
+                  key={msg.id || msg.createdAt}
                   className="flex gap-3 animate-in fade-in slide-in-from-bottom-2"
                 >
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-purple-400 flex items-center justify-center flex-shrink-0 text-lg">
-                    {/* On affiche l'avatar de l'auteur, sinon le smiley par défaut */}
-                    {msg.author?.avatar || "😊"}
-                  </div>
+				<div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-400 flex items-center justify-center flex-shrink-0 text-lg overflow-hidden border border-gray-200 shadow-sm">
+				{msg.author?.avatar ? (
+					<img
+						src={msg.author.avatar}
+						alt="Avatar"
+						className="w-full h-full object-cover"
+						onError={(e) => { e.currentTarget.style.display = 'none' }}
+					/>
+				) : (
+				"😊"
+				)}
+				</div>
                   <div className="flex-1">
                     <div className="flex items-baseline gap-2">
                       <span className="text-sm font-bold text-gray-900">
