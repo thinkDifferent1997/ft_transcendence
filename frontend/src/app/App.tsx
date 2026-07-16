@@ -16,6 +16,7 @@ import ProfilePage from "./components/ProfilePage";
 import TournamentLobby from "./components/TournamentLobby";
 import GamePage from "./components/GamePage";
 import TournamentGame from "./components/TournamentGame";
+import PartyGame from "./components/PartyGame";
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -179,12 +180,31 @@ export default function App() {
   }
 
   // Show game page
-  if (currentPage === "game") {
-    if (gameMode === "tournament") {
-		return <TournamentGame onBack={() => setCurrentPage("home")} />;
+if (currentPage === "game")
+{
+    if (gameMode === "tournament")
+    {
+        return (
+            <TournamentGame
+                onBack={() => setCurrentPage("home")}
+            />
+        );
     }
-    return <GamePage mode={gameMode} onBack={() => setCurrentPage("home")} />;
-  }
+
+    if (gameMode === "party")
+    {
+        return (
+            <PartyGame />
+        );
+    }
+
+    return (
+        <GamePage
+            mode={gameMode}
+            onBack={() => setCurrentPage("home")}
+        />
+    );
+}
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-violet-100 via-pink-50 to-cyan-100">

@@ -1,3 +1,11 @@
+export default function GamePage({
+    game,
+    selectedAnswer,
+    revealed,
+    onAnswer,
+    onBack,
+}: Props)
+
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Trophy,
@@ -13,6 +21,8 @@ import {
   Crown,
   Zap,
 } from "lucide-react";
+
+import BonusBar from "./BonusBar";
 
 type GameMode = "solo" | "ai" | "party" | "tournament";
 
@@ -34,41 +44,16 @@ interface ShuffledQuestion {
   type: "multiple" | "boolean";
 }
 
+import type { GameState } from "../types/GameState";
+import type { Question } from "../types/question";
+
 interface Props {
-  mode: GameMode;
-  onBack: () => void;
-}
-
-const TOTAL_QUESTIONS = 10;
-const QUESTION_TIME = 30;
-const OPPONENT_ANSWER_DELAY_MIN = 4000;
-const OPPONENT_ANSWER_DELAY_MAX = 18000;
-
-function decodeHTML(html: string) {
-  const txt = document.createElement("textarea");
-  txt.innerHTML = html;
-  return txt.value;
-}
-
-function shuffleArray<T>(arr: T[]): T[] {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
-function buildShuffled(q: Question): ShuffledQuestion {
-  const all = shuffleArray([q.correct_answer, ...q.incorrect_answers]);
-  return {
-    question: decodeHTML(q.question),
-    answers: all.map(decodeHTML),
-    correctIndex: all.indexOf(q.correct_answer),
-    category: decodeHTML(q.category),
-    difficulty: q.difficulty,
-    type: q.type,
-  };
+    game: GameState;
+	selectedAnswer: string | null;
+    revealed: boolean;
+	waitingForOpponent: boolean;
+    onAnswer: (answer: string) => void;
+    onBack: () => void;
 }
 
 // Mock fallback questions in case API fails
@@ -196,180 +181,39 @@ function buildTournamentBracket(playerScore: number) {
   return { qf, sf, final };
 }
 
-export default function GamePage({ mode, onBack }: Props) {
-  const [questions, setQuestions] = useState<ShuffledQuestion[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
-  const [revealed, setRevealed] = useState(false);
-  const [playerScore, setPlayerScore] = useState(0);
-  const [opponentScore, setOpponentScore] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(QUESTION_TIME);
-  const [opponentAnswered, setOpponentAnswered] = useState(false);
-  const [gameOver, setGameOver] = useState(false);
-  const [playerAnswers, setPlayerAnswers] = useState<(number | null)[]>([]);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const opponentTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	export default function GamePage({
+		game,
+		onAnswer,
+		onBack,
+		waitingForOpponent,
+	}: Props) {
 
-  const config = MODE_CONFIG[mode];
-  const hasOpponent = config.opponent;
-  const currentQ = questions[currentIndex];
+		const currentQ = game.currentQuestion;
 
-  // Load questions from API
-  useEffect(() => {
-    async function fetchQuestions() {
-      try {
-        const res = await fetch(
-          `https://opentdb.com/api.php?amount=${TOTAL_QUESTIONS}&type=multiple`
-        );
-        const data = await res.json();
-        if (data.results && data.results.length > 0) {
-          setQuestions(data.results.map(buildShuffled));
-        } else {
-          setQuestions(FALLBACK_QUESTIONS);
-        }
-      } catch {
-        setQuestions(FALLBACK_QUESTIONS);
-      }
-      setLoading(false);
-    }
-    fetchQuestions();
-  }, []);
+		const config =
+			MODE_CONFIG[game.mode as keyof typeof MODE_CONFIG];
 
-  const advanceQuestion = useCallback(() => {
-    if (timerRef.current) clearInterval(timerRef.current);
-    if (opponentTimerRef.current) clearTimeout(opponentTimerRef.current);
+		const hasOpponent = config.opponent;
 
-    setCurrentIndex((prev) => {
-      const next = prev + 1;
-      if (next >= TOTAL_QUESTIONS) {
-        setGameOver(true);
-        return prev;
-      }
-      return next;
-    });
-    setSelectedAnswer(null);
-    setRevealed(false);
-    setOpponentAnswered(false);
-    setTimeLeft(QUESTION_TIME);
-  }, []);
-
-  const revealAndScheduleNext = useCallback(
-    (chosenIndex: number | null, forceCorrect = false) => {
-      if (revealed) return;
-      setRevealed(true);
-      if (timerRef.current) clearInterval(timerRef.current);
-      if (opponentTimerRef.current) clearTimeout(opponentTimerRef.current);
-
-      const isCorrect =
-        forceCorrect ||
-        (chosenIndex !== null && chosenIndex === currentQ?.correctIndex);
-      if (isCorrect) setPlayerScore((s) => s + 1);
-      setPlayerAnswers((prev) => [...prev, chosenIndex]);
-
-      setTimeout(advanceQuestion, 2000);
-    },
-    [revealed, currentQ, advanceQuestion]
-  );
-
-  const handleAnswer = useCallback(
-    (idx: number) => {
-      if (revealed || selectedAnswer !== null) return;
-      setSelectedAnswer(idx);
-      revealAndScheduleNext(idx);
-    },
-    [revealed, selectedAnswer, revealAndScheduleNext]
-  );
-
-  // Timer
-  useEffect(() => {
-    if (loading || gameOver || revealed || !currentQ) return;
-    timerRef.current = setInterval(() => {
-      setTimeLeft((t) => {
-        if (t <= 1) {
-          clearInterval(timerRef.current!);
-          revealAndScheduleNext(null);
-          return 0;
-        }
-        return t - 1;
-      });
-    }, 1000);
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [currentIndex, loading, gameOver, revealed, currentQ, revealAndScheduleNext]);
-
-  // Opponent behaviour (simulate)
-  useEffect(() => {
-    if (!hasOpponent || loading || gameOver || revealed) return;
-    const delay =
-      OPPONENT_ANSWER_DELAY_MIN +
-      Math.random() * (OPPONENT_ANSWER_DELAY_MAX - OPPONENT_ANSWER_DELAY_MIN);
-
-    opponentTimerRef.current = setTimeout(() => {
-      if (!revealed) {
-        setOpponentAnswered(true);
-        const correct = Math.random() < 0.6;
-        if (correct) setOpponentScore((s) => s + 1);
-        // Reduce timer to 5s
-        setTimeLeft((t) => Math.min(t, 5));
-      }
-    }, delay);
-
-    return () => {
-      if (opponentTimerRef.current) clearTimeout(opponentTimerRef.current);
-    };
-  }, [currentIndex, hasOpponent, loading, gameOver, revealed]);
-
-  // Reset timer when opponent answered and timeLeft goes to 5
-  useEffect(() => {
-    if (opponentAnswered && timeLeft === 5 && !revealed) {
-      if (timerRef.current) clearInterval(timerRef.current);
-      timerRef.current = setInterval(() => {
-        setTimeLeft((t) => {
-          if (t <= 1) {
-            clearInterval(timerRef.current!);
-            revealAndScheduleNext(null);
-            return 0;
-          }
-          return t - 1;
-        });
-      }, 1000);
-    }
-  }, [opponentAnswered]);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-violet-900 via-purple-900 to-indigo-900 flex items-center justify-center">
-        <div className="text-center text-white">
-          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center mx-auto mb-4 animate-spin">
-            <Sparkles className="w-8 h-8" />
-          </div>
-          <p>Chargement des questions…</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (gameOver) {
-    return (
-      <ResultsScreen
-        mode={mode}
-        playerScore={playerScore}
-        opponentScore={opponentScore}
-        questions={questions}
-        playerAnswers={playerAnswers}
-        onBack={onBack}
-      />
-    );
-  }
+	if (!currentQ) {
+		return (
+			<div className="min-h-screen flex items-center justify-center text-white">
+				Waiting for question...
+			</div>
+		);
+	}
 
   if (!currentQ) return null;
 
-  const timerPct = (timeLeft / QUESTION_TIME) * 100;
+  const timerPct = (game.time_left / 20) * 100;
   const timerColor =
-    timeLeft > 15 ? "from-green-400 to-cyan-400" : timeLeft > 7 ? "from-yellow-400 to-orange-400" : "from-red-400 to-pink-400";
+	  game.time_left > 15
+		? "from-green-400 to-cyan-400"
+		: game.time_left > 7
+	  ? "from-yellow-400 to-orange-400"
+	  : "from-red-400 to-pink-400";
 
+	console.log(game.questionIndex);
   return (
     <div className="min-h-screen bg-gradient-to-br from-violet-900 via-purple-900 to-indigo-900 flex flex-col">
       {/* Top bar */}
@@ -385,11 +229,11 @@ export default function GamePage({ mode, onBack }: Props) {
           {config.label}
         </div>
         <div className="text-white/70 text-sm">
-          {currentIndex + 1} / {TOTAL_QUESTIONS}
+          {game.questionIndex} / 8
         </div>
       </div>
 
-      {/* Score bar (opponent mode) */}
+      {/* Score bar (opponent game.mode) */}
       {hasOpponent && (
         <div className="flex items-center justify-center gap-8 px-6 pb-2">
           {/* Player */}
@@ -399,18 +243,18 @@ export default function GamePage({ mode, onBack }: Props) {
             </div>
             <div className="text-right">
               <div className="text-white text-sm">Vous</div>
-              <div className="text-white">{playerScore}</div>
+              <div className="text-white">{game.localPlayer.score}</div>
             </div>
           </div>
           <div className="text-white/40 text-xl">VS</div>
           {/* Opponent */}
           <div className="flex items-center gap-3">
             <div className="text-left">
-              <div className="text-white text-sm">{mode === "ai" ? "Emilien" : "Alex"}</div>
-              <div className="text-white">{opponentScore}</div>
+              <div className="text-white text-sm">{game.mode === "ai" ? "Emilien" : "Alex"}</div>
+              <div className="text-white">{game.enemyPlayer.score}</div>
             </div>
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-xl">
-              {mode === "ai" ? "🤖" : "🎮"}
+              {game.mode === "ai" ? "🤖" : "🎮"}
             </div>
           </div>
         </div>
@@ -418,33 +262,65 @@ export default function GamePage({ mode, onBack }: Props) {
 
       {/* Main content */}
       <div className="flex-1 flex flex-col items-center justify-center px-4 max-w-3xl mx-auto w-full">
-        {/* Timer */}
-        <div className="w-full mb-6">
-          <div className="flex items-center justify-between mb-2">
-            <div className={`flex items-center gap-2 text-sm ${timeLeft <= 7 ? "text-red-300 animate-pulse" : "text-white/70"}`}>
-              <Clock className="w-4 h-4" />
-              <span>{timeLeft}s</span>
-            </div>
-            {hasOpponent && opponentAnswered && (
-              <div className="flex items-center gap-2 text-amber-300 text-sm animate-pulse">
-                <CheckCircle className="w-4 h-4" />
-                <span>{mode === "ai" ? "Emilien" : "Alex"} a répondu !</span>
-              </div>
-            )}
-            {hasOpponent && !opponentAnswered && (
-              <div className="flex items-center gap-2 text-white/40 text-sm">
-                <div className="w-2 h-2 rounded-full bg-gray-400 animate-pulse" />
-                <span>{mode === "ai" ? "Emilien" : "Alex"} réfléchit…</span>
-              </div>
-            )}
-          </div>
-          <div className="w-full h-3 rounded-full bg-white/10 overflow-hidden">
-            <div
-              className={`h-full rounded-full bg-gradient-to-r ${timerColor} transition-all duration-1000`}
-              style={{ width: `${timerPct}%` }}
-            />
-          </div>
-        </div>
+     
+	  {/* Timer */}
+		<BonusBar
+			streak={game.localPlayer.streak}
+			threeChoice={game.localPlayer.threeChoice}
+			hideAnswer={game.localPlayer.hideAnswer}
+			doublePoint={game.localPlayer.doublePoint}
+		/>
+		{!waitingForOpponent && (
+		<>
+			{/* Timer */}
+			<div className="w-full mb-6">
+				<div className="flex items-center justify-between mb-2">
+					<div
+						className={`flex items-center gap-2 text-sm ${
+							game.time_left <= 7
+								? "text-red-300 animate-pulse"
+								: "text-white/70"
+						}`}
+					>
+						<Clock className="w-4 h-4" />
+						<span>{game.time_left}s</span>
+					</div>
+
+					{hasOpponent && game.enemyPlayer.answered && (
+						<div className="flex items-center gap-2 text-amber-300 text-sm animate-pulse">
+							<CheckCircle className="w-4 h-4" />
+							<span>
+								{game.mode === "ai"
+									? "Emilien"
+									: "Alex"}{" "}
+								answered!
+							</span>
+						</div>
+					)}
+
+					{hasOpponent && !game.enemyPlayer.answered && (
+						<div className="flex items-center gap-2 text-white/40 text-sm">
+							<div className="w-2 h-2 rounded-full bg-gray-400 animate-pulse" />
+							<span>
+								{game.mode === "ai"
+									? "Emilien"
+									: "Alex"}{" "}
+								is thinking...
+							</span>
+						</div>
+					)}
+				</div>
+
+				<div className="w-full h-3 rounded-full bg-white/10 overflow-hidden">
+					<div
+						className={`h-full rounded-full bg-gradient-to-r ${timerColor} transition-all duration-1000`}
+						style={{ width: `${timerPct}%` }}
+					/>
+				</div>
+			</div>
+		</>
+	)}
+
 
         {/* Category + difficulty */}
         <div className="flex gap-2 mb-4">
@@ -464,61 +340,91 @@ export default function GamePage({ mode, onBack }: Props) {
           </span>
         </div>
 
-        {/* Question */}
-        <div className="w-full bg-white/10 backdrop-blur-md rounded-3xl p-8 mb-8 border border-white/20 shadow-2xl">
-          <p className="text-white text-center leading-relaxed">
-            {currentQ.question}
-          </p>
-        </div>
+       {waitingForOpponent ? (
 
-        {/* Answers */}
-        <div
-          className={`w-full grid gap-4 ${
-            currentQ.type === "boolean" ? "grid-cols-2" : "grid-cols-1 sm:grid-cols-2"
-          }`}
-        >
-          {currentQ.answers.map((answer, idx) => {
-            const isSelected = selectedAnswer === idx;
-            const isCorrect = idx === currentQ.correctIndex;
-            let bg = "bg-white/10 hover:bg-white/20 border-white/20 text-white";
-            if (revealed) {
-              if (isCorrect) bg = "bg-green-500/40 border-green-400 text-green-100";
-              else if (isSelected) bg = "bg-red-500/40 border-red-400 text-red-100";
-              else bg = "bg-white/5 border-white/10 text-white/30";
-            } else if (isSelected) {
-              bg = "bg-white/30 border-white text-white";
-            }
+  <div className="w-full bg-white/10 backdrop-blur-md rounded-3xl p-12 border border-white/20 shadow-2xl flex flex-col items-center">
 
-            return (
-              <button
-                key={idx}
-                onClick={() => handleAnswer(idx)}
-                disabled={revealed}
-                className={`relative rounded-2xl border-2 p-5 text-left transition-all duration-200 ${bg} ${
-                  !revealed ? "cursor-pointer hover:-translate-y-0.5 active:translate-y-0" : "cursor-default"
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <span className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-sm flex-shrink-0">
-                    {String.fromCharCode(65 + idx)}
-                  </span>
-                  <span className="leading-snug">{answer}</span>
-                  {revealed && isCorrect && (
-                    <CheckCircle className="w-5 h-5 text-green-400 ml-auto flex-shrink-0" />
-                  )}
-                  {revealed && isSelected && !isCorrect && (
-                    <XCircle className="w-5 h-5 text-red-400 ml-auto flex-shrink-0" />
-                  )}
-                </div>
-              </button>
-            );
-          })}
-        </div>
 
-        {/* Solo score */}
+    <h2 className="text-3xl font-bold text-white mb-3">
+      Answer submitted!
+    </h2>
+
+    <p className="text-white/70 text-lg mb-8">
+      Waiting for your opponent...
+    </p>
+
+    <div className="flex gap-3 mb-8">
+      <div className="w-3 h-3 rounded-full bg-violet-400 animate-bounce"></div>
+      <div className="w-3 h-3 rounded-full bg-violet-400 animate-bounce delay-150"></div>
+      <div className="w-3 h-3 rounded-full bg-violet-400 animate-bounce delay-300"></div>
+    </div>
+
+  </div>
+
+) : (
+
+  <>
+    {/* Question */}
+    <div className="w-full bg-white/10 backdrop-blur-md rounded-3xl p-8 mb-8 border border-white/20 shadow-2xl">
+      <p className="text-white text-center leading-relaxed">
+        {currentQ.question}
+      </p>
+    </div>
+
+    {/* Answers */}
+    <div
+      className={`w-full grid gap-4 ${
+        currentQ.type === "boolean"
+          ? "grid-cols-2"
+          : "grid-cols-1 sm:grid-cols-2"
+      }`}
+    >
+      {currentQ.answers.map((answer, idx) => {
+        const isCorrect = idx === currentQ.correctIndex;
+
+        let bg =
+          "bg-white/10 hover:bg-white/20 border-white/20 text-white";
+
+        if (game.localPlayer.answered) {
+          if (isCorrect)
+            bg = "bg-green-500/40 border-green-400 text-green-100";
+          else
+            bg = "bg-white/5 border-white/10 text-white/30";
+        }
+
+        return (
+          <button
+            key={idx}
+            onClick={() => onAnswer(answer.value)}
+            disabled={game.localPlayer.answered}
+            className={`relative rounded-2xl border-2 p-5 text-left transition-all duration-200 ${bg} ${
+              !game.localPlayer.answered
+                ? "cursor-pointer hover:-translate-y-0.5 active:translate-y-0"
+                : "cursor-default"
+            }`}
+          >
+            <div className="flex items-center gap-3">
+
+              <span className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-sm flex-shrink-0">
+                {String.fromCharCode(65 + idx)}
+              </span>
+
+              <span className="leading-snug">
+                {answer.label}
+              </span>
+
+            </div>
+          </button>
+        );
+      })}
+    </div>
+  </>
+
+)}
+		{/* Solo score */}
         {!hasOpponent && (
           <div className="mt-6 text-white/50 text-sm">
-            Score : <span className="text-white">{playerScore}</span> / {currentIndex}
+            Score : <span className="text-white">{game.localPlayer.score}</span> / {currentIndex}
           </div>
         )}
       </div>
@@ -528,29 +434,22 @@ export default function GamePage({ mode, onBack }: Props) {
 
 // ─── Results ────────────────────────────────────────────────────────────────
 
-interface ResultsProps {
-  mode: GameMode;
-  playerScore: number;
-  opponentScore: number;
-  questions: ShuffledQuestion[];
-  playerAnswers: (number | null)[];
-  onBack: () => void;
-}
 
 function ResultsScreen({ mode, playerScore, opponentScore, questions, playerAnswers, onBack }: ResultsProps) {
-  const config = MODE_CONFIG[mode];
+  const config = MODE_CONFIG[game.mode];
   const hasOpponent = config.opponent;
-  const opponentName = mode === "ai" ? "Emilien" : "Alex";
+  const opponentName = game.mode === "ai" ? "Emilien" : "Alex";
 
-  const playerWon = hasOpponent ? playerScore > opponentScore : true;
-  const isDraw = hasOpponent && playerScore === opponentScore;
+  const playerWon = hasOpponent ? game.localPlayer.score > game.enemyPlayer.score : true;
+  const isDraw = hasOpponent && game.localPlayer.score === game.enemyPlayer.score;
 
-  const bracket = mode === "tournament" ? buildTournamentBracket(playerScore) : null;
+  const bracket = game.mode === "tournament" ? buildTournamentBracket(game.localPlayer.score) : null;
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-violet-900 via-purple-900 to-indigo-900 flex flex-col items-center justify-start py-10 px-4">
       {/* Winner banner */}
-      {mode !== "tournament" && (
+      {game.mode !== "tournament" && (
         <div className="text-center mb-8">
           <div className="w-24 h-24 rounded-full bg-gradient-to-br from-yellow-400 to-amber-500 flex items-center justify-center mx-auto mb-4 shadow-2xl shadow-yellow-500/30">
             {isDraw ? (
@@ -577,23 +476,23 @@ function ResultsScreen({ mode, playerScore, opponentScore, questions, playerAnsw
       )}
 
       {/* Tournament bracket */}
-      {mode === "tournament" && bracket && (
-        <TournamentBracket bracket={bracket} playerScore={playerScore} />
+      {game.mode === "tournament" && bracket && (
+        <TournamentBracket bracket={bracket} playerScore={game.localPlayer.score} />
       )}
 
       {/* Score cards */}
       {hasOpponent && (
         <div className="flex gap-6 mb-8">
-          <ScoreCard name="Vous" score={playerScore} emoji="😊" winner={!isDraw && playerWon} />
-          <ScoreCard name={opponentName} score={opponentScore} emoji={mode === "ai" ? "🤖" : "🎮"} winner={!isDraw && !playerWon} />
+          <ScoreCard name="Vous" score={game.localPlayer.score} emoji="😊" winner={!isDraw && playerWon} />
+          <ScoreCard name={opponentName} score={game.enemyPlayer.score} emoji={game.mode === "ai" ? "🤖" : "🎮"} winner={!isDraw && !playerWon} />
         </div>
       )}
 
       {!hasOpponent && (
         <div className="mb-8 text-center">
-          <div className="text-6xl mb-2 text-white">{playerScore}/{TOTAL_QUESTIONS}</div>
+          <div className="text-6xl mb-2 text-white">{game.localPlayer.score}/8</div>
           <p className="text-white/60">
-            {playerScore >= 8 ? "Excellent ! Tu es un pro !" : playerScore >= 5 ? "Pas mal, continue !" : "Tu peux faire mieux !"}
+            {game.localPlayer.score >= 8 ? "Excellent ! Tu es un pro !" : game.localPlayer.score >= 5 ? "Pas mal, continue !" : "Tu peux faire mieux !"}
           </p>
         </div>
       )}
@@ -640,71 +539,6 @@ function ResultsScreen({ mode, playerScore, opponentScore, questions, playerAnsw
           <Sparkles className="w-5 h-5" />
           Rejouer
         </button>
-      </div>
-    </div>
-  );
-}
-
-function ScoreCard({ name, score, emoji, winner }: { name: string; score: number; emoji: string; winner: boolean }) {
-  return (
-    <div
-      className={`flex flex-col items-center gap-2 px-8 py-6 rounded-2xl border-2 transition-all ${
-        winner
-          ? "border-yellow-400 bg-yellow-400/10 shadow-lg shadow-yellow-400/20"
-          : "border-white/20 bg-white/5"
-      }`}
-    >
-      {winner && <Crown className="w-5 h-5 text-yellow-400" />}
-      <div className="text-4xl">{emoji}</div>
-      <div className="text-white">{name}</div>
-      <div className={`text-3xl ${winner ? "text-yellow-400" : "text-white"}`}>{score}</div>
-    </div>
-  );
-}
-
-interface BracketData {
-  qf: { p1: { name: string; score: number; isPlayer: boolean }; p2: { name: string; score: number; isPlayer: boolean }; winner: { name: string; isPlayer: boolean } }[];
-  sf: { p1: { name: string; score: number; isPlayer: boolean }; p2: { name: string; score: number; isPlayer: boolean }; winner: { name: string; isPlayer: boolean } }[];
-  final: { p1: { name: string; score: number; isPlayer: boolean }; p2: { name: string; score: number; isPlayer: boolean }; winner: { name: string; isPlayer: boolean } };
-}
-
-function TournamentBracket({ bracket, playerScore }: { bracket: BracketData; playerScore: number }) {
-  return (
-    <div className="w-full max-w-4xl mb-8">
-      <h2 className="text-white text-center mb-6 flex items-center justify-center gap-2">
-        <Trophy className="w-6 h-6 text-yellow-400" />
-        Bracket du tournoi
-      </h2>
-      <div className="flex gap-2 overflow-x-auto pb-4">
-        {/* Quarter Finals */}
-        <div className="flex flex-col justify-around gap-4 min-w-[160px]">
-          <div className="text-white/40 text-xs text-center mb-2">Quarts</div>
-          {bracket.qf.map((match, i) => (
-            <MatchCard key={i} p1={match.p1} p2={match.p2} winner={match.winner} />
-          ))}
-        </div>
-        {/* Connector */}
-        <div className="flex flex-col justify-around items-center min-w-[24px]">
-          {[0, 1].map((i) => (
-            <div key={i} className="w-6 h-24 border-r-2 border-t-2 border-b-2 border-white/20 rounded-r-lg" />
-          ))}
-        </div>
-        {/* Semi Finals */}
-        <div className="flex flex-col justify-around gap-8 min-w-[160px]">
-          <div className="text-white/40 text-xs text-center mb-2">Demis</div>
-          {bracket.sf.map((match, i) => (
-            <MatchCard key={i} p1={match.p1} p2={match.p2} winner={match.winner} />
-          ))}
-        </div>
-        {/* Connector */}
-        <div className="flex flex-col justify-around items-center min-w-[24px]">
-          <div className="w-6 h-24 border-r-2 border-t-2 border-b-2 border-white/20 rounded-r-lg" />
-        </div>
-        {/* Final */}
-        <div className="flex flex-col justify-center min-w-[160px]">
-          <div className="text-white/40 text-xs text-center mb-2">Finale</div>
-          <MatchCard p1={bracket.final.p1} p2={bracket.final.p2} winner={bracket.final.winner} isFinal />
-        </div>
       </div>
     </div>
   );
