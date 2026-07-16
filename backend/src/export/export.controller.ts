@@ -1,4 +1,5 @@
-import { Controller, Get, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Req, Res, UseGuards } from '@nestjs/common';
+import type { Response } from 'express';
 import { ExportService } from './export.service';
 import { FullAuthGuard } from '../auth/jwt/full-auth.guard';
 import type { AuthenticatedRequestUser } from '../auth/jwt/jwt.strategy';
@@ -15,5 +16,16 @@ export class ExportController {
   @UseGuards(FullAuthGuard)
   async exportMyData(@Req() req: AuthedRequest) {
     return this.exportService.exportUserData(req.user.userId);
+  }
+
+  @Get('me/csv')
+  @UseGuards(FullAuthGuard)
+  async exportMyDataCsv(@Req() req: AuthedRequest, @Res() res: Response) {
+    const csv = await this.exportService.exportUserDataAsCsv(req.user.userId);
+    res.set({
+      'Content-Type': 'text/csv',
+      'Content-Disposition': 'attachment; filename="my-data.csv"',
+    });
+    res.send(csv);
   }
 }

@@ -46,4 +46,37 @@ export class ExportService {
       tournamentsWon,
     };
   }
+
+      async exportUserDataAsCsv(userId: string): Promise<string> {
+      const participations = await this.prisma.roomParticipant.findMany({
+        where: { userId },
+        include: {
+          room: { select: { mode: true, status: true, createdAt: true } },
+          answers: {
+            include: { question: { select: { text: true } } },
+          },
+        },
+      });
+  
+      const header = 'room_mode,room_status,question,is_correct,time_taken_ms,answered_at';
+      const rows: string[] = [header];
+  
+      for (const participation of participations) {
+        for (const answer of participation.answers) {
+          const escapedQuestion = `"${answer.question.text.replace(/"/g, '""')}"`;
+          rows.push(
+            [
+              participation.room.mode,
+              participation.room.status,
+              escapedQuestion,
+              answer.isCorrect,
+              answer.timeTakenMs,
+              answer.createdAt.toISOString(),
+            ].join(','),
+          );
+        }
+      }
+  
+      return rows.join('\n');
+    }
 }
