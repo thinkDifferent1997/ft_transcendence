@@ -7,10 +7,11 @@ import { EventsModule } from './events/events.module';
 import { TournamentModule } from './tournament/tournament.module'
 import { StatsModule } from './stats/stats.module';
 import { ExportModule } from './export/export.module';
+import { ImportModule } from './import/import.module';
 
 
 @Module({
-  imports: [PrismaModule, AuthModule, EventsModule, TournamentModule, StatsModule, ExportModule],
+  imports: [PrismaModule, AuthModule, EventsModule, TournamentModule, StatsModule, ExportModule, ImportModule],
   controllers: [AppController],
   providers: [AppService],
 })
