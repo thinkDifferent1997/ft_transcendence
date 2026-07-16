@@ -5,9 +5,8 @@
  * Définit les routes (POST /auth/register, POST /auth/login, ...),
  * reçoit les requêtes, délègue à AuthService et renvoie la réponse.
  */
-import { Controller, Post, Body, Get, UseGuards, Req, Res, HttpCode, HttpStatus } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport'
-import { UseFilters } from '@nestjs/common';
+import { Controller, Post, Body, Get, UseGuards, Req, Res, HttpCode, HttpStatus, UseFilters } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { OAuthFailureFilter } from './oauth-failed.filter';
 import type { Response } from 'express';
 import { AuthService } from './auth.service';
@@ -51,7 +50,7 @@ export class AuthController {
   @Get('42/callback')
   @UseGuards(AuthGuard('42'))
   @UseFilters(OAuthFailureFilter)
-  async fortyTwoAuthCallback(@Req() req, @Res() res) {
+  async fortyTwoAuthCallback(@Req() req, @Res() res: Response) {
 
     const user = await this.authService.loginOrCreate42User(req.user);
 
