@@ -1,6 +1,12 @@
-import { Controller, Get, Param , Query, Post} from '@nestjs/common';
+import { Controller, Get, Param, Query, Post, Req, UseGuards } from '@nestjs/common';
 import { StatsService } from './stats.service';
 import { StatsGateway } from './stats.gateway';
+import { FullAuthGuard } from '../auth/jwt/full-auth.guard';
+import type { AuthenticatedRequestUser } from '../auth/jwt/jwt.strategy';
+
+interface AuthedRequest {
+  user: AuthenticatedRequestUser;
+}
 
 @Controller('api/stats')
 export class StatsController {
@@ -8,6 +14,21 @@ export class StatsController {
     private readonly statsService: StatsService,
     private readonly statsGateway: StatsGateway,
   ) {}
+
+  @Get('me/summary')
+  @UseGuards(FullAuthGuard)
+  async getMySummary(
+    @Req() req: AuthedRequest,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    return this.statsService.getSummary(
+      req.user.userId,
+      startDate ? new Date(startDate) : undefined,
+      endDate ? new Date(endDate) : undefined,
+    );
+  }
+
   @Get(':userId/games-played')
   async getGamesPlayed(
     @Param('userId') userId: string,
@@ -22,7 +43,7 @@ export class StatsController {
     return { gamesPlayed: count };
   }
 
-    @Get(':userId/answers')
+  @Get(':userId/answers')
   async getAnswerStats(
     @Param('userId') userId: string,
     @Query('startDate') startDate?: string,
@@ -75,11 +96,11 @@ export class StatsController {
     );
   }
 
-    @Get(':userId/tournaments-won')
-    async getTournamentsWon(@Param('userId') userId: string) {
-      const count = await this.statsService.getTournamentsWon(userId);
-      return { tournamentsWon: count };
-    }
+  @Get(':userId/tournaments-won')
+  async getTournamentsWon(@Param('userId') userId: string) {
+    const count = await this.statsService.getTournamentsWon(userId);
+    return { tournamentsWon: count };
+  }
 
   @Get(':userId/summary')
   async getSummary(
@@ -100,4 +121,4 @@ export class StatsController {
     this.statsGateway.notifyStatsUpdate(userId, summary);
     return { notified: true };
   }
-} 
+}
