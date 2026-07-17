@@ -1,6 +1,6 @@
 import { Body, Controller, Post, UseGuards } from '@nestjs/common';
 import { ImportService } from './import.service';
-import { ImportQuestionsBatchDto } from './import-question.dto';
+import { ImportQuestionsBatchDto } from './dto/import-question.dto';
 import { FullAuthGuard } from '../auth/jwt/full-auth.guard';
 
 @Controller('api/import')
