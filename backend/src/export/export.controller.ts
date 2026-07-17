@@ -28,4 +28,14 @@ export class ExportController {
     });
     res.send(csv);
   }
+
+  @Get('me/pdf')
+  @UseGuards(FullAuthGuard)
+  async exportMyDataPdf(@Req() req: AuthedRequest, @Res() res: Response) {
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': 'attachment; filename="my-data.pdf"',
+    });
+    await this.exportService.exportUserDataAsPdf(req.user.userId, res);
+  }
 }
