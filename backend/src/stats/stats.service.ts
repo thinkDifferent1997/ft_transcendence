@@ -13,126 +13,158 @@ interface CategoryStatEntry {
 export class StatsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getGamesPlayed(userId: string): Promise<number> {
+  async getGamesPlayed(userId: string, startDate?: Date, endDate?: Date): Promise<number> {
     return this.prisma.roomParticipant.count({
       where: {
         userId,
         room: {
           status: RoomStatus.FINISHED,
+          ...(startDate || endDate
+            ? {
+                createdAt: {
+                  ...(startDate ? { gte: startDate } : {}),
+                  ...(endDate ? { lte: endDate } : {}),
+                },
+              }
+            : {}),
         },
       },
     });
   }
 
-  async getAnswerStats(userId: string) {
-  const results = await this.prisma.answer.groupBy({
-    by: ['isCorrect'],
-    where: {
-      participant: { userId },
-    },
-    _count: {
-      _all: true,
-    },
-  });
+  async getAnswerStats(userId: string, startDate?: Date, endDate?: Date) {
+    const results = await this.prisma.answer.groupBy({
+      by: ['isCorrect'],
+      where: {
+        participant: { userId },
+        ...(startDate || endDate
+          ? {
+              createdAt: {
+                ...(startDate ? { gte: startDate } : {}),
+                ...(endDate ? { lte: endDate } : {}),
+              },
+            }
+          : {}),
+      },
+      _count: { _all: true },
+    });
 
-  const correct = results.find((r) => r.isCorrect === true)?._count._all ?? 0;
-  const incorrect = results.find((r) => r.isCorrect === false)?._count._all ?? 0;
-  const total = correct + incorrect;
+    const correct = results.find((r) => r.isCorrect === true)?._count._all ?? 0;
+    const incorrect = results.find((r) => r.isCorrect === false)?._count._all ?? 0;
+    const total = correct + incorrect;
 
-  return {
-    correct,
-    incorrect,
-    total,
-    successRate: total > 0 ? Math.round((correct / total) * 100) : 0,
-  };
-}
+    return {
+      correct,
+      incorrect,
+      total,
+      successRate: total > 0 ? Math.round((correct / total) * 100) : 0,
+    };
+  }
 
-    async getAverageResponseTime(userId: string): Promise<number> {
-      const result = await this.prisma.answer.aggregate({
-        where: {
-          participant: { userId },
-        },
-        _avg: {
-          timeTakenMs: true,
-        },
-      });
+  async getAverageResponseTime(userId: string, startDate?: Date, endDate?: Date): Promise<number> {
+    const result = await this.prisma.answer.aggregate({
+      where: {
+        participant: { userId },
+        ...(startDate || endDate
+          ? {
+              createdAt: {
+                ...(startDate ? { gte: startDate } : {}),
+                ...(endDate ? { lte: endDate } : {}),
+              },
+            }
+          : {}),
+      },
+      _avg: { timeTakenMs: true },
+    });
 
-      return Math.round(result._avg.timeTakenMs ?? 0);
-    }
+    return Math.round(result._avg.timeTakenMs ?? 0);
+  }
 
-    async getCategoryStats(userId: string) {
-      const answers = await this.prisma.answer.findMany({
-        where: {
-          participant: { userId },
-        },
-        include: {
-          question: {
-            include: {
-              category: true,
-            },
-          },
-        },
-      });
+  async getCategoryStats(userId: string, startDate?: Date, endDate?: Date) {
+    const answers = await this.prisma.answer.findMany({
+      where: {
+        participant: { userId },
+        ...(startDate || endDate
+          ? {
+              createdAt: {
+                ...(startDate ? { gte: startDate } : {}),
+                ...(endDate ? { lte: endDate } : {}),
+              },
+            }
+          : {}),
+      },
+      include: {
+        question: { include: { category: true } },
+      },
+    });
 
-      const statsByCategory = new Map<string, CategoryStatEntry>();
+    const statsByCategory = new Map<string, CategoryStatEntry>();
 
-      for (const answer of answers) {
-        const categoryId = answer.question.categoryId;
-        const categoryName = answer.question.category.name;
+    for (const answer of answers) {
+      const categoryId = answer.question.categoryId;
+      const categoryName = answer.question.category.name;
 
-        if (!statsByCategory.has(categoryId)) {
-          statsByCategory.set(categoryId, { categoryName, correct: 0, total: 0 });
-        }
-
-        const stats = statsByCategory.get(categoryId)!;
-        stats.total += 1;
-        if (answer.isCorrect) stats.correct += 1;
+      if (!statsByCategory.has(categoryId)) {
+        statsByCategory.set(categoryId, { categoryName, correct: 0, total: 0 });
       }
 
-      return Array.from(statsByCategory.entries()).map(([categoryId, stats]) => ({
-        categoryId,
-        categoryName: stats.categoryName,
-        correct: stats.correct,
-        total: stats.total,
-        successRate: Math.round((stats.correct / stats.total) * 100),
-      }));
+      const stats = statsByCategory.get(categoryId)!;
+      stats.total += 1;
+      if (answer.isCorrect) stats.correct += 1;
     }
 
-        async getWinLossStats(userId: string) {
-      const participations = await this.prisma.roomParticipant.findMany({
-        where: {
-          userId,
-          room: { status: RoomStatus.FINISHED },
+    return Array.from(statsByCategory.entries()).map(([categoryId, stats]) => ({
+      categoryId,
+      categoryName: stats.categoryName,
+      correct: stats.correct,
+      total: stats.total,
+      successRate: Math.round((stats.correct / stats.total) * 100),
+    }));
+  }
+
+  async getWinLossStats(userId: string, startDate?: Date, endDate?: Date) {
+    const participations = await this.prisma.roomParticipant.findMany({
+      where: {
+        userId,
+        room: {
+          status: RoomStatus.FINISHED,
+          ...(startDate || endDate
+            ? {
+                createdAt: {
+                  ...(startDate ? { gte: startDate } : {}),
+                  ...(endDate ? { lte: endDate } : {}),
+                },
+              }
+            : {}),
         },
-        include: {
-          room: {
-            include: { participants: true },
-          },
-        },
-      });
+      },
+      include: {
+        room: { include: { participants: true } },
+      },
+    });
 
-      let wins = 0;
-      let losses = 0;
-      let draws = 0;
+    let wins = 0;
+    let losses = 0;
+    let draws = 0;
 
-      for (const participation of participations) {
-        const scores = participation.room.participants.map((p) => p.score);
-        const maxScore = Math.max(...scores);
-        const topScorers = participation.room.participants.filter(
-          (p) => p.score === maxScore,
-        );
+    for (const participation of participations) {
+      const scores = participation.room.participants.map((p) => p.score);
+      const maxScore = Math.max(...scores);
+      const topScorers = participation.room.participants.filter(
+        (p) => p.score === maxScore,
+      );
 
-        if (topScorers.length > 1) {
-          draws += 1;
-        } else if (participation.score === maxScore) {
-          wins += 1;
-        } else {
-          losses += 1;
-        }
+      if (topScorers.length > 1) {
+        draws += 1;
+      } else if (participation.score === maxScore) {
+        wins += 1;
+      } else {
+        losses += 1;
       }
-
-      return { played: participations.length, wins, losses, draws };
     }
+
+    return { played: participations.length, wins, losses, draws };
+  }
 
         async getTournamentsWon(userId: string): Promise<number> {
       return this.prisma.tournament.count({
@@ -142,17 +174,17 @@ export class StatsService {
       });
     }
 
-        async getSummary(userId: string) {
-      const [gamesPlayed, answers, avgResponseTime, categories, winLoss, tournamentsWon] =
-        await Promise.all([
-          this.getGamesPlayed(userId),
-          this.getAnswerStats(userId),
-          this.getAverageResponseTime(userId),
-          this.getCategoryStats(userId),
-          this.getWinLossStats(userId),
-          this.getTournamentsWon(userId),
-        ]);
+  async getSummary(userId: string, startDate?: Date, endDate?: Date) {
+    const [gamesPlayed, answers, avgResponseTime, categories, winLoss, tournamentsWon] =
+      await Promise.all([
+        this.getGamesPlayed(userId, startDate, endDate),
+        this.getAnswerStats(userId, startDate, endDate),
+        this.getAverageResponseTime(userId, startDate, endDate),
+        this.getCategoryStats(userId, startDate, endDate),
+        this.getWinLossStats(userId, startDate, endDate),
+        this.getTournamentsWon(userId),
+      ]);
     
-      return { gamesPlayed, answers, avgResponseTime, categories, winLoss, tournamentsWon };
-    }
+    return { gamesPlayed, answers, avgResponseTime, categories, winLoss, tournamentsWon };
+  }
 }
