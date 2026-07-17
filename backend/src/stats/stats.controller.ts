@@ -1,10 +1,13 @@
-import { Controller, Get, Param , Query} from '@nestjs/common';
+import { Controller, Get, Param , Query, Post} from '@nestjs/common';
 import { StatsService } from './stats.service';
+import { StatsGateway } from './stats.gateway';
 
 @Controller('api/stats')
 export class StatsController {
-  constructor(private readonly statsService: StatsService) {}
-
+  constructor(
+    private readonly statsService: StatsService,
+    private readonly statsGateway: StatsGateway,
+  ) {}
   @Get(':userId/games-played')
   async getGamesPlayed(
     @Param('userId') userId: string,
@@ -89,5 +92,12 @@ export class StatsController {
       startDate ? new Date(startDate) : undefined,
       endDate ? new Date(endDate) : undefined,
     );
+  }
+
+  @Post(':userId/notify-test')
+  async notifyTest(@Param('userId') userId: string) {
+    const summary = await this.statsService.getSummary(userId);
+    this.statsGateway.notifyStatsUpdate(userId, summary);
+    return { notified: true };
   }
 } 
