@@ -24,5 +24,7 @@ export interface GameState
 	}[];
 	gameOver: boolean;
 	mode: string;
+	winner: 0 | 1 | 2;
+	endedbyDisconnect: boolean;
 }
 

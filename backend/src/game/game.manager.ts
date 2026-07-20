@@ -36,7 +36,8 @@ export class GameManager
             this.waitingPlayer,
             player,
         );
-		game.questions = await this.triviaService.getTestQuestions();
+//		game.questions = await this.triviaService.getTestQuestions();
+		game.questions = await this.triviaService.getQuestions();
 
         this.games.set(roomId, game);
 
@@ -68,14 +69,46 @@ export class GameManager
             return;
         }
 
-		if (player.id === game.player1.id)
-			game.player1Time += usedTime;
-		else
-			game.player2Time += usedTime;
+		const question = game.questions[game.currentQuestion];
 
-        const question = game.questions[game.currentQuestion];
+		if (!question)
+		{
+			console.warn(
+				`Answer reçu après la fin de la partie (${roomId})`
+			);
+			return;
+		}
 
         const isCorrect = answer === question.correct;
+
+		if (!game.questionHistory[game.currentQuestion])
+		{
+			game.questionHistory[game.currentQuestion] = {
+				question: question.question,
+				category: game.questions[game.currentQuestion].category,
+				correctAnswer: question.correct,
+
+				player1Answer: null,
+				player2Answer: null,
+
+				player1Correct: false,
+				player2Correct: false,
+			};
+		}
+
+		if (player.id === game.player1.id)
+		{
+			game.player1Time += usedTime;
+			game.questionHistory[game.currentQuestion].player1Answer = answer;
+			game.questionHistory[game.currentQuestion].player1Correct = isCorrect;
+		}
+		else
+		{
+			game.player2Time += usedTime;
+			game.questionHistory[game.currentQuestion].player2Answer = answer;
+			game.questionHistory[game.currentQuestion].player2Correct = isCorrect;
+		}
+
 
 		const hadThreeChoice =
 			player.id === game.player1.id
@@ -178,11 +211,20 @@ export class GameManager
 						winner = 0;
 				}
 
+				const matchStats = {
+					winner,
+
+					player1Score: game.player1Score,
+					player2Score: game.player2Score,
+
+					questions: game.questionHistory,
+				};
 				return {
 					nextQuestion: false,
 					gameOver: true,
 					correct: isCorrect,
 					winner,
+					stats: matchStats,
 				};
 			}
 			if (player.id === game.player1.id)
@@ -202,6 +244,7 @@ export class GameManager
 					game.player2HideAnswer = false;
 			}
 
+			console.log(game.questionHistory);
 			return {
 				nextQuestion: true,
 				gameOver: false,
@@ -233,6 +276,7 @@ export class GameManager
 				game.player2ThreeChoice = false;
 
 		}
+		console.log(game.questionHistory[0]);
 		return {
 			nextQuestion: false,
 			gameOver: false,
@@ -391,4 +435,32 @@ export class GameManager
     {
         return this.games.get(roomId);
     }
+
+	findGameByPlayer(player: Socket): GameSession | null
+	{
+		for (const game of this.games.values())
+		{
+			if (
+				game.player1.id === player.id ||
+				game.player2.id === player.id
+			)
+			{
+				return game;
+			}
+		}
+		return null;
+	}
+
+	removeGame(roomId: string): void
+	{
+		this.games.delete(roomId);
+	}
+
+	removeWaitingPlayer(player: Socket): void
+	{
+		if (this.waitingPlayer?.id === player.id)
+		{
+			this.waitingPlayer = null;
+		}
+	}
 }

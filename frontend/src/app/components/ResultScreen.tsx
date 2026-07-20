@@ -19,14 +19,14 @@ export default function ResultsScreen({
     onBack,
     onReplay,
 }: Props) {
-    const victory =
-        game.localPlayer.score > game.enemyPlayer.score;
 
-    const draw =
-        game.localPlayer.score === game.enemyPlayer.score;
+	const victory =
+		game.isPlayer1
+			? game.winner === 1
+			: game.winner === 2;
 
-	console.log("Local :", game.localPlayer.score);
-	console.log("Enemy :", game.enemyPlayer.score);
+	const draw =
+		game.winner === 0;
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-violet-900 via-purple-900 to-indigo-900 flex items-center justify-center px-6 py-10">

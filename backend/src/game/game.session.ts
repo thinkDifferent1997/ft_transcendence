@@ -1,5 +1,18 @@
 import { Socket } from "socket.io";
 
+export interface QuestionHistory {
+    question: string;
+    category: string;
+
+    correctAnswer: string;
+
+    player1Answer: string | null;
+    player2Answer: string | null;
+
+    player1Correct: boolean;
+    player2Correct: boolean;
+}
+
 export class GameSession
 {
     constructor(
@@ -12,6 +25,8 @@ export class GameSession
 		question: string;
 		correct: string;
 		answers: string[];
+		difficulty: "easy" | "normal" | "hard",
+		category : string,
 	}[] = [];
 
     currentQuestion = 0;
@@ -49,4 +64,18 @@ export class GameSession
 	player1DoublePoint = false;
 	player2DoublePoint = false;
 
+	questionHistory: QuestionHistory[] = [];
+
+}
+
+export interface MatchStats {
+    winner: string;
+
+    player1Id: string;
+    player2Id: string;
+
+    player1Score: number;
+    player2Score: number;
+
+    questions: QuestionHistory[];
 }

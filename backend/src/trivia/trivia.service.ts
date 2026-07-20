@@ -18,6 +18,8 @@ export class TriviaService
                         question.correctAnswer,
                         ...question.incorrectAnswers,
                 ].sort(() => Math.random() - 0.5),
+				difficulty: question.difficulty,
+				category: question.category,
         }));
     }
 	async getTestQuestions()

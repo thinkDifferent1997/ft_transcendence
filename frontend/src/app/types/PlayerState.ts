@@ -1,5 +1,6 @@
 export interface PlayerState
 {
+	username: string;
 	score: number;
 	answered: boolean;
 	totalTimeUsed: number;
