@@ -1,16 +1,30 @@
 import { Module } from '@nestjs/common';
-import { TriviaModule } from "./trivia/trivia.module";
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { EventsModule } from './events/events.module';
-import { GameModule } from "./game/game.module";
 import { TournamentModule } from './tournament/tournament.module';
-
+import { StatsModule } from './stats/stats.module';
+import { ExportModule } from './export/export.module';
+import { ImportModule } from './import/import.module';
+import { TriviaModule } from './trivia/trivia.module';
+import { GameModule } from './game/game.module';
+import { GameResultsModule } from './game-results/game-results.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, EventsModule, TriviaModule, GameModule, TournamentModule],
+  imports: [
+    PrismaModule,
+    AuthModule,
+    EventsModule,
+    TournamentModule,
+    StatsModule,
+    ExportModule,
+    ImportModule,
+    TriviaModule,
+    GameModule,
+    GameResultsModule
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
