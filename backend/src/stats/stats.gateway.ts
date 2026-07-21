@@ -9,7 +9,9 @@ import {
 import { Server, Socket } from 'socket.io';
 
 @Injectable()
-@WebSocketGateway({ path: '/ws' })
+@WebSocketGateway({
+  path: '/ws',
+  namespace: '/stats', })
 export class StatsGateway {
   @WebSocketServer()
   server: Server;

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "./ui/chart";
 import { socket } from "../../socket/socket";
+import { statsSocket } from "../../socket/socket";
 
 interface ProfilePageProps {
   username: string;
@@ -71,11 +72,11 @@ export default function ProfilePage({ username, onBack }: ProfilePageProps) {
 
   // Temps réel : écoute les mises à jour de stats poussées par le serveur
   useEffect(() => {
-    if (!socket.connected) {
-      socket.connect();
+    if (!statsSocket.connected) {
+      statsSocket.connect();
     }
 
-    socket.emit("stats:subscribe", { userId: username });
+    statsSocket.emit("stats:subscribe", { userId: username });
 
     const handleUpdate = (data: SummaryData) => {
       // On ne remplace que si aucun filtre de date n'est actif,
@@ -85,10 +86,10 @@ export default function ProfilePage({ username, onBack }: ProfilePageProps) {
       }
     };
 
-    socket.on("stats:updated", handleUpdate);
+    statsSocket.on("stats:updated", handleUpdate);
 
     return () => {
-      socket.off("stats:updated", handleUpdate);
+      statsSocket.off("stats:updated", handleUpdate);
     };
   }, [username, startDate, endDate]);
 
