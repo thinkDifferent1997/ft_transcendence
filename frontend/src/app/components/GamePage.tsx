@@ -242,7 +242,7 @@ function buildTournamentBracket(playerScore: number) {
               😊
             </div>
             <div className="text-right">
-              <div className="text-white text-sm">Vous</div>
+              <div className="text-white text-sm">{game.localPlayer.username}</div>
               <div className="text-white">{game.localPlayer.score}</div>
             </div>
           </div>
@@ -250,7 +250,7 @@ function buildTournamentBracket(playerScore: number) {
           {/* Opponent */}
           <div className="flex items-center gap-3">
             <div className="text-left">
-              <div className="text-white text-sm">{game.mode === "ai" ? "Emilien" : "Alex"}</div>
+              <div className="text-white text-sm">{game.mode === "ai" ? "Emilien" : game.enemyPlayer.username}</div>
               <div className="text-white">{game.enemyPlayer.score}</div>
             </div>
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-xl">
@@ -292,7 +292,7 @@ function buildTournamentBracket(playerScore: number) {
 							<span>
 								{game.mode === "ai"
 									? "Emilien"
-									: "Alex"}{" "}
+									: game.enemyPlayer.username}{" "}
 								answered!
 							</span>
 						</div>
@@ -304,7 +304,7 @@ function buildTournamentBracket(playerScore: number) {
 							<span>
 								{game.mode === "ai"
 									? "Emilien"
-									: "Alex"}{" "}
+									: game.enemyPlayer.username}{" "}
 								is thinking...
 							</span>
 						</div>
@@ -436,15 +436,25 @@ function buildTournamentBracket(playerScore: number) {
 
 
 function ResultsScreen({ mode, playerScore, opponentScore, questions, playerAnswers, onBack }: ResultsProps) {
-  const config = MODE_CONFIG[game.mode];
-  const hasOpponent = config.opponent;
-  const opponentName = game.mode === "ai" ? "Emilien" : "Alex";
+	const config = MODE_CONFIG[game.mode];
+	const hasOpponent = config.opponent;
+	const opponentName = game.mode === "ai" ? "Emilien" : game.enemyPlayer.username;
 
-  const playerWon = hasOpponent ? game.localPlayer.score > game.enemyPlayer.score : true;
-  const isDraw = hasOpponent && game.localPlayer.score === game.enemyPlayer.score;
+	const playerWon = hasOpponent
+		? (game.isPlayer1
+			? game.winner === 1
+			: game.winner === 2)
+		: true;
 
-  const bracket = game.mode === "tournament" ? buildTournamentBracket(game.localPlayer.score) : null;
+	const isDraw = hasOpponent && game.winner === 0;
+	const bracket = game.mode === "tournament" ? buildTournamentBracket(game.localPlayer.score) : null;
 
+	console.log({
+    winner: game.winner,
+    isPlayer1: game.isPlayer1,
+    playerWon,
+    isDraw,
+});
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-violet-900 via-purple-900 to-indigo-900 flex flex-col items-center justify-start py-10 px-4">
@@ -483,7 +493,7 @@ function ResultsScreen({ mode, playerScore, opponentScore, questions, playerAnsw
       {/* Score cards */}
       {hasOpponent && (
         <div className="flex gap-6 mb-8">
-          <ScoreCard name="Vous" score={game.localPlayer.score} emoji="😊" winner={!isDraw && playerWon} />
+          <ScoreCard name={game.localPlayer.username} score={game.localPlayer.score} emoji="😊" winner={!isDraw && playerWon} />
           <ScoreCard name={opponentName} score={game.enemyPlayer.score} emoji={game.mode === "ai" ? "🤖" : "🎮"} winner={!isDraw && !playerWon} />
         </div>
       )}

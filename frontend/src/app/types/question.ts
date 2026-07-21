@@ -10,6 +10,6 @@ export interface Question
 		playerAnswer: string | null;
 	}[];
     correct: string;
-	//category: string;
-	//difficulty: "easy" | "medium" | "hard";
+	category: string;
+	difficulty: "easy" | "medium" | "hard";
 }

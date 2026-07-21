@@ -49,6 +49,8 @@ export default function QuizPage()
 
 	function	handle_answer(answer: string)
 	{
+		if (game.gameOver || game.localPlayer.answered)
+        	return;
 		setSelectedAnswer(answer);
 		setRevealed(true);
 		setGame(previousGame => ({
@@ -101,11 +103,35 @@ export default function QuizPage()
 		
 		socket.on("match_found", (data) =>
 		{
-			isPlayer1Ref.current = socket.id === data.player1Id;
+			const isPlayer1 = socket.id === data.player1.id;
+			console.log("SERVER");
+			console.log("data.player1.id =", data.player1.id);
+			console.log("data.player1.userId =", data.player1.userId);
+			console.log("data.player2.id =", data.player2.id);
+			console.log("data.player2.userId =", data.player2.userId);
+			console.log("CLIENT");
+			console.log("socket.id:", socket.id);
+			console.log("data.player1.id:", data.player1.id);
+			console.log("data.player2.id:", data.player2.id);
+
+			isPlayer1Ref.current = isPlayer1;
 			setGame(previousGame => ({
 				...previousGame,
 				roomId: data.roomId,
-				isPlayer1: socket.id === data.player1Id,
+				isPlayer1,
+				localPlayer: {
+					...previousGame.localPlayer,
+					username: isPlayer1
+						? data.player1.username
+						: data.player2.username,
+				},
+
+				enemyPlayer: {
+					...previousGame.enemyPlayer,
+				username: isPlayer1
+					? data.player2.username
+					: data.player1.username,
+				},
 			}));
 			roomIdRef.current = data.roomId;
 		});
@@ -244,7 +270,7 @@ export default function QuizPage()
 
 	socket.on("game_over", (data) =>
 	{
-		console.log("game_over", data.correct);
+		setGameStarted(false);
 		const playerScore = isPlayer1Ref.current
 			? data.player1Score
 			: data.player2Score;
@@ -253,15 +279,10 @@ export default function QuizPage()
 			? data.player2Score
 			: data.player1Score;
 
-		const victory =
-			(isPlayer1Ref.current && data.winner === 1) ||
-			(!isPlayer1Ref.current && data.winner === 2);
-
-		const draw = data.winner === 0;
-
 		setGame(previousGame => ({
 			...previousGame,
 			gameOver: true,
+			winner: data.winner,
 
 			    localPlayer: {
 				...previousGame.localPlayer,
@@ -304,7 +325,7 @@ export default function QuizPage()
 
 	useEffect(() =>
 		{
-			if (!gameStarted)
+			if (!gameStarted || game.gameOver)
    				return;
 			const timer = setInterval(() => 
 					{

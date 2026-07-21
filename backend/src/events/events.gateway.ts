@@ -2,6 +2,8 @@ import { WebSocketServer } from "@nestjs/websockets";
 import { GameManager } from "../game/game.manager";
 import { Server } from "socket.io";
 import { MessageBody } from "@nestjs/websockets";
+import { JwtService } from '@nestjs/jwt';
+import { parse } from "cookie";
 
 /**
 	* EventsGateway
@@ -33,6 +35,7 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 
 	constructor(
     private readonly gameManager: GameManager,
+	private readonly jwtService: JwtService,
 	) {}
 
 	@WebSocketServer()
@@ -115,6 +118,7 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 
 		if (result.gameOver)
 		{
+			console.log("Winner normal :", result.winner);
 			this.server.to(data.roomId).emit("game_over", {
 											winner: result.winner,
 											player1Score: game.player1Score,
@@ -122,20 +126,56 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 											player1Time: game.player1Time,
 											player2Time: game.player2Time,
 											});
+			this.gameManager.removeGame(data.roomId);
 			return ;
 		}
 	}
 
+
 	handleConnection(client: Socket)
 	{
-		console.log(`${client.id} connected.`);
+		const cookies = parse(client.handshake.headers.cookie ?? "");
+
+		console.log("Socket:", client.id);
+		console.log("Token :", cookies.access_token);
+
+
+		const payload = this.jwtService.verify<{
+				sub: string;
+				username: string;
+				tfa: string;
+			}>(cookies.access_token);
+			
+		client.data.userId = payload.sub;
+		client.data.username = payload.username;
+		console.log(payload);
+
+		console.log(client.data);
 	}
 
 	handleDisconnect(client: Socket)
 	{
 		console.log(`${client.id} disconnected.`);
-	}
+		this.gameManager.removeWaitingPlayer(client);
 
+		const game = this.gameManager.findGameByPlayer(client);
+
+		if (!game)
+			return;
+
+		const p1won = game.player2.id === client.id;
+
+		this.server.to(game.roomId).emit("game_over", {
+			winner: p1won ? 1 : 2,
+			player1Score: game.player1Score,
+			player2Score: game.player2Score,
+			player1Time: game.player1Time,
+			player2Time: game.player2Time,
+			reason: "disconnect",
+		});
+
+		this.gameManager.removeGame(game.roomId);
+	}
 
 // -----------------------------------------------------------------------------
 // Matchmaking
@@ -210,6 +250,9 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 	@ConnectedSocket() client: Socket,
 	)
 	{
+		console.log("client.id =", client.id);
+console.log("client.data =", client.data);
+console.log("pouet");
 		const game = await this.gameManager.createMatch(client);
 
 		if (!game)
@@ -225,10 +268,20 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 			`${game.player1.id} matched with ${game.player2.id}`,
 		);
 
+		console.log("SERVER");
+		console.log("player1 socket:", game.player1.id);
+		console.log("player2 socket:", game.player2.id);
 		this.server.to(game.roomId).emit("match_found", {
 			roomId: game.roomId,
-			player1Id: game.player1.id,
-    		player2Id: game.player2.id,
+			player1: {
+					id: game.player1.id,
+					username: game.player1.data.username,
+			},
+
+			player2: {
+					id: game.player2.id,
+					username: game.player2.data.username,
+			},
 		});
-	}
+	}	
 }
