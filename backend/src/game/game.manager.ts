@@ -10,6 +10,7 @@ export class GameManager
     private waitingPlayer: Socket | null = null;
 
     private games = new Map<string, GameSession>();
+	private connectedPlayers = new Map<string, Socket>();
 
 // -----------------------------------------------------------------------------
 // Matchmaking
@@ -47,7 +48,28 @@ export class GameManager
 
         return game;
     }
-	
+
+	async createTournamentMatch(
+		player1: Socket,
+		player2: Socket,
+		roomId: string,
+	): Promise<GameSession>
+	{
+		const game = new GameSession(
+			roomId,
+			player1,
+			player2,
+		);
+
+		game.questions = await this.triviaService.getQuestions();
+
+		this.games.set(roomId, game);
+
+		console.log("Tournament game created:", roomId);
+
+		return game;
+	}
+
 // -----------------------------------------------------------------------------
 // Gameplay
 // -----------------------------------------------------------------------------
@@ -462,5 +484,20 @@ export class GameManager
 		{
 			this.waitingPlayer = null;
 		}
+	}
+
+	registerPlayer(userId: string, socket: Socket): void
+	{
+		this.connectedPlayers.set(userId, socket);
+	}
+
+	unregisterPlayer(userId: string): void
+	{
+		this.connectedPlayers.delete(userId);
+	}
+
+	getPlayerSocket(userId: string): Socket | undefined
+	{
+		return this.connectedPlayers.get(userId);
 	}
 }

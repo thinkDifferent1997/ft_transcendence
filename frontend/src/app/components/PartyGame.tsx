@@ -83,6 +83,8 @@ export default function QuizPage()
 
 		socket.connect();
 
+	//	const event = tournament ? "join_tournament" : "join_queue";
+
 		if (!socket.connected)
 		{
 			socket.once("connect", () =>

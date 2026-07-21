@@ -147,15 +147,20 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 			}>(cookies.access_token);
 			
 		client.data.userId = payload.sub;
+		this.gameManager.registerPlayer(
+			client.data.userId,
+			client,
+		);
 		client.data.username = payload.username;
-		console.log(payload);
-
-		console.log(client.data);
 	}
 
 	handleDisconnect(client: Socket)
 	{
 		console.log(`${client.id} disconnected.`);
+		if (client.data.userId)
+		{
+			this.gameManager.unregisterPlayer(client.data.userId);
+		}
 		this.gameManager.removeWaitingPlayer(client);
 
 		const game = this.gameManager.findGameByPlayer(client);

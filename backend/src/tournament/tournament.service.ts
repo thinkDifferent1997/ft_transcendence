@@ -3,14 +3,17 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { RoomMode, RoomStatus, TournamentRound } from '@prisma/client';
+import { Prisma, RoomMode, RoomStatus, TournamentRound } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class TournamentService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async createFourPlayerTournament() {
+  /*async createFourPlayerTournament( 
+    userIds: string[],
+   ) {*/
+   async createFourPlayerTournament() {
     return this.prisma.$transaction(async (tx) => {
       const tournament = await tx.tournament.create({
         data: {
@@ -195,6 +198,25 @@ export class TournamentService {
       },
     });
   }
+
+  private async addMultipleParticipantsToRoomTx(
+		tx: Prisma.TransactionClient,
+		roomId: string,
+		participants: Array<{ userId?: string; isBot?: boolean }>,
+	) {
+		await Promise.all(
+			participants.map((p) =>
+				tx.roomParticipant.create({
+					data: {
+						roomId,
+						userId: p.userId ?? null,
+						isBot: p.isBot ?? false,
+						score: 0,
+					},
+				}),
+			),
+		);
+	}
 
   async addMultipleParticipantsToRoom(
     roomId: string,
