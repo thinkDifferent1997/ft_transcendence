@@ -12,3 +12,5 @@ nginx/certs
 dist/
 
 *test*
+
+monitoring/alert_buddy/discord_webhook_url
