@@ -1,23 +1,23 @@
 import { useEffect, useState } from "react";
-import { socket } from "../../socket/socket"; // adapte le chemin si besoin
+import { socket } from "../../socket/socket";
 
 interface TournamentLobbyTestProps {
     username: string;
     onBack: () => void;
-    onStartGame: () => void;
+    onStartGame: (matchData: any) => void;
 }
 
 export default function TournamentLobbyTest({
     username,
     onBack,
+	onStartGame,
 }: TournamentLobbyTestProps)
 {
     const [connected, setConnected] = useState(false);
     const [players, setPlayers] = useState(0);
 
-    useEffect(() =>
-    {
-        socket.connect();
+	useEffect(() => {
+		socket.connect();
 
         socket.on("connect", () =>
         {
@@ -29,23 +29,25 @@ export default function TournamentLobbyTest({
             setConnected(false);
         });
 
-        socket.on("tournament_waiting", (data) =>
-        {
-            setPlayers(data.players);
-        });
+		console.log("EMIT join_tournament");
+		socket.emit("join_tournament");
 
-        return () =>
-        {
+		socket.on("tournament_waiting", (data) => {
+			setPlayers(data.players);
+		});
+
+		socket.on("match_found", (data) => {
+			console.log("MATCH FOUND", data);
+			onStartGame(data);
+		});
+
+		return () => {
             socket.off("connect");
             socket.off("disconnect");
-            socket.off("tournament_waiting");
-        };
-    }, []);
-
-    function joinTournament()
-    {
-        socket.emit("join_tournament");
-    }
+			socket.off("tournament_waiting");
+			socket.off("match_found");
+		};
+	}, []);
 
     return (
         <div>
@@ -62,10 +64,6 @@ export default function TournamentLobbyTest({
                 Players :
                 {players}/4
             </p>
-
-            <button onClick={joinTournament}>
-                Join tournament
-            </button>
 
             <br /><br />
 

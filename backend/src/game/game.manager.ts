@@ -53,12 +53,14 @@ export class GameManager
 		player1: Socket,
 		player2: Socket,
 		roomId: string,
+		tournamentId: string
 	): Promise<GameSession>
 	{
 		const game = new GameSession(
 			roomId,
 			player1,
 			player2,
+			tournamentId,
 		);
 
 		game.questions = await this.triviaService.getQuestions();

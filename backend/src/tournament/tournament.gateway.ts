@@ -46,23 +46,54 @@ export class TournamentGateway
 		this.waitingPlayers = [];
 
 		const tournament =
-			await this.tournamentService.createFourPlayerTournament();
+	await this.tournamentService.startFourPlayerTournament(players);
 
-		console.log("Tournament created :", tournament.tournament.id);
+	await this.gameManager.createTournamentMatch(
+		players[0],
+		players[1],
+		tournament.rooms.semiFinal1.id,
+		tournamentId,
+	);
 
-		console.log(
-			"Semi 1 :",
-			tournament.rooms.semiFinal1.id,
-		);
+	await this.gameManager.createTournamentMatch(
+		players[2],
+		players[3],
+		tournament.rooms.semiFinal2.id,
+		tournamentId,
+	);
 
-		console.log(
-			"Semi 2 :",
-			tournament.rooms.semiFinal2.id,
-		);
+	// Les joueurs rejoignent leur room Socket.IO
+	players[0].join(tournament.rooms.semiFinal1.id);
+	players[1].join(tournament.rooms.semiFinal1.id);
 
-		console.log(
-			"Final :",
-			tournament.rooms.finalRoom.id,
-		);
+	players[2].join(tournament.rooms.semiFinal2.id);
+	players[3].join(tournament.rooms.semiFinal2.id);
+
+	// On envoie exactement le même évènement que le matchmaking classique
+	this.server.to(tournament.rooms.semiFinal1.id).emit("match_found", {
+		roomId: tournament.rooms.semiFinal1.id,
+		player1: {
+			id: players[0].id,
+			username: players[0].data.username,
+		},
+		player2: {
+			id: players[1].id,
+			username: players[1].data.username,
+		},
+	});
+
+	this.server.to(tournament.rooms.semiFinal2.id).emit("match_found", {
+		roomId: tournament.rooms.semiFinal2.id,
+		player1: {
+			id: players[2].id,
+			username: players[2].data.username,
+		},
+		player2: {
+			id: players[3].id,
+			username: players[3].data.username,
+		},
+	});
+
+	console.log("Tournament started");
 	}
 }

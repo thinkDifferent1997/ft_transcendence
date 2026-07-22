@@ -50,12 +50,15 @@ export default function App() {
           <Route
             path="/tournament"
             element={
-             // <TournamentLobby
-              <TournamentLobbyTest
-                username={username}
-                onBack={() => navigate("/")}
-                onStartGame={() => navigate("/game/tournament")}
-              />
+				<TournamentLobbyTest
+					username={username}
+					onBack={() => navigate("/")}
+					onStartGame={(matchData) =>
+						navigate("/game/tournament", {
+							state: matchData,
+						})
+					}
+				/>
             }
           />
           <Route path="/game/:mode" element={<GameRoute />} />

@@ -10,9 +10,32 @@ import { PrismaService } from '../prisma/prisma.service';
 export class TournamentService {
   constructor(private readonly prisma: PrismaService) {}
 
-  /*async createFourPlayerTournament( 
-    userIds: string[],
-   ) {*/
+	async startFourPlayerTournament(players: any[]) {
+		const tournament = await this.createFourPlayerTournament();
+
+		await this.addParticipantToRoom(
+			tournament.rooms.semiFinal1.id,
+			players[0].data.userId,
+		);
+
+		await this.addParticipantToRoom(
+			tournament.rooms.semiFinal1.id,
+			players[1].data.userId,
+		);
+
+		await this.addParticipantToRoom(
+			tournament.rooms.semiFinal2.id,
+			players[2].data.userId,
+		);
+
+		await this.addParticipantToRoom(
+			tournament.rooms.semiFinal2.id,
+			players[3].data.userId,
+		);
+
+		return tournament;
+	}
+
    async createFourPlayerTournament() {
     return this.prisma.$transaction(async (tx) => {
       const tournament = await tx.tournament.create({

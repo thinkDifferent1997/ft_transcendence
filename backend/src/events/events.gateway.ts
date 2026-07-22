@@ -157,6 +157,19 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 	handleDisconnect(client: Socket)
 	{
 		console.log(`${client.id} disconnected.`);
+
+//Tournament
+
+	/*	this.waitingPlayers = this.waitingPlayers.filter(
+			player => player.id !== client.id
+		);
+
+		this.server.emit("tournament_waiting", {
+			players: this.waitingPlayers.length,
+		});
+*/
+//Party Game
+
 		if (client.data.userId)
 		{
 			this.gameManager.unregisterPlayer(client.data.userId);
@@ -278,6 +291,7 @@ console.log("pouet");
 		console.log("player2 socket:", game.player2.id);
 		this.server.to(game.roomId).emit("match_found", {
 			roomId: game.roomId,
+			tournamentId: game.tournamentId,
 			player1: {
 					id: game.player1.id,
 					username: game.player1.data.username,

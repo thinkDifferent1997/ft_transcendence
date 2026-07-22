@@ -2,6 +2,7 @@ import { socket } from "../../socket/socket";
 
 import { useState, useEffect } from "react";
 import { useRef } from "react";
+import { useParams, useLocation, useNavigate } from "react-router-dom";
 
 import QuestionCard from "./QuestionCard";
 import PlayerBonusPanel from "./PlayerBonus";
@@ -15,6 +16,17 @@ import type { Question } from "../types/question";
 
 export default function QuizPage()
 {
+	const { mode } = useParams<{ mode: string }>();
+	const location = useLocation();
+	useEffect(() =>
+	{
+		if (mode === "tournament" && location.state)
+		{
+			initializeMatch(location.state);
+		}
+	}, []);
+
+
 	const player: PlayerState = {
 			score: 0,
 			answered: false,
@@ -46,7 +58,34 @@ export default function QuizPage()
 
 	const roomIdRef = useRef("");
 	const isPlayer1Ref = useRef(false);
+	const navigate = useNavigate();
 
+	function initializeMatch(data: any)
+	{
+		const isPlayer1 = socket.id === data.player1.id;
+
+		isPlayer1Ref.current = isPlayer1;
+
+		setGame(previousGame => ({
+			...previousGame,
+			roomId: data.roomId,
+			isPlayer1,
+			localPlayer: {
+				...previousGame.localPlayer,
+				username: isPlayer1
+					? data.player1.username
+					: data.player2.username,
+			},
+			enemyPlayer: {
+				...previousGame.enemyPlayer,
+				username: isPlayer1
+					? data.player2.username
+					: data.player1.username,
+			},
+		}));
+
+		roomIdRef.current = data.roomId;
+	}
 	function	handle_answer(answer: string)
 	{
 		if (game.gameOver || game.localPlayer.answered)
@@ -74,7 +113,7 @@ export default function QuizPage()
 	// Socket events
 	// Register every Socket.IO listener once when the component mounts.
 
-	useEffect(() =>
+/*	useEffect(() =>
 	{
 		socket.on("connect", () =>
 		{
@@ -83,18 +122,19 @@ export default function QuizPage()
 
 		socket.connect();
 
-	//	const event = tournament ? "join_tournament" : "join_queue";
+		//const event = tournament ? "join_tournament" : "join_queue";
+		const event = "join_tournament";
 
 		if (!socket.connected)
 		{
 			socket.once("connect", () =>
 			{
-				socket.emit("join_queue");
+				socket.emit(event);
 			});
 		}
 		else
 		{
-			socket.emit("join_queue");
+			socket.emit(event);
 		}
 
 		socket.on("connect_error", (error) =>
@@ -140,6 +180,7 @@ export default function QuizPage()
 
 		socket.on("game_started", (data) =>
 		{
+			console.log("game_started");
 			setQuestions(data.questions);
 			setGame((previousGame) => ({
             ...previousGame,
@@ -308,7 +349,238 @@ export default function QuizPage()
 			socket.off("player_answered");
 			socket.disconnect();
 		};
-	}, []);
+	}, []);*/
+
+	useEffect(() =>
+	{
+		socket.on("connect", () =>
+		{
+			console.log("Connected :", socket.id);
+		});
+
+		socket.connect();
+
+		const joinGame = () =>
+		{
+			switch (mode)
+			{
+				case "party":
+					socket.emit("join_queue");
+					break;
+
+				case "tournament":
+					console.log("Tournament mode: no emit");
+					break;
+
+				case "ai":
+					socket.emit("join_ai");
+					break;
+
+				default:
+					console.error("Unknown game mode:", mode);
+					break;
+			}
+		};
+
+		if (!socket.connected)
+		{
+			socket.once("connect", joinGame);
+		}
+		else
+		{
+			joinGame();
+		}
+
+		socket.on("connect_error", (error) =>
+		{
+			console.log("Error :", error);
+		});
+
+		socket.on("match_found", (data) =>
+		{
+			initializeMatch(data);
+		});
+
+		socket.on("game_started", (data) =>
+		{
+			console.log("game_started");
+			setQuestions(data.questions);
+			setGame(previousGame => ({
+				...previousGame,
+				currentQuestion: data.questions[0],
+			}));
+
+			socket.emit("questions_loaded",
+			{
+				roomId: roomIdRef.current,
+			});
+		});
+
+		socket.on("start_game", () =>
+		{
+			setGameStarted(true);
+		});
+
+		socket.on("next_question", (data) =>
+		{
+			setGame(previousGame => ({
+				...previousGame,
+				currentQuestion: data.question,
+				questionIndex: previousGame.questionIndex + 1,
+				time_left: 20,
+
+				localPlayer: {
+					...previousGame.localPlayer,
+					answered: false,
+				},
+
+				enemyPlayer: {
+					...previousGame.enemyPlayer,
+					answered: false,
+				},
+			}));
+		});
+
+		socket.on("player_answered", (data) =>
+		{
+			console.log("player_answered", data.correct);
+			setGame(previousGame =>
+			{
+				const answeredQuestions = [...previousGame.answeredQuestions];
+
+				if (data.playerId === socket.id && answeredQuestions.length > 0)
+				{
+					answeredQuestions[answeredQuestions.length - 1] = {
+						...answeredQuestions[answeredQuestions.length - 1],
+						correct: data.correct,
+					};
+				}
+
+				const localScore = previousGame.isPlayer1
+					? data.player1Score
+					: data.player2Score;
+
+				const enemyScore = previousGame.isPlayer1
+					? data.player2Score
+					: data.player1Score;
+
+				const localStreak = previousGame.isPlayer1
+					? data.player1Streak
+					: data.player2Streak;
+
+				const enemyStreak = previousGame.isPlayer1
+					? data.player2Streak
+					: data.player1Streak;
+
+				const localThreeChoice = previousGame.isPlayer1
+					? data.player1ThreeChoice
+					: data.player2ThreeChoice;
+
+				const localHideAnswer = previousGame.isPlayer1
+					? data.player1HideAnswer
+					: data.player2HideAnswer;
+
+				const localDoublePoint = previousGame.isPlayer1
+					? data.player1DoublePoint
+					: data.player2DoublePoint;
+
+				if (data.playerId === socket.id)
+				{
+					return {
+						...previousGame,
+						answeredQuestions,
+
+						localPlayer: {
+							...previousGame.localPlayer,
+							answered: true,
+							score: localScore,
+							streak: localStreak,
+							threeChoice: localThreeChoice,
+							hideAnswer: localHideAnswer,
+							doublePoint: localDoublePoint,
+						},
+
+						enemyPlayer: {
+							...previousGame.enemyPlayer,
+							score: enemyScore,
+							streak: enemyStreak,
+						},
+					};
+				}
+
+				return {
+					...previousGame,
+					answeredQuestions,
+					time_left: Math.min(previousGame.time_left, 5),
+
+					localPlayer: {
+						...previousGame.localPlayer,
+						score: localScore,
+						streak: localStreak,
+						threeChoice: localThreeChoice,
+						hideAnswer: localHideAnswer,
+						doublePoint: localDoublePoint,
+					},
+
+					enemyPlayer: {
+						...previousGame.enemyPlayer,
+						answered: true,
+						score: enemyScore,
+						streak: enemyStreak,
+					},
+				};
+			});
+		});
+
+		socket.on("game_over", (data) =>
+		{
+			setGameStarted(false);
+
+			const playerScore = isPlayer1Ref.current
+				? data.player1Score
+				: data.player2Score;
+
+			const enemyScore = isPlayer1Ref.current
+				? data.player2Score
+				: data.player1Score;
+
+			setGame(previousGame => ({
+				...previousGame,
+				gameOver: true,
+				winner: data.winner,
+
+				localPlayer: {
+					...previousGame.localPlayer,
+					score: playerScore,
+				},
+
+				enemyPlayer: {
+					...previousGame.enemyPlayer,
+					score: enemyScore,
+				},
+			}));
+			if (mode === "tournament")
+			{
+				setTimeout(() => {
+					navigate("/tournament");
+				}, 3000);
+			}
+		});
+
+		return () =>
+		{
+			socket.off("connect");
+			socket.off("connect_error");
+			socket.off("match_found");
+			socket.off("game_started");
+			socket.off("start_game");
+			socket.off("next_question");
+			socket.off("player_answered");
+			socket.off("game_over");
+			socket.off("connect", joinGame);
+		//	socket.disconnect();
+		};
+	}, [mode]);
 
 	// Notify the backend that this client is ready.
 
