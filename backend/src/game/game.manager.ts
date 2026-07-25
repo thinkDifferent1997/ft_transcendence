@@ -37,12 +37,14 @@ export class GameManager
             this.waitingPlayer,
             player,
         );
+
+		game.player1Id = this.waitingPlayer.data.userId;
+		game.player2Id = player.data.userId;
+
 //		game.questions = await this.triviaService.getTestQuestions();
 		game.questions = await this.triviaService.getQuestions();
 
         this.games.set(roomId, game);
-
-		console.log("Game created:", roomId);
 
         this.waitingPlayer = null;
 
@@ -62,6 +64,9 @@ export class GameManager
 			player2,
 			tournamentId,
 		);
+
+		game.player1Id = player1.data.userId;
+		game.player2Id = player2.data.userId;
 
 		game.questions = await this.triviaService.getQuestions();
 
@@ -267,8 +272,6 @@ export class GameManager
 				if (hadHideAnswer)
 					game.player2HideAnswer = false;
 			}
-
-			console.log(game.questionHistory);
 			return {
 				nextQuestion: true,
 				gameOver: false,
@@ -300,7 +303,6 @@ export class GameManager
 				game.player2ThreeChoice = false;
 
 		}
-		console.log(game.questionHistory[0]);
 		return {
 			nextQuestion: false,
 			gameOver: false,

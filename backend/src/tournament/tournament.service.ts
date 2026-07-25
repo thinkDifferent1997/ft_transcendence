@@ -191,19 +191,24 @@ export class TournamentService {
         where: { roomId: nextRoom.id },
       });
 
-      if (nextRoomParticipantCount >= 2) {
-        await tx.room.update({
-          where: { id: nextRoom.id },
-          data: {
-            status: RoomStatus.IN_PROGRESS,
-          },
-        });
-      }
+	  const readyToStart = nextRoomParticipantCount >= 2;
 
-      return {
-        tournamentFinished: false,
-        nextRoomId: nextRoom.id,
-      };
+		if (readyToStart)
+		{
+			await tx.room.update({
+				where: { id: nextRoom.id },
+				data: {
+					status: RoomStatus.IN_PROGRESS,
+				},
+			});
+		}
+
+		return {
+			tournamentFinished: false,
+			nextRoomId: nextRoom.id,
+			readyToStart,
+		};
+
     });
   }
 
@@ -353,7 +358,29 @@ export class TournamentService {
     );
   }
 
-  async createEightPlayerTournament() {
+  async reportWinnerFromUser(roomId: string, userId: string)
+	{
+		const participant = await this.prisma.roomParticipant.findFirst({
+			where: {
+				roomId,
+				userId,
+			},
+		});
+
+		if (!participant)
+			throw new NotFoundException("Participant not found.");
+
+		return this.reportRoomWinner(roomId, participant.id);
+	}
+
+	async removePlayer(userId: string) {
+		return this.prisma.roomParticipant.deleteMany({
+			where: {
+				userId,
+			},
+		});
+	}
+/*  async createEightPlayerTournament() {
     return this.prisma.$transaction(async (tx) => {
       const tournament = await tx.tournament.create({
         data: {
@@ -451,5 +478,5 @@ export class TournamentService {
         },
       };
     });
-  }
+  }*/
 }

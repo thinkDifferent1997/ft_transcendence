@@ -22,6 +22,9 @@ export class GameSession
 		public readonly tournamentId?: string,
     ) {}
 
+	player1Id!: string;
+	player2Id!: string;
+
     questions: {
 		question: string;
 		correct: string;

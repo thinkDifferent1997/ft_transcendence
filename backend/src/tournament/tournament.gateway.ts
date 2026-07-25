@@ -3,6 +3,7 @@ import { Server, Socket } from "socket.io";
 
 import { TournamentService } from "./tournament.service";
 import { GameManager } from "../game/game.manager";
+import { TournamentState } from "./tournament.state";
 
 @WebSocketGateway({
 	path: "/ws",
@@ -17,6 +18,7 @@ export class TournamentGateway
 	constructor(
 		private readonly tournamentService: TournamentService,
 		private readonly gameManager: GameManager,
+		private readonly tournamentState: TournamentState,
 	) {}
 	private waitingPlayers: Socket[] = [];
 
@@ -45,33 +47,69 @@ export class TournamentGateway
 		const players = [...this.waitingPlayers];
 		this.waitingPlayers = [];
 
-		const tournament =
+		const tournamentData =
 	await this.tournamentService.startFourPlayerTournament(players);
+
+	this.tournamentState.registerTournament(
+		tournamentData.tournament.id,
+		tournamentData.rooms.semiFinal1.id,
+		tournamentData.rooms.semiFinal2.id,
+	);
+
+	console.log("CALL registerSemiFinalPlayers #1");
+	this.tournamentState.registerSemiFinalPlayers(
+		tournamentData.tournament.id,
+		tournamentData.rooms.semiFinal1.id,
+		{
+			id: players[0].data.userId,
+			username: players[0].data.username,
+		},
+		{
+			id: players[1].data.userId,
+			username: players[1].data.username,
+		},
+	);
+
+	console.log("CALL registerSemiFinalPlayers #2");
+	this.tournamentState.registerSemiFinalPlayers(
+		tournamentData.tournament.id,
+		tournamentData.rooms.semiFinal2.id,
+		{
+			id: players[2].data.userId,
+			username: players[2].data.username,
+		},
+		{
+			id: players[3].data.userId,
+			username: players[3].data.username,
+		},
+	);
+	console.log("REGISTER SEMI ENTERED");
 
 	await this.gameManager.createTournamentMatch(
 		players[0],
 		players[1],
-		tournament.rooms.semiFinal1.id,
-		tournamentId,
+		tournamentData.rooms.semiFinal1.id,
+		tournamentData.tournament.id,
 	);
 
 	await this.gameManager.createTournamentMatch(
 		players[2],
 		players[3],
-		tournament.rooms.semiFinal2.id,
-		tournamentId,
+		tournamentData.rooms.semiFinal2.id,
+		tournamentData.tournament.id,
 	);
 
 	// Les joueurs rejoignent leur room Socket.IO
-	players[0].join(tournament.rooms.semiFinal1.id);
-	players[1].join(tournament.rooms.semiFinal1.id);
+	players[0].join(tournamentData.rooms.semiFinal1.id);
+	players[1].join(tournamentData.rooms.semiFinal1.id);
 
-	players[2].join(tournament.rooms.semiFinal2.id);
-	players[3].join(tournament.rooms.semiFinal2.id);
+	players[2].join(tournamentData.rooms.semiFinal2.id);
+	players[3].join(tournamentData.rooms.semiFinal2.id);
 
 	// On envoie exactement le même évènement que le matchmaking classique
-	this.server.to(tournament.rooms.semiFinal1.id).emit("match_found", {
-		roomId: tournament.rooms.semiFinal1.id,
+	this.server.to(tournamentData.rooms.semiFinal1.id).emit("match_found", {
+		roomId: tournamentData.rooms.semiFinal1.id,
+		tournamentId: tournamentData.tournament.id,
 		player1: {
 			id: players[0].id,
 			username: players[0].data.username,
@@ -82,8 +120,9 @@ export class TournamentGateway
 		},
 	});
 
-	this.server.to(tournament.rooms.semiFinal2.id).emit("match_found", {
-		roomId: tournament.rooms.semiFinal2.id,
+	this.server.to(tournamentData.rooms.semiFinal2.id).emit("match_found", {
+		roomId: tournamentData.rooms.semiFinal2.id,
+		tournamentId: tournamentData.tournament.id,
 		player1: {
 			id: players[2].id,
 			username: players[2].data.username,
@@ -94,6 +133,23 @@ export class TournamentGateway
 		},
 	});
 
-	console.log("Tournament started");
+}
+
+	@SubscribeMessage("leave_tournament")
+	handleLeaveTournament(
+		@ConnectedSocket() client: Socket,
+	)
+	{
+		this.waitingPlayers = this.waitingPlayers.filter(
+			player => player.data.userId !== client.data.userId,
+		);
+
+		this.server.emit("tournament_waiting", {
+			players: this.waitingPlayers.length,
+		});
+
+		console.log(
+			`${client.data.username} left tournament (${this.waitingPlayers.length}/4)`,
+		);
 	}
 }

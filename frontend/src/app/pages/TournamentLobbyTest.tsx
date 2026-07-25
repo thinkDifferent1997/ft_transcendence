@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { socket } from "../../socket/socket";
+import { useLocation } from "react-router-dom";
 
 interface TournamentLobbyTestProps {
     username: string;
@@ -13,6 +14,7 @@ export default function TournamentLobbyTest({
 	onStartGame,
 }: TournamentLobbyTestProps)
 {
+	const location = useLocation();
     const [connected, setConnected] = useState(false);
     const [players, setPlayers] = useState(0);
 
@@ -29,6 +31,13 @@ export default function TournamentLobbyTest({
             setConnected(false);
         });
 
+		 if (location.state?.tournamentId)
+		{
+			console.log("Resume tournament", location.state.tournamentId);
+
+			return;
+		}
+
 		console.log("EMIT join_tournament");
 		socket.emit("join_tournament");
 
@@ -42,8 +51,11 @@ export default function TournamentLobbyTest({
 		});
 
 		return () => {
-            socket.off("connect");
-            socket.off("disconnect");
+			console.log("EMIT leave_tournament");
+			socket.emit("leave_tournament");
+
+			socket.off("connect");
+			socket.off("disconnect");
 			socket.off("tournament_waiting");
 			socket.off("match_found");
 		};

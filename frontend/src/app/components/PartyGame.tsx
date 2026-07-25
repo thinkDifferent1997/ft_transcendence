@@ -9,6 +9,7 @@ import PlayerBonusPanel from "./PlayerBonus";
 import GamePage from "./GamePage";
 import MatchmakingScreen from "./MatchmakingScreen";
 import ResultsScreen from "./ResultScreen";
+import TournamentBracket from "./TournamentBracket";
 
 import type { PlayerState } from "../types/PlayerState";
 import type { GameState } from "../types/GameState";
@@ -39,6 +40,8 @@ export default function QuizPage()
 
 	const [questions, setQuestions] = useState<Question[]>([]);
 	const [gameStarted, setGameStarted] = useState(false);
+	const [waitingForFinal, setWaitingForFinal] = useState(false);
+	const [tournamentBracket, setTournamentBracket] = useState<any>(null);
 	const [game, setGame] = useState<GameState>(
 		{
 			currentQuestion: questions[0],
@@ -62,6 +65,7 @@ export default function QuizPage()
 
 	function initializeMatch(data: any)
 	{
+		setWaitingForFinal(false);
 		const isPlayer1 = socket.id === data.player1.id;
 
 		isPlayer1Ref.current = isPlayer1;
@@ -70,17 +74,20 @@ export default function QuizPage()
 			...previousGame,
 			roomId: data.roomId,
 			isPlayer1,
+			time_left: 20,
 			localPlayer: {
 				...previousGame.localPlayer,
 				username: isPlayer1
 					? data.player1.username
 					: data.player2.username,
+				answered: false,
 			},
 			enemyPlayer: {
 				...previousGame.enemyPlayer,
 				username: isPlayer1
 					? data.player2.username
 					: data.player1.username,
+				answered: false,
 			},
 		}));
 
@@ -112,244 +119,6 @@ export default function QuizPage()
 
 	// Socket events
 	// Register every Socket.IO listener once when the component mounts.
-
-/*	useEffect(() =>
-	{
-		socket.on("connect", () =>
-		{
-			console.log("Connected :", socket.id);
-		});
-
-		socket.connect();
-
-		//const event = tournament ? "join_tournament" : "join_queue";
-		const event = "join_tournament";
-
-		if (!socket.connected)
-		{
-			socket.once("connect", () =>
-			{
-				socket.emit(event);
-			});
-		}
-		else
-		{
-			socket.emit(event);
-		}
-
-		socket.on("connect_error", (error) =>
-		{
-			console.log("Error :", error);
-		});
-
-		
-		socket.on("match_found", (data) =>
-		{
-			const isPlayer1 = socket.id === data.player1.id;
-			console.log("SERVER");
-			console.log("data.player1.id =", data.player1.id);
-			console.log("data.player1.userId =", data.player1.userId);
-			console.log("data.player2.id =", data.player2.id);
-			console.log("data.player2.userId =", data.player2.userId);
-			console.log("CLIENT");
-			console.log("socket.id:", socket.id);
-			console.log("data.player1.id:", data.player1.id);
-			console.log("data.player2.id:", data.player2.id);
-
-			isPlayer1Ref.current = isPlayer1;
-			setGame(previousGame => ({
-				...previousGame,
-				roomId: data.roomId,
-				isPlayer1,
-				localPlayer: {
-					...previousGame.localPlayer,
-					username: isPlayer1
-						? data.player1.username
-						: data.player2.username,
-				},
-
-				enemyPlayer: {
-					...previousGame.enemyPlayer,
-				username: isPlayer1
-					? data.player2.username
-					: data.player1.username,
-				},
-			}));
-			roomIdRef.current = data.roomId;
-		});
-
-		socket.on("game_started", (data) =>
-		{
-			console.log("game_started");
-			setQuestions(data.questions);
-			setGame((previousGame) => ({
-            ...previousGame,
-            currentQuestion: data.questions[0],
-        }));
-
-		socket.emit("questions_loaded",
-		{
-			roomId: roomIdRef.current,
-		});
-    });
-
-	socket.on("start_game", () =>
-	{
-		setGameStarted(true);
-	});
-
-	socket.on("next_question", (data) =>
-	{
-
-		setGame((previousGame) => ({
-			...previousGame,
-			currentQuestion: data.question,
-			questionIndex: previousGame.questionIndex + 1,
-			time_left: 20,
-
-			localPlayer: {
-				...previousGame.localPlayer,
-				answered: false,
-			},
-
-			enemyPlayer: {
-				...previousGame.enemyPlayer,
-				answered: false,
-			},
-		}));
-	});
-
-	// Update scores, streaks and bonuses after every answer.
-
-	socket.on("player_answered", (data) =>
-	{
-		console.log("player_answered", data.correct);
-		setGame(previousGame =>
-		{
-			const answeredQuestions = [...previousGame.answeredQuestions];
-
-			if (data.playerId === socket.id && answeredQuestions.length > 0)
-			{
-				answeredQuestions[answeredQuestions.length - 1] = {
-					...answeredQuestions[answeredQuestions.length - 1],
-					correct: data.correct,
-				};
-			}
-			const localScore = previousGame.isPlayer1
-				? data.player1Score
-				: data.player2Score;
-
-			const enemyScore = previousGame.isPlayer1
-				? data.player2Score
-				: data.player1Score;
-
-			const localStreak = previousGame.isPlayer1
-				? data.player1Streak
-				: data.player2Streak;
-
-			const enemyStreak = previousGame.isPlayer1
-				? data.player2Streak
-				: data.player1Streak;
-
-			const localThreeChoice = previousGame.isPlayer1
-				? data.player1ThreeChoice
-				: data.player2ThreeChoice;
-
-			const localHideAnswer = previousGame.isPlayer1
-				? data.player1HideAnswer
-				: data.player2HideAnswer;
-
-			const localDoublePoint = previousGame.isPlayer1
-				? data.player1DoublePoint
-				: data.player2DoublePoint;
-
-			if (data.playerId === socket.id)
-			{
-				return {
-					...previousGame,
-					answeredQuestions,
-
-					localPlayer: {
-						...previousGame.localPlayer,
-						answered: true,
-						score: localScore,
-						streak: localStreak,
-						threeChoice: localThreeChoice,
-						hideAnswer: localHideAnswer,
-						doublePoint: localDoublePoint,
-					},
-
-					enemyPlayer: {
-						...previousGame.enemyPlayer,
-						score: enemyScore,
-						streak: enemyStreak,
-					},
-				};
-			}
-
-			return {
-				...previousGame,
-				answeredQuestions,
-				time_left: Math.min(previousGame.time_left, 5),
-
-				localPlayer: {
-					...previousGame.localPlayer,
-					score: localScore,
-					streak: localStreak,
-					threeChoice: localThreeChoice,
-					hideAnswer: localHideAnswer,
-					doublePoint: localDoublePoint,
-				},
-
-				enemyPlayer: {
-					...previousGame.enemyPlayer,
-					answered: true,
-					score: enemyScore,
-					streak: enemyStreak,
-				},
-			};
-		});
-	});
-
-	socket.on("game_over", (data) =>
-	{
-		setGameStarted(false);
-		const playerScore = isPlayer1Ref.current
-			? data.player1Score
-			: data.player2Score;
-
-		const enemyScore = isPlayer1Ref.current
-			? data.player2Score
-			: data.player1Score;
-
-		setGame(previousGame => ({
-			...previousGame,
-			gameOver: true,
-			winner: data.winner,
-
-			    localPlayer: {
-				...previousGame.localPlayer,
-				score: playerScore,
-			},
-
-			enemyPlayer: {
-				...previousGame.enemyPlayer,
-				score: enemyScore,
-			},
-		}));
-	});
-
-		return () =>
-		{
-			socket.off("connect");
-			socket.off("connect_error");
-			socket.off("match_found");
-			socket.off("game_started");
-			socket.off("next_question");
-			socket.off("player_answered");
-			socket.disconnect();
-		};
-	}, []);*/
 
 	useEffect(() =>
 	{
@@ -396,9 +165,23 @@ export default function QuizPage()
 			console.log("Error :", error);
 		});
 
-		socket.on("match_found", (data) =>
+	/*	socket.on("match_found", (data) =>
 		{
 			initializeMatch(data);
+		});
+*/
+
+		socket.on("match_found", (data) => {
+
+			console.log("isFinal : ", data.isFinal);
+			if (data.isFinal) {
+				setTimeout(() => {
+					initializeMatch(data);
+					setTournamentBracket(null);
+				}, 7000);
+			}
+			else 
+				initializeMatch(data);
 		});
 
 		socket.on("game_started", (data) =>
@@ -418,6 +201,7 @@ export default function QuizPage()
 
 		socket.on("start_game", () =>
 		{
+			console.log("start_game");
 			setGameStarted(true);
 		});
 
@@ -532,8 +316,37 @@ export default function QuizPage()
 			});
 		});
 
+		socket.on("tournament_bracket", (bracket) => {
+			console.log("Tournament bracket received:", bracket);
+			setTournamentBracket(bracket);
+		});
+		socket.on("tournament_waiting_final", () =>
+		{
+			console.log("Waiting for final");
+
+			console.log("setGameStarted(false) from waiting_final");
+			setGameStarted(false);
+			setWaitingForFinal(true);
+
+			setGame(previousGame => ({
+				...previousGame,
+
+				localPlayer: {
+					...previousGame.localPlayer,
+					answered: false,
+				},
+
+				enemyPlayer: {
+					...previousGame.enemyPlayer,
+					answered: false,
+				},
+			}));
+		});
+
 		socket.on("game_over", (data) =>
 		{
+			console.log("GAME_OVER RECEIVED", data);
+			console.log("setGameStarted(false) from game_over");
 			setGameStarted(false);
 
 			const playerScore = isPlayer1Ref.current
@@ -561,6 +374,7 @@ export default function QuizPage()
 			}));
 			if (mode === "tournament")
 			{
+				console.log("TOURNAMENT ID : ", location.state?.tournamentId);
 				setTimeout(() => {
 					navigate("/tournament");
 				}, 3000);
@@ -576,8 +390,10 @@ export default function QuizPage()
 			socket.off("start_game");
 			socket.off("next_question");
 			socket.off("player_answered");
+			socket.off("tournament_waiting_final");
 			socket.off("game_over");
 			socket.off("connect", joinGame);
+			socket.off("tournament_bracket");
 		//	socket.disconnect();
 		};
 	}, [mode]);
@@ -627,6 +443,15 @@ export default function QuizPage()
 				}
 			}, [game.time_left]);
 
+	if (tournamentBracket)
+	{
+		return (
+			<TournamentBracket
+				bracket={tournamentBracket}
+			/>
+		);
+	}
+
 	if (game.gameOver)
 	{
 		return (
@@ -640,6 +465,18 @@ export default function QuizPage()
 		);
 	}
 	
+	if (waitingForFinal)
+	{
+		return (
+			<div className="flex h-full items-center justify-center">
+				<div className="text-center">
+					<h1>🏆 Demi-finale remportée !</h1>
+					<p>En attente de la fin de l'autre demi-finale...</p>
+				</div>
+			</div>
+		);
+	}
+
 	if (!gameStarted)
 	{
 		return (
