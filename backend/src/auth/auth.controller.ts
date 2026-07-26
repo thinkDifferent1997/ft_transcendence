@@ -5,8 +5,9 @@
  * Définit les routes (POST /auth/register, POST /auth/login, ...),
  * reçoit les requêtes, délègue à AuthService et renvoie la réponse.
  */
-import { Controller, Post, Body, Get, UseGuards, Req, Res, HttpCode, HttpStatus } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport'
+import { Controller, Post, Body, Get, UseGuards, Req, Res, HttpCode, HttpStatus, UseFilters } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+import { OAuthFailureFilter } from './oauth-failed.filter';
 import type { Response } from 'express';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
@@ -48,7 +49,8 @@ export class AuthController {
 
   @Get('42/callback')
   @UseGuards(AuthGuard('42'))
-  async fortyTwoAuthCallback(@Req() req, @Res() res) {
+  @UseFilters(OAuthFailureFilter)
+  async fortyTwoAuthCallback(@Req() req, @Res() res: Response) {
 
     const user = await this.authService.loginOrCreate42User(req.user);
 
@@ -91,11 +93,12 @@ export class AuthController {
   @Get('github')
   @UseGuards(AuthGuard('github'))
   async githubAuth() {
-    // Intentionally empty: the guard performs the redirect to GitHub.
+    // empty: because the guard performs the redirect to GitHub.
   }
 
   @Get('github/callback')
   @UseGuards(AuthGuard('github'))
+  @UseFilters(OAuthFailureFilter)
   async githubAuthCallback(@Req() req, @Res() res: Response) {
     const user = await this.authService.loginOrCreateGithubUser(req.user);
     const { twoFactorRequired } = this.tokens.issueLoginCookie(res, user);

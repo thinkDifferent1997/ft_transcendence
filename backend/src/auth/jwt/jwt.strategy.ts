@@ -11,6 +11,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { Request } from 'express';
+import { PrismaService } from '../../prisma/prisma.service';
 import {
   ACCESS_TOKEN_COOKIE,
   JwtPayload,
@@ -30,7 +31,7 @@ const cookieExtractor = (req: Request): string | null => {
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor() {
+  constructor(private readonly prisma: PrismaService) {
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
         cookieExtractor,
@@ -41,13 +42,24 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  validate(payload: JwtPayload): AuthenticatedRequestUser {
+  async validate(payload: JwtPayload): Promise<AuthenticatedRequestUser> {
     if (!payload?.sub) {
       throw new UnauthorizedException();
     }
+
+    // A valid signature isn't enough: the user must still exist. After a
+    // DB wipe (`make fclean`) an old, unexpired cookie would otherwise be
+    // accepted for a user that no longer exists in the database.
+    const user = await this.prisma.user.findUnique({
+      where: { id: payload.sub },
+    });
+    if (!user) {
+      throw new UnauthorizedException();
+    }
+
     return {
-      userId: payload.sub,
-      username: payload.username,
+      userId: user.id,
+      username: user.username,
       tfa: payload.tfa,
     };
   }

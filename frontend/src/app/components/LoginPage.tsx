@@ -1,5 +1,5 @@
 import { Sparkles, Mail, Lock, User, AlertCircle, Key, Github } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 interface LoginPageProps {
   onLogin?: (username?: string) => void;
@@ -12,37 +12,9 @@ export default function LoginPage({ onLogin, force2FA = false }: LoginPageProps)
   const [password, setPassword] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
-  
+
   const [is2FARequired, setIs2FARequired] = useState(force2FA);
   const [twoFactorCode, setTwoFactorCode] = useState("");
-
-  useEffect(() => {
-    // Si l'URL est /quiz, on vient d'être redirigé par le backend après le login 42
-    if (window.location.pathname === "/quiz") {
-      fetch("/api/users/me", {
-        credentials: 'include', // On envoie le cookie JWT fraîchement reçu
-      })
-        .then(async (res) => {
-          const data = await res.json();
-          return { ok: res.ok, data };
-        })
-        .then(({ ok, data }) => {
-          if (ok && data && data.username) {
-            // 1. Session valide ! On connecte l'utilisateur
-            if (onLogin) onLogin(data.username);
-            // On nettoie la barre d'adresse
-            window.history.replaceState({}, document.title, "/");
-          } else if (data && data.twoFactorRequired) {
-            // 2. 42 est passé, mais le backend exige le 2FA
-            setIs2FARequired(true);
-            window.history.replaceState({}, document.title, "/");
-          }
-        })
-        .catch((err) => {
-          console.error("Aucune session valide trouvée :", err);
-        });
-    }
-  }, [onLogin]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
