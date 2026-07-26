@@ -53,6 +53,7 @@ COPY --from=builder --chown=app:app /app/package.json ./package.json
 # Entrypoint runs migrations then starts the app
 COPY --chown=app:app entrypoint.sh ./entrypoint.sh
 RUN chmod +x ./entrypoint.sh
+RUN chown -R app:app /etc/nginx/certs || true
 
 USER app
 

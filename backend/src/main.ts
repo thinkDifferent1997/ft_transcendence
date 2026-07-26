@@ -3,30 +3,32 @@ import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 import cookieParser from 'cookie-parser';
 import * as fs from 'fs';
-import * as path from 'path';
 
 async function bootstrap() {
+    let app;
 
+    try {
+        const httpsOptions = {
+            key: fs.readFileSync('/etc/nginx/certs/selfsigned.key'),
+            cert: fs.readFileSync('/etc/nginx/certs/selfsigned.crt'),
+        };
+        app = await NestFactory.create(AppModule, { httpsOptions });
+    } catch (e) {
+        console.warn("⚠️ Mode HTTP simple de secours activé :", e.message);
+        app = await NestFactory.create(AppModule);
+    }
 
-	const httpsOptions = {
-	key: fs.readFileSync('/etc/nginx/certs/selfsigned.key'),	
-	cert: fs.readFileSync('/etc/nginx/certs/selfsigned.crt'),	
-	};
-	const app = await NestFactory.create(AppModule, {
-		httpsOptions,
-	});
+    app.setGlobalPrefix('api');
 
-	// Parse cookies so the JWT strategy can read the access-token cookie.
-	app.use(cookieParser());
+    app.use(cookieParser());
+    app.useGlobalPipes(
+        new ValidationPipe({
+            whitelist: true,
+            forbidNonWhitelisted: true,
+            transform: true,
+        }),
+    );
 
-	app.useGlobalPipes(
-		new ValidationPipe({
-			whitelist: true,
-			forbidNonWhitelisted: true,
-			transform: true,
-    }),
-  );
-
-  await app.listen(3000);
+    await app.listen(3000);
 }
 bootstrap();

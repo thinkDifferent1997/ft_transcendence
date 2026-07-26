@@ -1,5 +1,7 @@
-import { Sparkles, LogOut } from "lucide-react";
+import { Sparkles, LogOut, MessageCircle, X, Send } from "lucide-react";
 import { Outlet, useNavigate } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
+import { socket } from "../../socket/socket";
 
 interface LayoutProps {
   username: string;
@@ -9,13 +11,57 @@ interface LayoutProps {
 export default function Layout({ username, onLogout }: LayoutProps) {
   const navigate = useNavigate();
 
+  // --- LOGIQUE DU CHAT ---
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [messages, setMessages] = useState<any[]>([]);
+  const [newMessage, setNewMessage] = useState("");
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    fetch("/api/chat/history")
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) setMessages(data);
+        else setMessages([]);
+      })
+      .catch((err) => {
+        console.error("Erreur historique:", err);
+        setMessages([]);
+      });
+  }, []);
+
+  useEffect(() => {
+	socket.connect();
+    socket.on("receive_message", (msg) => {
+      console.log("📥 Message reçu :", msg);
+      setMessages((prev) => [...prev, msg]);
+    });
+    return () => {
+		socket.off("receive_message");
+      socket.off("receive_message");
+    };
+  }, []);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isChatOpen]);
+
+  const handleSendMessage = () => {
+    if (newMessage.trim() === "") return;
+    console.log("📤 Envoi :", newMessage);
+    socket.emit("send_message", { 
+      authorId: username || "Anonyme", 
+      content: newMessage 
+    });
+    setNewMessage("");
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-violet-100 via-pink-50 to-cyan-100">
       {/* Top Navigation Bar */}
       <nav className="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-md border-b border-gray-200 shadow-sm z-40">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-
-          {/* Bloc de Gauche : Logo et Titre */}
+          
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center">
               <Sparkles className="w-6 h-6 text-white" />
@@ -25,10 +71,7 @@ export default function Layout({ username, onLogout }: LayoutProps) {
             </span>
           </div>
 
-          {/* Bloc de Droite : Profil et Déconnexion */}
           <div className="flex items-center gap-4">
-
-            {/* Bouton Profil */}
             <button
               onClick={() => navigate("/profile")}
               className="group flex items-center gap-3 px-4 py-2 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 transition-all shadow-md hover:shadow-lg"
@@ -39,7 +82,6 @@ export default function Layout({ username, onLogout }: LayoutProps) {
               </div>
             </button>
 
-            {/* Bouton Déconnexion */}
             <button
               onClick={onLogout}
               className="flex items-center justify-center w-10 h-10 rounded-full bg-white/80 border border-gray-200 text-gray-500 hover:text-red-500 hover:bg-red-50 transition-all shadow-sm hover:shadow-md"
@@ -47,13 +89,70 @@ export default function Layout({ username, onLogout }: LayoutProps) {
             >
               <LogOut className="w-5 h-5" />
             </button>
-
           </div>
         </div>
       </nav>
 
       <div className="pt-20">
         <Outlet />
+      </div>
+
+      {/* --- WIDGET CHAT --- */}
+      <div className="fixed bottom-6 right-6 z-50">
+        {isChatOpen ? (
+          <div className="w-80 h-96 bg-white rounded-2xl shadow-2xl flex flex-col border border-gray-200 overflow-hidden">
+            <div className="bg-gradient-to-r from-purple-500 to-indigo-600 p-4 flex justify-between items-center text-white">
+              <span className="font-bold">Chat Global</span>
+              <button onClick={() => setIsChatOpen(false)} className="hover:bg-white/20 p-1 rounded transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 p-4 bg-gray-50 overflow-y-auto flex flex-col gap-3">
+              {Array.isArray(messages) && messages.length === 0 ? (
+                <p className="text-gray-500 text-sm text-center mt-4">Aucun message pour l'instant...</p>
+              ) : (
+                Array.isArray(messages) && messages.map((msg, index) => (
+                  <div key={index} className="flex flex-col">
+                    <span className="text-xs font-bold text-gray-600 ml-1">
+                      {msg.author?.username || msg.authorId || "Inconnu"}
+                    </span>
+                    <div className="bg-white p-2 rounded-xl shadow-sm border border-gray-100 w-fit max-w-[85%] text-sm text-gray-800 mt-1">
+                      {msg.content}
+                    </div>
+                  </div>
+                ))
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+
+            <div className="p-3 bg-white border-t border-gray-100 flex gap-2">
+              <input
+                type="text"
+                placeholder="Écrire un message..."
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleSendMessage();
+                }}
+                className="flex-1 bg-gray-100 rounded-full px-4 py-2 outline-none text-sm focus:ring-2 focus:ring-purple-300"
+              />
+              <button 
+                onClick={handleSendMessage}
+                className="bg-purple-500 text-white p-2 rounded-full hover:bg-purple-600 transition-colors"
+              >
+                <Send className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            onClick={() => setIsChatOpen(true)}
+            className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white p-4 rounded-full shadow-lg hover:shadow-xl hover:scale-105 transition-all flex items-center justify-center"
+          >
+            <MessageCircle className="w-6 h-6" />
+          </button>
+        )}
       </div>
     </div>
   );

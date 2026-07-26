@@ -2,11 +2,11 @@ import { Controller, Get } from '@nestjs/common';
 import { AppService } from './app.service';
 import { PrismaService } from './prisma/prisma.service';
 
-@Controller('api/health') //base root
+@Controller('health') //base root
 export class AppController {
   constructor(private readonly appService: AppService,
-              private readonly prisma: PrismaService
-             ) {}
+    private readonly prisma: PrismaService
+  ) {}
 
 
   @Get() //dveient la racine /api/health

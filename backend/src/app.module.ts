@@ -19,6 +19,7 @@ import { GameResultsModule } from './game-results/game-results.module';
     AuthModule,
     EventsModule,
     TournamentModule,
+    ChatModule,
     StatsModule,
     ExportModule,
     ImportModule,

@@ -14,7 +14,7 @@ import { RegisterDto } from './dto/register.dto';
 import { JwtTokenService } from './jwt/jwt-token.service';
 import { PUBLIC_URL } from '../config/public-url';
 
-@Controller('api/auth')
+@Controller('auth')
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
