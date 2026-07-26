@@ -149,110 +149,12 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 						? game.player2
 						: game.player1;
 
-				const tournamentResult =
-					await this.tournamentService.reportWinnerFromUser(
-						game.roomId,
-						winnerSocket.data.userId,
-					);
-
-				const tournament =
-					this.tournamentState.findTournamentBySemiFinal(game.roomId);
-
-				if (tournament)
-				{
-					this.tournamentState.setSemiFinalWinner(
-						tournament.tournamentId,
-						game.roomId,
-						winnerSocket.data.userId,
-					);
-				}
-
-				if (!tournamentResult.tournamentFinished)
-				{
-					if (tournamentResult.readyToStart)
-					{
-						const bracket =
-							this.tournamentState.getBracket(game.tournamentId!);
-
-						console.log("Sending bracket:", bracket);
-
-						const participants =
-							await this.tournamentService.getRoomParticipants(
-								tournamentResult.nextRoomId,
-							);
-						const socket1 =
-							this.gameManager.getPlayerSocket(
-								participants[0].userId!,
-							);
-
-						const socket2 =
-							this.gameManager.getPlayerSocket(
-								participants[1].userId!,
-							);
-							
-						if (!socket1 || !socket2)
-						{
-							console.error("Unable to find both finalist sockets");
-							return;
-						}
-
-						socket1.leave(data.roomId);
-						socket2.leave(data.roomId);
-
-						const finalGame =
-							await this.gameManager.createTournamentMatch(
-								socket1,
-								socket2,
-								tournamentResult.nextRoomId,
-								game.tournamentId!,
-							);
-						socket1.join(finalGame.roomId);
-						socket2.join(finalGame.roomId);
-
-						const payload = {
-							roomId: finalGame.roomId,
-							tournamentId: finalGame.tournamentId,
-
-							player1: {
-								id: socket1.id,
-								username: socket1.data.username,
-							},
-
-							player2: {
-								id: socket2.id,
-								username: socket2.data.username,
-							},
-							isFinal: true,
-						};
-
-						socket1.emit("tournament_bracket", bracket);
-						socket2.emit("tournament_bracket", bracket);
-
-						socket1.emit("match_found", payload);
-						socket2.emit("match_found", payload);
-
-						this.emitGameOver(loserSocket, result, game);
-
-						this.gameManager.removeGame(data.roomId);
-						return;
-					}
-					else if (!tournamentResult.readyToStart)
-					{
-						this.emitGameOver(loserSocket, result, game);
-						winnerSocket.emit("tournament_waiting_final");
-
-						this.gameManager.removeGame(data.roomId);
-						return;
-					}
-				}
-				else
-				{
-					this.emitGameOver(winnerSocket, result, game);
-					this.emitGameOver(loserSocket, result, game);
-
-					this.gameManager.removeGame(data.roomId);
-					return;
-				}
+				await this.finishTournamentMatch(
+					game,
+					winnerSocket,
+					loserSocket,
+				);
+				return;
 			}
 		}
 	}
@@ -266,6 +168,138 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 			player1Time: game.player1Time,
 			player2Time: game.player2Time,
 		});
+	}
+
+	private async finishTournamentMatch(
+		game: GameSession,
+		winnerSocket: Socket,
+		loserSocket: Socket,
+	)
+	{
+		const tournamentResult =
+			await this.tournamentService.reportWinnerFromUser(
+				game.roomId,
+				winnerSocket.data.userId,
+			);
+
+		const tournament =
+			this.tournamentState.findTournamentBySemiFinal(game.roomId);
+
+		if (tournament)
+		{
+			this.tournamentState.setSemiFinalWinner(
+				tournament.tournamentId,
+				game.roomId,
+				winnerSocket.data.userId,
+			);
+		}
+
+		if (!tournamentResult.tournamentFinished)
+		{
+			if (tournamentResult.readyToStart)
+			{
+				const bracket =
+					this.tournamentState.getBracket(game.tournamentId!);
+
+				console.log("Sending bracket:", bracket);
+
+				const participants =
+					await this.tournamentService.getRoomParticipants(
+						tournamentResult.nextRoomId,
+					);
+
+				const socket1 =
+					this.gameManager.getPlayerSocket(
+						participants[0].userId!,
+					);
+
+				const socket2 =
+					this.gameManager.getPlayerSocket(
+						participants[1].userId!,
+					);
+
+				if (!socket1 || !socket2)
+				{
+					console.error("Unable to find both finalist sockets");
+					return;
+				}
+
+				socket1.leave(game.roomId);
+				socket2.leave(game.roomId);
+
+				const finalGame =
+					await this.gameManager.createTournamentMatch(
+						socket1,
+						socket2,
+						tournamentResult.nextRoomId,
+						game.tournamentId!,
+					);
+
+				socket1.join(finalGame.roomId);
+				socket2.join(finalGame.roomId);
+
+				const payload = {
+					roomId: finalGame.roomId,
+					tournamentId: finalGame.tournamentId,
+
+					player1: {
+						id: socket1.id,
+						username: socket1.data.username,
+					},
+
+					player2: {
+						id: socket2.id,
+						username: socket2.data.username,
+					},
+
+					isFinal: true,
+				};
+
+				socket1.emit("tournament_bracket", bracket);
+				socket2.emit("tournament_bracket", bracket);
+
+				socket1.emit("match_found", payload);
+				socket2.emit("match_found", payload);
+
+				this.emitGameOver(loserSocket, {
+					winner:
+						winnerSocket === game.player1
+							? 1
+							: 2,
+				}, game);
+
+				this.gameManager.removeGame(game.roomId);
+				return;
+			}
+
+			this.emitGameOver(loserSocket, {
+				winner:
+					winnerSocket === game.player1
+						? 1
+						: 2,
+			}, game);
+
+			winnerSocket.emit("tournament_waiting_final");
+
+			this.gameManager.removeGame(game.roomId);
+			return;
+		}
+
+		this.emitGameOver(winnerSocket, {
+			winner:
+				winnerSocket === game.player1
+					? 1
+					: 2,
+		}, game);
+
+		this.emitGameOver(loserSocket, {
+			winner:
+				winnerSocket === game.player1
+					? 1
+					: 2,
+		}, game);
+
+		this.gameManager.removeGame(game.roomId);
 	}
 
 	handleConnection(client: Socket)
@@ -293,16 +327,48 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 		if (client.data.userId)
 		{
 			this.gameManager.unregisterPlayer(client.data.userId);
-			await this.tournamentService.removePlayer(client.data.userId);
 		}
 		this.gameManager.removeWaitingPlayer(client);
+		await this.handlePlayerForfeit(client);
+	}
 
+	private async handlePlayerForfeit(client: Socket)
+	{
 		const game = this.gameManager.findGameByPlayer(client);
-
+	
 		if (!game)
+		{
+			if (client.data.userId)
+			{
+				await this.tournamentService.leaveTournament(
+					client.data.userId,
+				);
+			}
 			return;
+		}
 
 		const p1won = game.player2.id === client.id;
+
+		if (game.tournamentId)
+		{
+			const winnerSocket =
+				game.player1.id === client.id
+					? game.player2
+					: game.player1;
+
+			const loserSocket =
+				game.player1.id === client.id
+					? game.player1
+					: game.player2;
+
+			await this.finishTournamentMatch(
+				game,
+				winnerSocket,
+				loserSocket,
+			);
+
+			return;
+		}
 
 		this.server.to(game.roomId).emit("game_over", {
 			winner: p1won ? 1 : 2,
@@ -315,6 +381,51 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 
 		this.gameManager.removeGame(game.roomId);
 	}
+
+	@SubscribeMessage("leave_game")
+	async handleLeaveGame(
+		@ConnectedSocket() client: Socket,
+	)
+ 	{
+		console.log("leave_game reçu");
+
+const game = this.gameManager.findGameByPlayer(client);
+
+console.log("game :", game ? "OUI" : "NON");
+
+if (game)
+{
+    console.log("handlePlayerForfeit");
+    await this.handlePlayerForfeit(client);
+    return;
+}
+
+console.log("leaveTournament");
+
+const result = await this.tournamentService.leaveTournament(
+    client.data.userId,
+);
+
+console.log(result);
+	}
+// 		console.log("leave_game reçu");
+// 		const game = this.gameManager.findGameByPlayer(client);
+
+// 		if (game)
+// 		{
+// 			await this.handlePlayerForfeit(client);
+// 			return;
+// 		}
+
+// if (!client.data.userId)
+//     return;
+// console.log("leaveTournament :", result);
+// const result = await this.tournamentService.leaveTournament(
+//     client.data.userId,
+// );
+
+// console.log("RESULT ", result);
+// 	}
 
 // -----------------------------------------------------------------------------
 // Matchmaking

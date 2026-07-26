@@ -179,8 +179,19 @@ export default function TournamentBracket({
 
 					<div className="rounded-2xl border border-yellow-400/30 bg-white/10 px-8 py-5 backdrop-blur-xl shadow-2xl">
 
+					<div className="mt-6 flex flex-col items-center">
+
+						<p className="text-lg font-medium text-violet-200">
+							The next match is about to begin.
+						</p>
+
+						<p className="mt-2 text-sm text-white/60">
+							Get ready for the Grand
+						</p>
+
+					</div>
 						<div className="mb-5 text-center text-sm uppercase tracking-[0.25em] text-yellow-300">
-							Finale
+							Final !
 						</div>
 
 						<div className="flex items-center justify-center gap-8">

@@ -373,110 +373,67 @@ export class TournamentService {
 		return this.reportRoomWinner(roomId, participant.id);
 	}
 
-	async removePlayer(userId: string) {
-		return this.prisma.roomParticipant.deleteMany({
-			where: {
-				userId,
-			},
-		});
-	}
-/*  async createEightPlayerTournament() {
-    return this.prisma.$transaction(async (tx) => {
-      const tournament = await tx.tournament.create({
-        data: {
-          status: RoomStatus.WAITING,
-        },
-      });
+  async leaveTournament(userId: string)
+  {
+	  return this.prisma.$transaction(async (tx) =>
+  	{
+	  	const participant = await tx.roomParticipant.findFirst({
+		  	where: {
+			  	userId,
+  			},
+	  		include: {
+		  		room: true,
+		  	},
+  		});
+    
+  		if (!participant)
+	  		return null;
 
-      // Créer la finale
-      const finalRoom = await tx.room.create({
-        data: {
-          mode: RoomMode.TOURNAMENT,
-          status: RoomStatus.WAITING,
-          round: TournamentRound.FINAL,
-          tournamentId: tournament.id,
-        },
-      });
+  		const room = await tx.room.findUnique({
+	  		where: {
+		  		id: participant.roomId,
+			  },
+  			include: {
+	  			participants: true,
+		  	},
+		  });
 
-      // Créer 2 semi-finals qui pointent vers la finale
-      const semiFinal1 = await tx.room.create({
-        data: {
-          mode: RoomMode.TOURNAMENT,
-          status: RoomStatus.WAITING,
-          round: TournamentRound.SEMI_FINAL,
-          tournamentId: tournament.id,
-          nextRoomId: finalRoom.id,
-        },
-      });
+		  if (!room)
+			  return null;
 
-      const semiFinal2 = await tx.room.create({
-        data: {
-          mode: RoomMode.TOURNAMENT,
-          status: RoomStatus.WAITING,
-          round: TournamentRound.SEMI_FINAL,
-          tournamentId: tournament.id,
-          nextRoomId: finalRoom.id,
-        },
-      });
+		// On retire le joueur du tournoi
+  		await tx.roomParticipant.delete({
+	  		where: {
+		  		id: participant.id,
+			  },
+	  	});
 
-      // Créer 4 quarts de finales qui pointent vers les semi-finals
-      const quarterFinal1 = await tx.room.create({
-        data: {
-          mode: RoomMode.TOURNAMENT,
-          status: RoomStatus.WAITING,
-          round: TournamentRound.QUARTER_FINAL,
-          tournamentId: tournament.id,
-          nextRoomId: semiFinal1.id,
-        },
-      });
+		// On regarde s'il reste quelqu'un dans cette room
+  		const remainingParticipants = room.participants.filter(
+	  		p => p.id !== participant.id,
+		  );
 
-      const quarterFinal2 = await tx.room.create({
-        data: {
-          mode: RoomMode.TOURNAMENT,
-          status: RoomStatus.WAITING,
-          round: TournamentRound.QUARTER_FINAL,
-          tournamentId: tournament.id,
-          nextRoomId: semiFinal1.id,
-        },
-      });
+		// Personne en face -> rien à qualifier
+  		if (remainingParticipants.length === 0)
+	  	{
+		  	return {
+			  	forfeit: true,
+				  qualifiedUserId: null,
+	  		};
+		  }
 
-      const quarterFinal3 = await tx.room.create({
-        data: {
-          mode: RoomMode.TOURNAMENT,
-          status: RoomStatus.WAITING,
-          round: TournamentRound.QUARTER_FINAL,
-          tournamentId: tournament.id,
-          nextRoomId: semiFinal2.id,
-        },
-      });
+		  const winner = remainingParticipants[0];
 
-      const quarterFinal4 = await tx.room.create({
-        data: {
-          mode: RoomMode.TOURNAMENT,
-          status: RoomStatus.WAITING,
-          round: TournamentRound.QUARTER_FINAL,
-          tournamentId: tournament.id,
-          nextRoomId: semiFinal2.id,
-        },
-      });
+		  const result = await this.reportRoomWinner(
+			  room.id,
+			  winner.id,
+		  );
 
-      // Assigner les questions
-      await this.assignQuestionsToRoomTx(tx, quarterFinal1.id, 10);
-      await this.assignQuestionsToRoomTx(tx, quarterFinal2.id, 10);
-      await this.assignQuestionsToRoomTx(tx, quarterFinal3.id, 10);
-      await this.assignQuestionsToRoomTx(tx, quarterFinal4.id, 10);
-      await this.assignQuestionsToRoomTx(tx, semiFinal1.id, 10);
-      await this.assignQuestionsToRoomTx(tx, semiFinal2.id, 10);
-      await this.assignQuestionsToRoomTx(tx, finalRoom.id, 10);
-
-      return {
-        tournament,
-        rooms: {
-          quarterFinals: [quarterFinal1, quarterFinal2, quarterFinal3, quarterFinal4],
-          semiFinals: [semiFinal1, semiFinal2],
-          finalRoom,
-        },
-      };
-    });
-  }*/
+  		return {
+	  		forfeit: true,
+		  	qualifiedUserId: winner.userId,
+			  ...result,
+		  };
+  	});
+  }
 }

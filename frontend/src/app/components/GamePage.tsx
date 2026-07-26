@@ -222,7 +222,7 @@ function buildTournamentBracket(playerScore: number) {
           className="flex items-center gap-2 text-white/70 hover:text-white transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
-          <span>Quitter</span>
+          <span>Leave</span>
         </button>
         <div className={`px-4 py-1.5 rounded-full bg-gradient-to-r ${config.color} text-white text-sm`}>
           {config.label}

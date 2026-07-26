@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { socket } from "../../socket/socket";
 import { useLocation } from "react-router-dom";
+import TournamentWait from "./TournamentWait.tsx";
 
 interface TournamentLobbyTestProps {
     username: string;
     onBack: () => void;
     onStartGame: (matchData: any) => void;
+	players: string[];
 }
 
 export default function TournamentLobbyTest({
@@ -16,7 +18,7 @@ export default function TournamentLobbyTest({
 {
 	const location = useLocation();
     const [connected, setConnected] = useState(false);
-    const [players, setPlayers] = useState(0);
+    const [players, setPlayers] = useState<string[]>([]);
 
 	useEffect(() => {
 		socket.connect();
@@ -60,28 +62,10 @@ export default function TournamentLobbyTest({
 			socket.off("match_found");
 		};
 	}, []);
-
-    return (
-        <div>
-            <h1>Tournament</h1>
-
-            <p>Player : {username}</p>
-
-            <p>
-                Status :
-                {connected ? " Connected" : " Disconnected"}
-            </p>
-
-            <p>
-                Players :
-                {players}/4
-            </p>
-
-            <br /><br />
-
-            <button onClick={onBack}>
-                Back
-            </button>
-        </div>
-    );
+	return (
+		<TournamentWait
+			players={players}
+			onBack={onBack}
+		/>
+	);
 }

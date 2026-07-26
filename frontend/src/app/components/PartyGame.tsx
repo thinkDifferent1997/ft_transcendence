@@ -3,6 +3,7 @@ import { socket } from "../../socket/socket";
 import { useState, useEffect } from "react";
 import { useRef } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
+import { useGame } from "../context/GameContext";
 
 import QuestionCard from "./QuestionCard";
 import PlayerBonusPanel from "./PlayerBonus";
@@ -14,10 +15,14 @@ import TournamentBracket from "./TournamentBracket";
 import type { PlayerState } from "../types/PlayerState";
 import type { GameState } from "../types/GameState";
 import type { Question } from "../types/question";
+import TournamentWaitingFinal from "../pages/TournamentWaitingFinal";
 
 export default function QuizPage()
 {
 	const { mode } = useParams<{ mode: string }>();
+	const [revealedAnswer, setRevealedAnswer] = useState<string | null>(null);
+	const [correctAnswer, setCorrectAnswer] = useState<string | null>(null);
+	const { setIsInGame } = useGame();
 	const location = useLocation();
 	useEffect(() =>
 	{
@@ -27,6 +32,15 @@ export default function QuizPage()
 		}
 	}, []);
 
+	useEffect(() =>
+	{
+		setIsInGame(true);
+
+		return () =>
+		{
+			setIsInGame(false);
+		};
+	}, []);
 
 	const player: PlayerState = {
 			score: 0,
@@ -42,6 +56,7 @@ export default function QuizPage()
 	const [gameStarted, setGameStarted] = useState(false);
 	const [waitingForFinal, setWaitingForFinal] = useState(false);
 	const [tournamentBracket, setTournamentBracket] = useState<any>(null);
+	const [opponentReady, setOpponentReady] = useState(false);
 	const [game, setGame] = useState<GameState>(
 		{
 			currentQuestion: questions[0],
@@ -75,6 +90,10 @@ export default function QuizPage()
 			roomId: data.roomId,
 			isPlayer1,
 			time_left: 20,
+			questionIndex: 0,
+  			score: 0,
+    		gameOver: false,
+   			question: undefined,
 			localPlayer: {
 				...previousGame.localPlayer,
 				username: isPlayer1
@@ -165,22 +184,21 @@ export default function QuizPage()
 			console.log("Error :", error);
 		});
 
-	/*	socket.on("match_found", (data) =>
-		{
-			initializeMatch(data);
-		});
-*/
-
 		socket.on("match_found", (data) => {
+			if (data.isFinal)
+			{
+				setOpponentReady(true);
 
-			console.log("isFinal : ", data.isFinal);
-			if (data.isFinal) {
-				setTimeout(() => {
+				setTimeout(() =>
+				{
+					setWaitingForFinal(false);
+					setOpponentReady(false);
+
 					initializeMatch(data);
 					setTournamentBracket(null);
-				}, 7000);
+				}, 5000);
 			}
-			else 
+			else
 				initializeMatch(data);
 		});
 
@@ -327,6 +345,7 @@ export default function QuizPage()
 			console.log("setGameStarted(false) from waiting_final");
 			setGameStarted(false);
 			setWaitingForFinal(true);
+			setOpponentReady(false);
 
 			setGame(previousGame => ({
 				...previousGame,
@@ -372,13 +391,6 @@ export default function QuizPage()
 					score: enemyScore,
 				},
 			}));
-			if (mode === "tournament")
-			{
-				console.log("TOURNAMENT ID : ", location.state?.tournamentId);
-				setTimeout(() => {
-					navigate("/tournament");
-				}, 3000);
-			}
 		});
 
 		return () =>
@@ -459,7 +471,7 @@ export default function QuizPage()
 				game={game}
 				onBack={() => {
 					socket.emit("leave_queue");
-					// TODO : retour au lobby
+					navigate("/");
 				}}
 			/>
 		);
@@ -468,12 +480,7 @@ export default function QuizPage()
 	if (waitingForFinal)
 	{
 		return (
-			<div className="flex h-full items-center justify-center">
-				<div className="text-center">
-					<h1>🏆 Demi-finale remportée !</h1>
-					<p>En attente de la fin de l'autre demi-finale...</p>
-				</div>
-			</div>
+			<TournamentWaitingFinal opponentReady={opponentReady} />
 		);
 	}
 
@@ -483,7 +490,6 @@ export default function QuizPage()
 			<MatchmakingScreen
 				onCancel={() => {
 					socket.emit("leave_queue");
-					// TODO : retour au lobby
 				}}
 			/>
 		);
@@ -496,7 +502,10 @@ export default function QuizPage()
 					revealed={revealed}
 					waitingForOpponent={game.localPlayer.answered}
 					onAnswer={handle_answer}
-					onBack={() => {}}
+					onBack={() => {
+						socket.disconnect();
+						navigate("/");
+					}}
 				/>
 		);
 }

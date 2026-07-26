@@ -1,6 +1,8 @@
 import { Sparkles, MessageCircle, Send, X, Minus, LogOut } from "lucide-react";
 import { useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
+import { socket } from "../../socket/socket";
+import { useGame } from "../context/GameContext";
 
 interface LayoutProps {
   username: string;
@@ -35,6 +37,8 @@ export default function Layout({ username, onLogout }: LayoutProps) {
     },
   ]);
 
+	const { isInGame } = useGame();
+
   const handleSendMessage = () => {
     if (message.trim()) {
       setMessages([
@@ -50,6 +54,25 @@ export default function Layout({ username, onLogout }: LayoutProps) {
       setMessage("");
     }
   };
+
+	const handleNavigate = (path: string) =>
+	{
+		if (isInGame)
+		{
+			const leave = window.confirm(
+				"Leaving the game will count as a defeat. Continue?"
+			);
+
+			if (!leave)
+				return;
+      setTimeout(() => {
+        navigate(path);
+      }, 100);
+			socket.emit("leave_game");
+		}
+
+		navigate(path);
+	};
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-violet-100 via-pink-50 to-cyan-100">
@@ -72,7 +95,7 @@ export default function Layout({ username, onLogout }: LayoutProps) {
 
             {/* Bouton Profil */}
             <button
-              onClick={() => navigate("/profile")}
+              onClick={() => handleNavigate("/profile")}
               className="group flex items-center gap-3 px-4 py-2 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 transition-all shadow-md hover:shadow-lg"
             >
               <span className="text-white font-medium">{username}</span>
@@ -83,7 +106,22 @@ export default function Layout({ username, onLogout }: LayoutProps) {
 
             {/* VRAI BOUTON DÉCONNEXION FIGMA STYLE */}
             <button
-              onClick={onLogout}
+				onClick={() =>
+				{
+					if (isInGame)
+					{
+						const leave = window.confirm(
+							"Leaving the game will count as a defeat. Continue?"
+						);
+
+						if (!leave)
+							return;
+
+						socket.emit("leave_game");
+					}
+
+					onLogout();
+				}}
               className="flex items-center justify-center w-10 h-10 rounded-full bg-white/80 border border-gray-200 text-gray-500 hover:text-red-500 hover:bg-red-50 transition-all shadow-sm hover:shadow-md"
               title="Logout"
             >
