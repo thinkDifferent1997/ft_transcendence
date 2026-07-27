@@ -1,6 +1,5 @@
 import { Navigate, useNavigate, useParams } from "react-router-dom";
 import GamePage from "../components/GamePage";
-import TournamentGame from "../components/TournamentGame";
 import PartyGame from "../components/PartyGame";
 
 const VALID_MODES = ["solo", "ai", "party", "tournament"] as const;
@@ -21,7 +20,7 @@ export default function GameRoute() {
   const onBack = () => navigate("/");
 
   if (mode === "tournament") {
-    return <TournamentGame onBack={onBack} />;
+    return <PartyGame />;
   }
 
   if (mode === "party") {

@@ -17,11 +17,11 @@ export class TournamentController {
   /**
    * Create a new 8-player tournament with semi-final and final rooms
    */
-  @Post('eight-players')
+/*  @Post('eight-players')
   @HttpCode(201)
   async createEightPlayerTournament() {
     return this.tournamentService.createEightPlayerTournament();
-  }
+  }*/
 
   /**
    * Report the winner of a room and advance them to the next round

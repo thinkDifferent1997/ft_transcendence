@@ -3,14 +3,40 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { RoomMode, RoomStatus, TournamentRound } from '@prisma/client';
+import { Prisma, RoomMode, RoomStatus, TournamentRound } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class TournamentService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async createFourPlayerTournament() {
+	async startFourPlayerTournament(players: any[]) {
+		const tournament = await this.createFourPlayerTournament();
+
+		await this.addParticipantToRoom(
+			tournament.rooms.semiFinal1.id,
+			players[0].data.userId,
+		);
+
+		await this.addParticipantToRoom(
+			tournament.rooms.semiFinal1.id,
+			players[1].data.userId,
+		);
+
+		await this.addParticipantToRoom(
+			tournament.rooms.semiFinal2.id,
+			players[2].data.userId,
+		);
+
+		await this.addParticipantToRoom(
+			tournament.rooms.semiFinal2.id,
+			players[3].data.userId,
+		);
+
+		return tournament;
+	}
+
+   async createFourPlayerTournament() {
     return this.prisma.$transaction(async (tx) => {
       const tournament = await tx.tournament.create({
         data: {
@@ -165,19 +191,24 @@ export class TournamentService {
         where: { roomId: nextRoom.id },
       });
 
-      if (nextRoomParticipantCount >= 2) {
-        await tx.room.update({
-          where: { id: nextRoom.id },
-          data: {
-            status: RoomStatus.IN_PROGRESS,
-          },
-        });
-      }
+	  const readyToStart = nextRoomParticipantCount >= 2;
 
-      return {
-        tournamentFinished: false,
-        nextRoomId: nextRoom.id,
-      };
+		if (readyToStart)
+		{
+			await tx.room.update({
+				where: { id: nextRoom.id },
+				data: {
+					status: RoomStatus.IN_PROGRESS,
+				},
+			});
+		}
+
+		return {
+			tournamentFinished: false,
+			nextRoomId: nextRoom.id,
+			readyToStart,
+		};
+
     });
   }
 
@@ -195,6 +226,25 @@ export class TournamentService {
       },
     });
   }
+
+  private async addMultipleParticipantsToRoomTx(
+		tx: Prisma.TransactionClient,
+		roomId: string,
+		participants: Array<{ userId?: string; isBot?: boolean }>,
+	) {
+		await Promise.all(
+			participants.map((p) =>
+				tx.roomParticipant.create({
+					data: {
+						roomId,
+						userId: p.userId ?? null,
+						isBot: p.isBot ?? false,
+						score: 0,
+					},
+				}),
+			),
+		);
+	}
 
   async addMultipleParticipantsToRoom(
     roomId: string,
@@ -308,103 +358,82 @@ export class TournamentService {
     );
   }
 
-  async createEightPlayerTournament() {
-    return this.prisma.$transaction(async (tx) => {
-      const tournament = await tx.tournament.create({
-        data: {
-          status: RoomStatus.WAITING,
-        },
-      });
+  async reportWinnerFromUser(roomId: string, userId: string)
+	{
+		const participant = await this.prisma.roomParticipant.findFirst({
+			where: {
+				roomId,
+				userId,
+			},
+		});
 
-      // Créer la finale
-      const finalRoom = await tx.room.create({
-        data: {
-          mode: RoomMode.TOURNAMENT,
-          status: RoomStatus.WAITING,
-          round: TournamentRound.FINAL,
-          tournamentId: tournament.id,
-        },
-      });
+		if (!participant)
+			throw new NotFoundException("Participant not found.");
 
-      // Créer 2 semi-finals qui pointent vers la finale
-      const semiFinal1 = await tx.room.create({
-        data: {
-          mode: RoomMode.TOURNAMENT,
-          status: RoomStatus.WAITING,
-          round: TournamentRound.SEMI_FINAL,
-          tournamentId: tournament.id,
-          nextRoomId: finalRoom.id,
-        },
-      });
+		return this.reportRoomWinner(roomId, participant.id);
+	}
 
-      const semiFinal2 = await tx.room.create({
-        data: {
-          mode: RoomMode.TOURNAMENT,
-          status: RoomStatus.WAITING,
-          round: TournamentRound.SEMI_FINAL,
-          tournamentId: tournament.id,
-          nextRoomId: finalRoom.id,
-        },
-      });
+  async leaveTournament(userId: string)
+  {
+	  return this.prisma.$transaction(async (tx) =>
+  	{
+	  	const participant = await tx.roomParticipant.findFirst({
+		  	where: {
+			  	userId,
+  			},
+	  		include: {
+		  		room: true,
+		  	},
+  		});
+    
+  		if (!participant)
+	  		return null;
 
-      // Créer 4 quarts de finales qui pointent vers les semi-finals
-      const quarterFinal1 = await tx.room.create({
-        data: {
-          mode: RoomMode.TOURNAMENT,
-          status: RoomStatus.WAITING,
-          round: TournamentRound.QUARTER_FINAL,
-          tournamentId: tournament.id,
-          nextRoomId: semiFinal1.id,
-        },
-      });
+  		const room = await tx.room.findUnique({
+	  		where: {
+		  		id: participant.roomId,
+			  },
+  			include: {
+	  			participants: true,
+		  	},
+		  });
 
-      const quarterFinal2 = await tx.room.create({
-        data: {
-          mode: RoomMode.TOURNAMENT,
-          status: RoomStatus.WAITING,
-          round: TournamentRound.QUARTER_FINAL,
-          tournamentId: tournament.id,
-          nextRoomId: semiFinal1.id,
-        },
-      });
+		  if (!room)
+			  return null;
 
-      const quarterFinal3 = await tx.room.create({
-        data: {
-          mode: RoomMode.TOURNAMENT,
-          status: RoomStatus.WAITING,
-          round: TournamentRound.QUARTER_FINAL,
-          tournamentId: tournament.id,
-          nextRoomId: semiFinal2.id,
-        },
-      });
+		// On retire le joueur du tournoi
+  		await tx.roomParticipant.delete({
+	  		where: {
+		  		id: participant.id,
+			  },
+	  	});
 
-      const quarterFinal4 = await tx.room.create({
-        data: {
-          mode: RoomMode.TOURNAMENT,
-          status: RoomStatus.WAITING,
-          round: TournamentRound.QUARTER_FINAL,
-          tournamentId: tournament.id,
-          nextRoomId: semiFinal2.id,
-        },
-      });
+		// On regarde s'il reste quelqu'un dans cette room
+  		const remainingParticipants = room.participants.filter(
+	  		p => p.id !== participant.id,
+		  );
 
-      // Assigner les questions
-      await this.assignQuestionsToRoomTx(tx, quarterFinal1.id, 10);
-      await this.assignQuestionsToRoomTx(tx, quarterFinal2.id, 10);
-      await this.assignQuestionsToRoomTx(tx, quarterFinal3.id, 10);
-      await this.assignQuestionsToRoomTx(tx, quarterFinal4.id, 10);
-      await this.assignQuestionsToRoomTx(tx, semiFinal1.id, 10);
-      await this.assignQuestionsToRoomTx(tx, semiFinal2.id, 10);
-      await this.assignQuestionsToRoomTx(tx, finalRoom.id, 10);
+		// Personne en face -> rien à qualifier
+  		if (remainingParticipants.length === 0)
+	  	{
+		  	return {
+			  	forfeit: true,
+				  qualifiedUserId: null,
+	  		};
+		  }
 
-      return {
-        tournament,
-        rooms: {
-          quarterFinals: [quarterFinal1, quarterFinal2, quarterFinal3, quarterFinal4],
-          semiFinals: [semiFinal1, semiFinal2],
-          finalRoom,
-        },
-      };
-    });
+		  const winner = remainingParticipants[0];
+
+		  const result = await this.reportRoomWinner(
+			  room.id,
+			  winner.id,
+		  );
+
+  		return {
+	  		forfeit: true,
+		  	qualifiedUserId: winner.userId,
+			  ...result,
+		  };
+  	});
   }
 }

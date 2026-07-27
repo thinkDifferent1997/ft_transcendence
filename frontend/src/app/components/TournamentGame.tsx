@@ -592,7 +592,7 @@ function BracketView({
       <div className="w-full max-w-5xl">
         <div className="flex items-center justify-between mb-8">
           <button onClick={onBack} className="flex items-center gap-2 text-white/60 hover:text-white transition-colors">
-            <ArrowLeft className="w-5 h-5" /> Quitter
+            <ArrowLeft className="w-5 h-5" /> Leave
           </button>
           <div className="flex items-center gap-2 text-white">
             <Trophy className="w-6 h-6 text-yellow-400" />
