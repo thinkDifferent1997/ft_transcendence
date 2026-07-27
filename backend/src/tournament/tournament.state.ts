@@ -34,6 +34,28 @@ export class TournamentState
 {
 	private tournaments = new Map<string, TournamentStateData>();
 
+	// Retient qu'un finaliste a quitté le tournoi avant que la finale ne
+	// démarre (l'autre demi-finale était encore en cours). Permet de
+	// déclarer l'autre finaliste champion par forfait dès qu'il est connu,
+	// au lieu de le laisser attendre indéfiniment un adversaire qui ne
+	// viendra jamais.
+	// userId est un identifiant string (uuid), pas un number.
+	private finalForfeits = new Map<string, string>();
+
+	markFinalForfeit(tournamentId: string, userId: string): void
+	{
+		this.finalForfeits.set(tournamentId, userId);
+	}
+
+	consumeFinalForfeit(tournamentId: string): string | undefined
+	{
+		const userId = this.finalForfeits.get(tournamentId);
+
+		this.finalForfeits.delete(tournamentId);
+
+		return userId;
+	}
+
 	registerTournament(
 		tournamentId: string,
 		semiFinal1RoomId: string,

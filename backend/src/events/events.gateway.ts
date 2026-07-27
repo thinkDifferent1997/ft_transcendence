@@ -196,6 +196,34 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 
 		if (!tournamentResult.tournamentFinished)
 		{
+			// Si l'autre finaliste a déjà quitté le tournoi avant que la
+			// finale ne démarre, ce vainqueur devient champion directement :
+			// sans ça, il resterait bloqué sur "Waiting for your opponent...".
+			const forfeitedUserId =
+				this.tournamentState.consumeFinalForfeit(game.tournamentId!);
+
+			if (forfeitedUserId)
+			{
+				await this.tournamentService.reportWinnerFromUser(
+					tournamentResult.nextRoomId!,
+					winnerSocket.data.userId,
+				);
+
+				winnerSocket.emit("tournament_champion", {
+					reason: "forfeit",
+				});
+
+				this.emitGameOver(loserSocket, {
+					winner:
+						winnerSocket === game.player1
+							? 1
+							: 2,
+				}, game);
+
+				this.gameManager.removeGame(game.roomId);
+				return;
+			}
+
 			if (tournamentResult.readyToStart)
 			{
 				const bracket =
@@ -340,9 +368,21 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 		{
 			if (client.data.userId)
 			{
-				await this.tournamentService.leaveTournament(
+				const result = await this.tournamentService.leaveTournament(
 					client.data.userId,
 				);
+
+				// Le joueur qui part était déjà qualifié pour la finale
+				// (aucune GameSession active pour lui) : on retient le
+				// forfait pour que l'autre finaliste soit déclaré champion
+				// dès qu'il est connu, au lieu d'attendre indéfiniment.
+				if (result?.round === "FINAL" && result.tournamentId)
+				{
+					this.tournamentState.markFinalForfeit(
+						result.tournamentId,
+						client.data.userId,
+					);
+				}
 			}
 			return;
 		}
@@ -387,45 +427,11 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 		@ConnectedSocket() client: Socket,
 	)
  	{
-		console.log("leave_game reçu");
-
-const game = this.gameManager.findGameByPlayer(client);
-
-console.log("game :", game ? "OUI" : "NON");
-
-if (game)
-{
-    console.log("handlePlayerForfeit");
-    await this.handlePlayerForfeit(client);
-    return;
-}
-
-console.log("leaveTournament");
-
-const result = await this.tournamentService.leaveTournament(
-    client.data.userId,
-);
-
-console.log(result);
+		// handlePlayerForfeit gère à la fois le cas "partie en cours" et le
+		// cas "en attente de la finale" (et marque le forfait le cas
+		// échéant) — pas besoin de dupliquer sa logique ici.
+		await this.handlePlayerForfeit(client);
 	}
-// 		console.log("leave_game reçu");
-// 		const game = this.gameManager.findGameByPlayer(client);
-
-// 		if (game)
-// 		{
-// 			await this.handlePlayerForfeit(client);
-// 			return;
-// 		}
-
-// if (!client.data.userId)
-//     return;
-// console.log("leaveTournament :", result);
-// const result = await this.tournamentService.leaveTournament(
-//     client.data.userId,
-// );
-
-// console.log("RESULT ", result);
-// 	}
 
 // -----------------------------------------------------------------------------
 // Matchmaking
