@@ -23,6 +23,10 @@ model User {
   githubId            String? @unique
   avatar              String?
 
+  // Id du socket Socket.IO de la session active (une seule fenêtre à la
+  // fois par compte). null = personne connecté en ce moment.
+  activeSocketId      String?
+
   xp             Int               @default(0)
   participations RoomParticipant[]
   userBadges     UserBadge[]

@@ -11,6 +11,7 @@ import { GameResultsService } from "../game-results/game-results.service";
 import { GamificationService } from "../gamification/gamification.service";
 import { StatsService } from "../stats/stats.service";
 import { StatsGateway } from "../stats/stats.gateway";
+import { PrismaService } from "../prisma/prisma.service";
 
 /**
 	* EventsGateway
@@ -49,6 +50,7 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 	private readonly gamificationService: GamificationService,
 	private readonly statsService: StatsService,
 	private readonly statsGateway: StatsGateway,
+	private readonly prisma: PrismaService,
 	) {}
 
 	@WebSocketServer()
@@ -401,7 +403,7 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 		this.gameManager.removeGame(game.roomId);
 	}
 
-	handleConnection(client: Socket)
+	async handleConnection(client: Socket)
 	{
 		const cookies = parse(client.handshake.headers.cookie ?? "");
 
@@ -410,13 +412,46 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 				username: string;
 				tfa: string;
 			}>(cookies.access_token);
-			
+
 		client.data.userId = payload.sub;
 		this.gameManager.registerPlayer(
 			client.data.userId,
 			client,
 		);
 		client.data.username = payload.username;
+
+		await this.enforceSingleSession(client);
+	}
+
+	// Un même compte ne doit être connecté que depuis une seule fenêtre à
+	// la fois. Si une session était déjà active ailleurs, on déconnecte
+	// activement l'ancienne au profit de celle-ci (plutôt que de refuser
+	// la nouvelle connexion).
+	private async enforceSingleSession(client: Socket)
+	{
+		try
+		{
+			const user = await this.prisma.user.findUnique({
+				where: { id: client.data.userId },
+				select: { activeSocketId: true },
+			});
+
+			const previousSocketId = user?.activeSocketId;
+
+			if (previousSocketId && previousSocketId !== client.id)
+			{
+				this.server.sockets.sockets.get(previousSocketId)?.disconnect(true);
+			}
+
+			await this.prisma.user.update({
+				where: { id: client.data.userId },
+				data: { activeSocketId: client.id },
+			});
+		}
+		catch (error)
+		{
+			console.error("Failed to enforce single session:", error);
+		}
 	}
 
 	async handleDisconnect(client: Socket)
@@ -426,9 +461,31 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 		if (client.data.userId)
 		{
 			this.gameManager.unregisterPlayer(client.data.userId);
+			await this.clearActiveSession(client);
 		}
 		this.gameManager.removeWaitingPlayer(client);
 		await this.handlePlayerForfeit(client);
+	}
+
+	// Ne libère activeSocketId que s'il correspond encore à CE socket :
+	// si une nouvelle connexion l'a déjà remplacé entre-temps, on ne veut
+	// surtout pas effacer la trace de cette session plus récente.
+	private async clearActiveSession(client: Socket)
+	{
+		try
+		{
+			await this.prisma.user.updateMany({
+				where: {
+					id: client.data.userId,
+					activeSocketId: client.id,
+				},
+				data: { activeSocketId: null },
+			});
+		}
+		catch (error)
+		{
+			console.error("Failed to clear active session:", error);
+		}
 	}
 
 	private async handlePlayerForfeit(client: Socket)
