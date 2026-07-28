@@ -23,7 +23,30 @@ model User {
   githubId            String? @unique
   avatar              String?
 
+  xp             Int               @default(0)
   participations RoomParticipant[]
+  userBadges     UserBadge[]
+}
+
+// ─── Gamification ───
+
+model Badge {
+  id          String      @id @default(uuid())
+  code        String      @unique
+  name        String
+  description String
+  userBadges  UserBadge[]
+}
+
+model UserBadge {
+  id       String   @id @default(uuid())
+  userId   String
+  user     User     @relation(fields: [userId], references: [id])
+  badgeId  String
+  badge    Badge    @relation(fields: [badgeId], references: [id])
+  earnedAt DateTime @default(now())
+
+  @@unique([userId, badgeId])
 }
 
 // ─── Banque de questions ───
@@ -97,6 +120,12 @@ model Room {
   nextRoom      Room?           @relation("RoomNext", fields: [nextRoomId], references: [id])
   previousRoom  Room[]           @relation("RoomNext")
 
+  // Vainqueur explicite du match (null = match nul). Persisté directement
+  // plutôt que redéduit des scores : le vrai vainqueur peut avoir été
+  // départagé par le temps de réponse en cas d'égalité de score.
+  winnerParticipantId String?
+  winner              RoomParticipant? @relation("RoomWinner", fields: [winnerParticipantId], references: [id])
+
   participants  RoomParticipant[]
   questions     RoomQuestion[]
 }
@@ -114,6 +143,7 @@ model RoomParticipant {
   answers Answer[]
 
   championOf Tournament[] @relation("TournamentChampion")
+  wonRooms   Room[]       @relation("RoomWinner")
 
   @@unique([roomId, userId])
 }

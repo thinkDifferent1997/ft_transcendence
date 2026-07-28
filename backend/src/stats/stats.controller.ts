@@ -102,6 +102,11 @@ export class StatsController {
     return { tournamentsWon: count };
   }
 
+  @Get(':userId/badges')
+  async getBadges(@Param('userId') userId: string) {
+    return this.statsService.getBadges(userId);
+  }
+
   @Get(':userId/summary')
   async getSummary(
     @Param('userId') userId: string,

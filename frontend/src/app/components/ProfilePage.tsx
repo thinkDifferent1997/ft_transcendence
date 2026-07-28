@@ -1,4 +1,4 @@
-import { Trophy, Target, TrendingUp, Star, Camera, Award, Zap, Shield, QrCode, X, CheckCircle, Download, FileText } from "lucide-react";
+import { Trophy, Target, TrendingUp, Star, Camera, Award, Zap, Shield, QrCode, X, CheckCircle, Download, FileText, Lock } from "lucide-react";
 import { useEffect, useState } from "react";
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "./ui/chart";
@@ -7,7 +7,16 @@ import { statsSocket } from "../../socket/socket";
 
 interface ProfilePageProps {
   username: string;
+  userId: string;
   onBack?: () => void;
+}
+
+interface BadgeStat {
+  code: string;
+  name: string;
+  description: string;
+  earned: boolean;
+  earnedAt: string | null;
 }
 
 interface SummaryData {
@@ -17,6 +26,8 @@ interface SummaryData {
   categories: { categoryName: string; correct: number; total: number; successRate: number }[];
   winLoss: { played: number; wins: number; losses: number; draws: number };
   tournamentsWon: number;
+  xp: number;
+  badges: BadgeStat[];
 }
 
 const themeColors = [
@@ -33,7 +44,7 @@ const chartConfig: ChartConfig = {
 
 const winLossColors = ["#22c55e", "#ef4444", "#94a3b8"];
 
-export default function ProfilePage({ username, onBack }: ProfilePageProps) {
+export default function ProfilePage({ username, userId, onBack }: ProfilePageProps) {
   const [avatar, setAvatar] = useState("😊");
   const [stats, setStats] = useState<SummaryData | null>(null);
   const [statsLoading, setStatsLoading] = useState(true);
@@ -76,7 +87,9 @@ export default function ProfilePage({ username, onBack }: ProfilePageProps) {
       statsSocket.connect();
     }
 
-    statsSocket.emit("stats:subscribe", { userId: username });
+    if (!userId) return;
+
+    statsSocket.emit("stats:subscribe", { userId });
 
     const handleUpdate = (data: SummaryData) => {
       // On ne remplace que si aucun filtre de date n'est actif,
@@ -91,7 +104,7 @@ export default function ProfilePage({ username, onBack }: ProfilePageProps) {
     return () => {
       statsSocket.off("stats:updated", handleUpdate);
     };
-  }, [username, startDate, endDate]);
+  }, [userId, startDate, endDate]);
 
   const emojis = ["😊", "🎨", "🚀", "🌟", "🎯", "🔥", "💫", "🎮", "🏆", "⚡"];
 
@@ -285,7 +298,7 @@ export default function ProfilePage({ username, onBack }: ProfilePageProps) {
               )}
             </div>
 
-            <div className="grid grid-cols-3 gap-4 text-center mt-6 md:mt-0">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center mt-6 md:mt-0">
               <div className="px-4">
                 <div className="bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent text-2xl font-bold">
                   {stats?.gamesPlayed ?? 0}
@@ -300,9 +313,15 @@ export default function ProfilePage({ username, onBack }: ProfilePageProps) {
               </div>
               <div className="px-4">
                 <div className="bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent text-2xl font-bold">
-                  {stats?.tournamentsWon ?? 0}
+                  {stats?.winLoss.wins ?? 0}
                 </div>
                 <div className="text-sm text-gray-600 font-medium">Victoires</div>
+              </div>
+              <div className="px-4">
+                <div className="bg-gradient-to-r from-yellow-500 to-amber-600 bg-clip-text text-transparent text-2xl font-bold">
+                  {stats?.xp ?? 0}
+                </div>
+                <div className="text-sm text-gray-600 font-medium">XP</div>
               </div>
             </div>
           </div>
@@ -420,6 +439,48 @@ export default function ProfilePage({ username, onBack }: ProfilePageProps) {
             ))}
             {(stats?.categories ?? []).length === 0 && (
               <p className="text-gray-400 col-span-2 text-center py-6">Aucune donnée pour l'instant — joue une partie !</p>
+            )}
+          </div>
+        </div>
+
+        {/* Badges */}
+        <div className="bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl p-6 border border-white/50 mb-8">
+          <h3 className="mb-6 flex items-center gap-2 text-xl font-bold text-gray-800">
+            <Award className="w-6 h-6 text-pink-600" />
+            Badges
+          </h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            {(stats?.badges ?? []).map((badge) => (
+              <div
+                key={badge.code}
+                title={badge.description}
+                className={`flex flex-col items-center text-center gap-2 p-4 rounded-2xl border transition-all ${
+                  badge.earned
+                    ? "bg-gradient-to-br from-yellow-400/20 to-amber-500/20 border-amber-300 shadow-md"
+                    : "bg-gray-100 border-gray-200 opacity-60"
+                }`}
+              >
+                <div
+                  className={`w-14 h-14 rounded-full flex items-center justify-center ${
+                    badge.earned
+                      ? "bg-gradient-to-br from-yellow-400 to-amber-500 shadow-lg"
+                      : "bg-gray-300"
+                  }`}
+                >
+                  {badge.earned ? (
+                    <Trophy className="w-7 h-7 text-white" />
+                  ) : (
+                    <Lock className="w-6 h-6 text-gray-500" />
+                  )}
+                </div>
+                <span className="font-bold text-sm text-gray-800">{badge.name}</span>
+                <span className="text-xs text-gray-500">{badge.description}</span>
+              </div>
+            ))}
+            {(stats?.badges ?? []).length === 0 && (
+              <p className="text-gray-400 col-span-full text-center py-6">
+                Aucun badge pour l'instant — joue une partie !
+              </p>
             )}
           </div>
         </div>
