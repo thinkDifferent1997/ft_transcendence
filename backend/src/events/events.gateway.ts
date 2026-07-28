@@ -334,18 +334,26 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 	{
 		const cookies = parse(client.handshake.headers.cookie ?? "");
 
-		const payload = this.jwtService.verify<{
-				sub: string;
-				username: string;
-				tfa: string;
-			}>(cookies.access_token);
-			
-		client.data.userId = payload.sub;
-		this.gameManager.registerPlayer(
-			client.data.userId,
-			client,
-		);
-		client.data.username = payload.username;
+		try
+		{
+			const payload = this.jwtService.verify<{
+					sub: string;
+					username: string;
+					tfa: string;
+				}>(cookies.access_token);
+				
+			client.data.userId = payload.sub;
+			this.gameManager.registerPlayer(
+				client.data.userId,
+				client,
+			);
+			client.data.username = payload.username;
+		}
+		catch
+		{
+			console.log("Invalid JWT");
+			client.disconnect();
+		}
 	}
 
 	async handleDisconnect(client: Socket)

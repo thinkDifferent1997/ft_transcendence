@@ -464,6 +464,10 @@ export class GameManager
 		else
 			game.player2Ready = true;
 
+		if (game.ai)
+		game.player2Ready = true;
+
+
 		return game.player1Ready && game.player2Ready;
 	}
 
