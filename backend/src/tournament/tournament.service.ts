@@ -373,53 +373,64 @@ export class TournamentService {
 		return this.reportRoomWinner(roomId, participant.id);
 	}
 
+  // Retire un joueur du tournoi en cours.
+  // On cible uniquement sa room ACTIVE (pas déjà FINISHED) pour éviter de
+  // piocher par erreur un participant d'une demi-finale déjà jouée, ce qui
+  // provoquait une fausse qualification et bloquait la finale.
   async leaveTournament(userId: string)
   {
 	  return this.prisma.$transaction(async (tx) =>
-  	{
-	  	const participant = await tx.roomParticipant.findFirst({
-		  	where: {
-			  	userId,
-  			},
-	  		include: {
-		  		room: true,
-		  	},
-  		});
-    
-  		if (!participant)
-	  		return null;
-
-  		const room = await tx.room.findUnique({
-	  		where: {
-		  		id: participant.roomId,
+	  {
+		  const participant = await tx.roomParticipant.findFirst({
+			  where: {
+				  userId,
+				  room: { status: { not: RoomStatus.FINISHED } },
 			  },
-  			include: {
-	  			participants: true,
-		  	},
+			  include: {
+				  room: true,
+			  },
+			  orderBy: {
+				  room: { createdAt: 'desc' },
+			  },
+		  });
+
+		  if (!participant)
+			  return null;
+
+		  const room = await tx.room.findUnique({
+			  where: {
+				  id: participant.roomId,
+			  },
+			  include: {
+				  participants: true,
+			  },
 		  });
 
 		  if (!room)
 			  return null;
 
-		// On retire le joueur du tournoi
-  		await tx.roomParticipant.delete({
-	  		where: {
-		  		id: participant.id,
+		  // On retire le joueur du tournoi
+		  await tx.roomParticipant.delete({
+			  where: {
+				  id: participant.id,
 			  },
-	  	});
+		  });
 
-		// On regarde s'il reste quelqu'un dans cette room
-  		const remainingParticipants = room.participants.filter(
-	  		p => p.id !== participant.id,
+		  // On regarde s'il reste quelqu'un dans cette room
+		  const remainingParticipants = room.participants.filter(
+			  p => p.id !== participant.id,
 		  );
 
-		// Personne en face -> rien à qualifier
-  		if (remainingParticipants.length === 0)
-	  	{
-		  	return {
-			  	forfeit: true,
+		  // Personne en face -> rien à qualifier
+		  if (remainingParticipants.length === 0)
+		  {
+			  return {
+				  forfeit: true,
 				  qualifiedUserId: null,
-	  		};
+				  round: room.round,
+				  tournamentId: room.tournamentId,
+				  roomId: room.id,
+			  };
 		  }
 
 		  const winner = remainingParticipants[0];
@@ -429,11 +440,14 @@ export class TournamentService {
 			  winner.id,
 		  );
 
-  		return {
-	  		forfeit: true,
-		  	qualifiedUserId: winner.userId,
+		  return {
+			  forfeit: true,
+			  qualifiedUserId: winner.userId,
+			  round: room.round,
+			  tournamentId: room.tournamentId,
+			  roomId: room.id,
 			  ...result,
 		  };
-  	});
+	  });
   }
 }
