@@ -78,6 +78,11 @@ export default function QuizPage()
 	const isPlayer1Ref = useRef(false);
 	const navigate = useNavigate();
 
+	// Timer d'affichage du bracket avant la finale : doit être annulé si la
+	// partie se termine (forfait de l'adversaire) pendant ces 5 secondes,
+	// sinon il "ressuscite" un match déjà clos côté serveur.
+	const bracketTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
 	function initializeMatch(data: any)
 	{
 		setWaitingForFinal(false);
@@ -191,12 +196,18 @@ export default function QuizPage()
 			{
 				setOpponentReady(true);
 
-				setTimeout(() =>
+				// On initialise le match tout de suite (roomId, isPlayer1...)
+				// même si l'écran de bracket reste affiché 5s de plus : sinon,
+				// en cas de forfait pendant ce délai, isPlayer1 resterait sur
+				// la valeur de la demi-finale et le calcul victoire/défaite
+				// serait faux.
+				initializeMatch(data);
+
+				bracketTimeoutRef.current = setTimeout(() =>
 				{
+					bracketTimeoutRef.current = null;
 					setWaitingForFinal(false);
 					setOpponentReady(false);
-
-					initializeMatch(data);
 					setTournamentBracket(null);
 				}, 5000);
 			}
@@ -364,10 +375,43 @@ export default function QuizPage()
 			}));
 		});
 
+		socket.on("tournament_champion", () =>
+		{
+			console.log("tournament_champion (forfeit)");
+
+			if (bracketTimeoutRef.current)
+			{
+				clearTimeout(bracketTimeoutRef.current);
+				bracketTimeoutRef.current = null;
+			}
+
+			setTournamentBracket(null);
+			setGameStarted(false);
+			setWaitingForFinal(false);
+			setOpponentReady(false);
+
+			setGame(previousGame => ({
+				...previousGame,
+				gameOver: true,
+				winner: previousGame.isPlayer1 ? 1 : 2,
+			}));
+		});
+
 		socket.on("game_over", (data) =>
 		{
 			console.log("GAME_OVER RECEIVED", data);
 			console.log("setGameStarted(false) from game_over");
+
+			// Annule le timer d'affichage du bracket : sinon, s'il se
+			// déclenche après coup, il ré-initialise un match déjà terminé
+			// et bloque le joueur restant sur un écran d'attente sans fin.
+			if (bracketTimeoutRef.current)
+			{
+				clearTimeout(bracketTimeoutRef.current);
+				bracketTimeoutRef.current = null;
+			}
+
+			setTournamentBracket(null);
 			setGameStarted(false);
 
 			const playerScore = isPlayer1Ref.current
@@ -397,6 +441,12 @@ export default function QuizPage()
 
 		return () =>
 		{
+			if (bracketTimeoutRef.current)
+			{
+				clearTimeout(bracketTimeoutRef.current);
+				bracketTimeoutRef.current = null;
+			}
+
 			socket.off("connect");
 			socket.off("connect_error");
 			socket.off("match_found");
@@ -405,6 +455,7 @@ export default function QuizPage()
 			socket.off("next_question");
 			socket.off("player_answered");
 			socket.off("tournament_waiting_final");
+			socket.off("tournament_champion");
 			socket.off("game_over");
 			socket.off("connect", joinGame);
 			socket.off("tournament_bracket");
