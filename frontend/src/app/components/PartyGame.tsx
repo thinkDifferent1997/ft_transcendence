@@ -150,6 +150,7 @@ export default function QuizPage()
 
 		const joinGame = () =>
 		{
+			console.log("mode : ", mode);
 			switch (mode)
 			{
 				case "party":
@@ -185,6 +186,7 @@ export default function QuizPage()
 		});
 
 		socket.on("match_found", (data) => {
+			console.log("match_found");
 			if (data.isFinal)
 			{
 				setOpponentReady(true);

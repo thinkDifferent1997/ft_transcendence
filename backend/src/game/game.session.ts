@@ -13,6 +13,23 @@ export interface QuestionHistory {
     player2Correct: boolean;
 }
 
+export interface AIPlayer {
+
+    accuracy: {
+        easy: number;
+        normal: number;
+        hard: number;
+    };
+
+    thinkingTime: {
+        easy: [number, number];
+        normal: [number, number];
+        hard: [number, number];
+    };
+	timeout?: NodeJS.Timeout;
+	answerAt?: number;
+}
+
 export class GameSession
 {
     constructor(
@@ -24,6 +41,7 @@ export class GameSession
 
 	player1Id!: string;
 	player2Id!: string;
+	ai?: AIPlayer;
 
     questions: {
 		question: string;

@@ -77,6 +77,41 @@ export class GameManager
 		return game;
 	}
 
+	async createAIMatch(
+		player: Socket,
+	): Promise<GameSession>
+	{
+		const roomId = `room-${Date.now()}`;
+
+		const game = new GameSession(
+			roomId,
+			player,
+			player, // temporaire
+		);
+
+		game.player1Id = player.data.userId;
+		game.player2Id = "AI";
+
+		game.questions = await this.triviaService.getQuestions();
+
+		game.ai = {
+			accuracy: {
+				easy: 0.8,
+				normal: 0.5,
+				hard: 0.3,
+			},
+			thinkingTime: {
+				easy: [4, 12],
+				normal: [5, 16],
+				hard: [8, 19],
+			},
+		};
+
+		this.games.set(roomId, game);
+
+		return game;
+	}
+
 // -----------------------------------------------------------------------------
 // Gameplay
 // -----------------------------------------------------------------------------

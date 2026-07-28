@@ -528,4 +528,30 @@ console.log(result);
 			},
 		});
 	}	
+	@SubscribeMessage("join_ai")
+	async handleJoinAI(
+		@ConnectedSocket() client: Socket,
+	)
+	{
+		const game = await this.gameManager.createAIMatch(client);
+
+		console.log("Handle join AI");
+		client.join(game.roomId);
+
+		client.emit("match_found", {
+			roomId: game.roomId,
+
+			player1: {
+				id: client.id,
+				username: client.data.username,
+			},
+
+			player2: {
+				id: "AI",
+				username: "TriviaBot",
+			},
+
+			ai: true,
+		});
+	}
 }

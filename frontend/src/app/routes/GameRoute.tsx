@@ -23,7 +23,7 @@ export default function GameRoute() {
     return <PartyGame />;
   }
 
-  if (mode === "party") {
+  if (mode === "party" || "ai") {
     return <PartyGame />;
   }
 
