@@ -5,12 +5,12 @@ import { PrismaService } from '../prisma/prisma.service';
 export class ChatService {
 	constructor(private prisma: PrismaService) {}
 
-	async saveGlobalMessage(username: string, content: string) {
+	async saveGlobalMessage(userId: string, content: string) {
 		const user = await this.prisma.user.findUnique({
-			where: { username }
+			where: { id: userId }
 		});
 
-		if (!user) throw new Error("Utilisateur introuvable dans la base de données");
+		if (!user) throw new Error("The user does not exist in the DataBase");
 
 		return this.prisma.globalMessage.create({
 			data: {

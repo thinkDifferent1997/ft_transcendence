@@ -19,14 +19,12 @@ export default function useAuthSession(): AuthSession {
       const res = await fetch("/api/auth/me", { credentials: "include" });
       if (res.ok) {
         const data = await res.json();
-        if (data && data.username) {
-          setUsername(data.username);
-          setIsLoggedIn(true);
-        } else {
-          setIsLoggedIn(false);
-        }
-      } else {
-        setIsLoggedIn(false);
+        setIsLoggedIn(true);
+        const foundName = data?.username || data?.user?.username || data?.login || data?.sub;
+        if (foundName)
+            setUsername(foundName);
+        else
+            setIsLoggedIn(false);
       }
     } catch (err) {
       console.error(err);

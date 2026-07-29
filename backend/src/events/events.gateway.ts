@@ -7,6 +7,7 @@ import { parse } from "cookie";
 import { TournamentService } from "../tournament/tournament.service";
 import { GameSession } from "../game/game.session";
 import { TournamentState } from "../tournament/tournament.state";
+import { PrismaService } from '../prisma/prisma.service';
 
 /**
 	* EventsGateway
@@ -41,6 +42,7 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 	private readonly jwtService: JwtService,
 	private readonly tournamentService: TournamentService,
 	private readonly tournamentState: TournamentState,
+    private readonly prisma: PrismaService,
 	) {}
 
 	@WebSocketServer()
@@ -330,22 +332,32 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 		this.gameManager.removeGame(game.roomId);
 	}
 
-	handleConnection(client: Socket)
+	async handleConnection(client: Socket)
 	{
-		const cookies = parse(client.handshake.headers.cookie ?? "");
+        try{
+            const cookies = parse(client.handshake.headers.cookie ?? "");
+            const payload = this.jwtService.verify<{
+                    sub: string;
+                    username: string;
+                    tfa: string;
+                }>(cookies.access_token);
+                
+            client.data.userId = payload.sub;
+            client.data.username = payload.username;
 
-		const payload = this.jwtService.verify<{
-				sub: string;
-				username: string;
-				tfa: string;
-			}>(cookies.access_token);
-			
-		client.data.userId = payload.sub;
-		this.gameManager.registerPlayer(
-			client.data.userId,
-			client,
-		);
-		client.data.username = payload.username;
+            this.gameManager.registerPlayer(
+                client.data.userId,
+                client,
+            );
+
+            await this.prisma.user.update({
+                where: { id: payload.sub },
+                data: { status: 'ONLINE' }
+            });
+        }catch (error) {
+            console.error("Socket Auth Error:", error.message);
+            client.disconnect();
+        }
 	}
 
 	async handleDisconnect(client: Socket)
@@ -355,6 +367,14 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 		if (client.data.userId)
 		{
 			this.gameManager.unregisterPlayer(client.data.userId);
+            try {
+                await this.prisma.user.update ({
+                    where: { id: client.data.userId },
+                    data: { status: 'OFFLINE' }
+                });
+            } catch (error) {
+                console.error("Error while disconneting Prisma:", error.message);
+            }
 		}
 		this.gameManager.removeWaitingPlayer(client);
 		await this.handlePlayerForfeit(client);

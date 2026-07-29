@@ -2,15 +2,16 @@ import {
     WebSocketGateway,
     SubscribeMessage,
     MessageBody,
-    WebSocketServer
+    WebSocketServer,
+    ConnectedSocket
 } from '@nestjs/websockets';
-import { Server } from 'socket.io';
+import { Server, Socket } from 'socket.io';
 import { ChatService } from './chat.service';
 
 @WebSocketGateway({ 
 	path: '/ws',
     cors: {
-        origin: true,
+        origin: '*',
         credentials: true,
     }
 })
@@ -22,16 +23,18 @@ export class ChatGateway {
 
     @SubscribeMessage('send_message')
     async handleMessage(
+        @ConnectedSocket() client: Socket,
         @MessageBody() data: { authorId: string, content: string }
     ) {
         try {
-            // Ici data.authorId contient le pseudonyme envoyé par le frontend
-			console.log("📨 Message reçu du front :", data); // 👈 Ajoute ceci pour voir si le message arrive bien ici
+			console.log("📨 Message reçu du front :", data);
+            if (!client.data.userId)
+                throw new Error("User not recognized by WebSocket");
             const savedMessage = await this.chatService.saveGlobalMessage(
-                data.authorId,
+                client.data.userId,
                 data.content
             );
-			console.log("✅ Message sauvegardé avec succès :", savedMessage); // 👈 Pour voir si Prisma valide
+			console.log("✅ Message sauvegardé avec succès :", savedMessage);
             this.server.emit('receive_message', savedMessage);
         } catch (error) {
             console.error("ERREUR WEBSOCKET (Envoi Message):", error);
