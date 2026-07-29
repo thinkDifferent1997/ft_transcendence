@@ -10,6 +10,7 @@ export class GameManager
     private waitingPlayer: Socket | null = null;
 
     private games = new Map<string, GameSession>();
+	private connectedPlayers = new Map<string, Socket>();
 
 // -----------------------------------------------------------------------------
 // Matchmaking
@@ -36,18 +37,46 @@ export class GameManager
             this.waitingPlayer,
             player,
         );
+
+		game.player1Id = this.waitingPlayer.data.userId;
+		game.player2Id = player.data.userId;
+
 //		game.questions = await this.triviaService.getTestQuestions();
 		game.questions = await this.triviaService.getQuestions();
 
         this.games.set(roomId, game);
 
-		console.log("Game created:", roomId);
-
         this.waitingPlayer = null;
 
         return game;
     }
-	
+
+	async createTournamentMatch(
+		player1: Socket,
+		player2: Socket,
+		roomId: string,
+		tournamentId: string
+	): Promise<GameSession>
+	{
+		const game = new GameSession(
+			roomId,
+			player1,
+			player2,
+			tournamentId,
+		);
+
+		game.player1Id = player1.data.userId;
+		game.player2Id = player2.data.userId;
+
+		game.questions = await this.triviaService.getQuestions();
+
+		this.games.set(roomId, game);
+
+		console.log("Tournament game created:", roomId);
+
+		return game;
+	}
+
 // -----------------------------------------------------------------------------
 // Gameplay
 // -----------------------------------------------------------------------------
@@ -243,8 +272,6 @@ export class GameManager
 				if (hadHideAnswer)
 					game.player2HideAnswer = false;
 			}
-
-			console.log(game.questionHistory);
 			return {
 				nextQuestion: true,
 				gameOver: false,
@@ -276,7 +303,6 @@ export class GameManager
 				game.player2ThreeChoice = false;
 
 		}
-		console.log(game.questionHistory[0]);
 		return {
 			nextQuestion: false,
 			gameOver: false,
@@ -462,5 +488,20 @@ export class GameManager
 		{
 			this.waitingPlayer = null;
 		}
+	}
+
+	registerPlayer(userId: string, socket: Socket): void
+	{
+		this.connectedPlayers.set(userId, socket);
+	}
+
+	unregisterPlayer(userId: string): void
+	{
+		this.connectedPlayers.delete(userId);
+	}
+
+	getPlayerSocket(userId: string): Socket | undefined
+	{
+		return this.connectedPlayers.get(userId);
 	}
 }

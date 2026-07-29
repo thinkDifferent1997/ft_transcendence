@@ -2,6 +2,7 @@ import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import LoginPage from "./components/LoginPage";
 import ProfilePage from "./components/ProfilePage";
 import TournamentLobby from "./components/TournamentLobby";
+import TournamentLobbyTest from "./pages/TournamentLobbyTest";
 import Layout from "./components/Layout";
 import Home from "./pages/Home";
 import GameRoute from "./routes/GameRoute";
@@ -47,11 +48,15 @@ export default function App() {
           <Route
             path="/tournament"
             element={
-              <TournamentLobby
-                username={username}
-                onBack={() => navigate("/")}
-                onStartGame={() => navigate("/game/tournament")}
-              />
+				<TournamentLobbyTest
+					username={username}
+					onBack={() => navigate("/")}
+					onStartGame={(matchData) =>
+						navigate("/game/tournament", {
+							state: matchData,
+						})
+					}
+				/>
             }
           />
           <Route path="/game/:mode" element={<GameRoute />} />

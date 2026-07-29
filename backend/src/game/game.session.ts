@@ -19,7 +19,11 @@ export class GameSession
         public readonly roomId: string,
         public readonly player1: Socket,
         public readonly player2: Socket,
+		public readonly tournamentId?: string,
     ) {}
+
+	player1Id!: string;
+	player2Id!: string;
 
     questions: {
 		question: string;

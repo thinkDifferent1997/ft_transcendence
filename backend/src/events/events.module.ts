@@ -7,9 +7,10 @@ import { Module } from '@nestjs/common';
 import { EventsGateway } from './events.gateway';
 import { GameModule } from '../game/game.module';
 import { JwtAuthModule } from "../auth/jwt/jwt-auth.module";
+import { TournamentModule } from "../tournament/tournament.module";
 
 @Module({
-	imports: [GameModule, JwtAuthModule],
+	imports: [GameModule, JwtAuthModule, TournamentModule],
 	providers: [EventsGateway],
 })
 export class EventsModule {}

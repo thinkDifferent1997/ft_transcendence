@@ -213,7 +213,6 @@ function buildTournamentBracket(playerScore: number) {
 	  ? "from-yellow-400 to-orange-400"
 	  : "from-red-400 to-pink-400";
 
-	console.log(game.questionIndex);
   return (
     <div className="min-h-screen bg-gradient-to-br from-violet-900 via-purple-900 to-indigo-900 flex flex-col">
       {/* Top bar */}
@@ -223,7 +222,7 @@ function buildTournamentBracket(playerScore: number) {
           className="flex items-center gap-2 text-white/70 hover:text-white transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
-          <span>Quitter</span>
+          <span>Leave</span>
         </button>
         <div className={`px-4 py-1.5 rounded-full bg-gradient-to-r ${config.color} text-white text-sm`}>
           {config.label}
@@ -448,13 +447,6 @@ function ResultsScreen({ mode, playerScore, opponentScore, questions, playerAnsw
 
 	const isDraw = hasOpponent && game.winner === 0;
 	const bracket = game.mode === "tournament" ? buildTournamentBracket(game.localPlayer.score) : null;
-
-	console.log({
-    winner: game.winner,
-    isPlayer1: game.isPlayer1,
-    playerWon,
-    isDraw,
-});
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-violet-900 via-purple-900 to-indigo-900 flex flex-col items-center justify-start py-10 px-4">

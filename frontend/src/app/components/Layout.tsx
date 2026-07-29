@@ -2,6 +2,7 @@ import { Sparkles, LogOut, MessageCircle, X, Send } from "lucide-react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { socket } from "../../socket/socket";
+import { useGame } from "../context/GameContext";
 
 interface LayoutProps {
 	username: string;
@@ -18,6 +19,47 @@ const [isChatOpen, setIsChatOpen] = useState(false);
 const [messages, setMessages] = useState<any[]>([]);
 const [newMessage, setNewMessage] = useState("");
 const messagesEndRef = useRef<HTMLDivElement>(null);
+const { isInGame } = useGame();
+
+  const handleSendMessage = () => {
+    if (message.trim()) {
+      setMessages([
+        ...messages,
+        {
+          id: messages.length + 1,
+          user: "You",
+          avatar: "😊",
+          text: message,
+          time: "Just now",
+        },
+      ]);
+      setMessage("");
+    }
+  };
+
+	const handleNavigate = (path: string) =>
+	{
+		if (isInGame)
+		{
+			const leave = window.confirm(
+				"Leaving the game will count as a defeat. Continue?"
+			);
+
+			if (!leave)
+				return;
+      setTimeout(() => {
+        navigate(path);
+      }, 100);
+			socket.emit("leave_game");
+		}
+		navigate(path);
+	};
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-violet-100 via-pink-50 to-cyan-100">
+      {/* Top Navigation Bar */}
+      <nav className="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-md border-b border-gray-200 shadow-sm z-40">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
 
 useEffect(() => {
   fetch("/api/auth/me")
@@ -39,7 +81,7 @@ useEffect(() => {
   });
 }, []);
 
-useEffect(() => {
+    useEffect(() => {
 	socket.connect();
 	socket.on("receive_message", (msg) => {
 	  console.log("📥 Message reçu :", msg);
@@ -47,7 +89,6 @@ useEffect(() => {
 	});
 	return () => {
 		socket.off("receive_message");
-	  socket.off("receive_message");
 	};
 	}, []);
 
@@ -64,6 +105,40 @@ useEffect(() => {
 	});
 	setNewMessage("");
 };
+            {/* Bouton Profil */}
+            <button
+              onClick={() => handleNavigate("/profile")}
+              className="group flex items-center gap-3 px-4 py-2 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 transition-all shadow-md hover:shadow-lg"
+            >
+              <span className="text-white font-medium">{username}</span>
+              <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-2xl ring-2 ring-white/50">
+                😊
+              </div>
+            </button>
+
+            {/* VRAI BOUTON DÉCONNEXION FIGMA STYLE */}
+            <button
+				onClick={() =>
+				{
+					if (isInGame)
+					{
+						const leave = window.confirm(
+							"Leaving the game will count as a defeat. Continue?"
+						);
+
+						if (!leave)
+							return;
+
+						socket.emit("leave_game");
+					}
+
+					onLogout();
+				}}
+              className="flex items-center justify-center w-10 h-10 rounded-full bg-white/80 border border-gray-200 text-gray-500 hover:text-red-500 hover:bg-red-50 transition-all shadow-sm hover:shadow-md"
+              title="Logout"
+            >
+              <LogOut className="w-5 h-5" />
+            </button>
 
 return (
 	<div className="min-h-screen bg-gradient-to-br from-violet-100 via-pink-50 to-cyan-100">
