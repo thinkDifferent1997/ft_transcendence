@@ -23,12 +23,11 @@ export default function useAuthSession(): AuthSession {
         const foundName = data?.username || data?.user?.username || data?.login || data?.sub;
         if (foundName)
             setUsername(foundName);
-        else
-            setIsLoggedIn(false);
-      }
+      }else
+          setIsLoggedIn(false);
+
     } catch (err) {
       console.error(err);
-      setIsLoggedIn(false);
     } finally {
       setAuthChecked(true);
     }
