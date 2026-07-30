@@ -14,20 +14,9 @@ export interface QuestionHistory {
 }
 
 export interface AIPlayer {
-
-    accuracy: {
-        easy: number;
-        normal: number;
-        hard: number;
-    };
-
-    thinkingTime: {
-        easy: [number, number];
-        normal: [number, number];
-        hard: [number, number];
-    };
 	timeout?: NodeJS.Timeout;
 	answerAt?: number;
+	accuracy? : number;
 }
 
 export class GameSession
@@ -38,6 +27,8 @@ export class GameSession
         public readonly player2: Socket,
 		public readonly tournamentId?: string,
     ) {}
+
+	gameStarted: boolean = false;
 
 	player1Id!: string;
 	player2Id!: string;

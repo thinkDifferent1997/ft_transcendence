@@ -81,14 +81,18 @@ export default function Layout({ username, onLogout }: LayoutProps) {
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
 
           {/* Bloc de Gauche : Logo et Titre */}
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center">
-              <Sparkles className="w-6 h-6 text-white" />
-            </div>
-            <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent font-bold">
-              Culture Quiz
-            </span>
-          </div>
+		<button
+			onClick={() => handleNavigate("/")}
+			className="flex items-center gap-3 cursor-pointer"
+		>
+			<div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center">
+				<Sparkles className="w-6 h-6 text-white" />
+			</div>
+
+			<span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent font-bold">
+				Culture Quiz
+			</span>
+		</button>
 
           {/* Bloc de Droite : Profil et Déconnexion */}
           <div className="flex items-center gap-4">

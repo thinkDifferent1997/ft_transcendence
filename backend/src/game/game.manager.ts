@@ -86,28 +86,18 @@ export class GameManager
 		const game = new GameSession(
 			roomId,
 			player,
-			player, // temporaire
+			player,
 		);
 
 		game.player1Id = player.data.userId;
 		game.player2Id = "AI";
 
+		game.ai = {};
+
 		game.questions = await this.triviaService.getQuestions();
 
-		game.ai = {
-			accuracy: {
-				easy: 0.8,
-				normal: 0.5,
-				hard: 0.3,
-			},
-			thinkingTime: {
-				easy: [4, 12],
-				normal: [5, 16],
-				hard: [8, 19],
-			},
-		};
-
 		this.games.set(roomId, game);
+		console.log("[AI] Match created", roomId);
 
 		return game;
 	}
@@ -118,7 +108,7 @@ export class GameManager
 
 	submitAnswer(
 		roomId: string,
-		player: Socket,
+		player: Socket | "AI",
 		answer: string | null,
 		timeLeft: number,
 	)
@@ -132,6 +122,12 @@ export class GameManager
             console.log("Game not found");
             return;
         }
+
+		const isAI = player === "AI";
+
+		const isPlayer1 =
+			!isAI &&
+			player.id === game.player1.id;
 
 		const question = game.questions[game.currentQuestion];
 
@@ -160,7 +156,7 @@ export class GameManager
 			};
 		}
 
-		if (player.id === game.player1.id)
+		if (isPlayer1)
 		{
 			game.player1Time += usedTime;
 			game.questionHistory[game.currentQuestion].player1Answer = answer;
@@ -174,13 +170,11 @@ export class GameManager
 		}
 
 
-		const hadThreeChoice =
-			player.id === game.player1.id
+		const hadThreeChoice = isPlayer1
 				? game.player1ThreeChoice
 				: game.player2ThreeChoice;
 
-		const hadHideAnswer =
-			player.id === game.player1.id
+		const hadHideAnswer = isPlayer1
 				? game.player1HideAnswer
 				: game.player2HideAnswer;
 
@@ -198,7 +192,7 @@ export class GameManager
 		if (game.player2HideAnswer)
 			game.player2HideAnswer = false;
 
-		if (player.id === game.player1.id)
+		if (isPlayer1)
 		{
 			game.player1Streak = this.updateCorrectStreak(
 				game.player1Streak,
@@ -217,7 +211,7 @@ export class GameManager
 
 		if (isCorrect)
 		{
-			if (player.id === game.player1.id)
+			if (isPlayer1)
 			{
 				if (game.player1DoublePoint)
 				{
@@ -239,7 +233,7 @@ export class GameManager
 			}
 		}
 		
-		if (player.id === game.player1.id)
+		if (isPlayer1)
 			game.player1Answered = true;
 		else
 			game.player2Answered = true;
@@ -291,7 +285,7 @@ export class GameManager
 					stats: matchStats,
 				};
 			}
-			if (player.id === game.player1.id)
+			if (isPlayer1)
 			{
 				if (hadThreeChoice)
 					game.player1ThreeChoice = false;
@@ -326,7 +320,7 @@ export class GameManager
 			};
 		}
 
-		if (player.id === game.player1.id)
+		if (isPlayer1)
 		{
 			if (hadThreeChoice)
 				game.player1ThreeChoice = false;
@@ -451,7 +445,7 @@ export class GameManager
 
 	markPlayerReady(
 		roomId: string,
-		player: Socket,
+		player: Socket | "AI",
 	): boolean
 	{
 		const game = this.games.get(roomId);
@@ -459,13 +453,19 @@ export class GameManager
 		if (!game)
 			return false;
 
-		if (player.id === game.player1.id)
+		const isAI = player === "AI";
+
+		const isPlayer1 =
+			!isAI &&
+			player.id === game.player1.id;
+
+		if (isPlayer1)
 			game.player1Ready = true;
 		else
 			game.player2Ready = true;
 
 		if (game.ai)
-		game.player2Ready = true;
+			game.player2Ready = true;
 
 
 		return game.player1Ready && game.player2Ready;
@@ -473,7 +473,7 @@ export class GameManager
 
 	markQuestionsLoaded(
 		roomId: string,
-		player: Socket,
+		player: Socket | "AI",
 	): boolean
 	{
 		const game = this.games.get(roomId);
@@ -481,15 +481,32 @@ export class GameManager
 		if (!game)
 			return false;
 
-		if (player.id === game.player1.id)
+		
+		const isAI = player === "AI";
+
+		if (!isAI && player.id === game.player1.id)
 			game.player1QuestionsLoaded = true;
 		else
 			game.player2QuestionsLoaded = true;
 
-		return (
-			game.player1QuestionsLoaded &&
-			game.player2QuestionsLoaded
-		);
+		// En mode IA, le second joueur est toujours prêt.
+		if (game.ai)
+			game.player2QuestionsLoaded = true;
+
+		// Les deux joueurs ne sont pas encore prêts.
+		if (
+			!game.player1QuestionsLoaded ||
+			!game.player2QuestionsLoaded
+		)
+			return false;
+
+		// La partie a déjà été démarrée.
+		if (game.gameStarted)
+			return false;
+
+		game.gameStarted = true;
+		console.log("START GAME");
+		return true;
 	}
 
 // !!!!!!!!!!!!!!!!!!!!
@@ -518,6 +535,11 @@ export class GameManager
 
 	removeGame(roomId: string): void
 	{
+		const game = this.games.get(roomId);
+
+    	if (game?.ai?.timeout)
+        	clearTimeout(game.ai.timeout);
+
 		this.games.delete(roomId);
 	}
 
@@ -543,4 +565,4 @@ export class GameManager
 	{
 		return this.connectedPlayers.get(userId);
 	}
-}
+			}

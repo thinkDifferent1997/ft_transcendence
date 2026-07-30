@@ -57,24 +57,43 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 		@MessageBody() data: { roomId: string; answer: string | null; timeLeft: number;},
 	)
 	{
-		const result = this.gameManager.submitAnswer(
-			data.roomId,
+		await this.processAnswer(
 			client,
+			data.roomId,
 			data.answer,
 			data.timeLeft,
 		);
+	}
+
+	private async processAnswer(
+		client: Socket | "AI",
+		roomId: string,
+		answer: string | null,
+		timeLeft: number,
+	)
+	{
+		const result = this.gameManager.submitAnswer(
+			roomId,
+			client,
+			answer,
+			timeLeft,
+		);
+
 		if (!result)
 			return;
 
-		const game = this.gameManager.getGame(data.roomId);
+		const game = this.gameManager.getGame(roomId);
 
 		if (!game)
 			return;
 
+		if (game && game.ai && client !== "AI" && !result.nextQuestion && !game.player2Answered && timeLeft > 5)
+		   	this.accelerateAITurn(roomId);
+	
 		// Broadcast updated scores and bonus states after every answer.
 
-		this.server.to(data.roomId).emit("player_answered", {
-		    playerId: client.id,
+		this.server.to(roomId).emit("player_answered", {
+		    playerId: client === "AI" ? "AI" : client.id,
 			correct: result.correct,
 			player1Score: result.player1Score,
 			player2Score: result.player2Score,
@@ -106,17 +125,22 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 				questionIndex: result.questionIndex,
 			});
 
-			game.player2.emit("next_question", {
-				question: {
-					...question,
-					answers: this.gameManager.buildDisplayedAnswers(
-						question,
-						result.player2ThreeChoice ?? false,
-						result.player1HideAnswer ?? false,
-					),
-				},
-				questionIndex: result.questionIndex,
-			});
+			if (!game.ai)
+			{
+				game.player2.emit("next_question", {
+					question: {
+						...question,
+						answers: this.gameManager.buildDisplayedAnswers(
+							question,
+							result.player2ThreeChoice ?? false,
+							result.player1HideAnswer ?? false,
+						),
+					},
+					questionIndex: result.questionIndex,
+				});
+			}
+			if (game.ai)
+				this.startAITurn(game.roomId);
 		}
 
 		// The match is over.
@@ -126,7 +150,7 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 		{
 			if (!game.tournamentId)
 			{
-				this.server.to(data.roomId).emit("game_over", {
+				this.server.to(roomId).emit("game_over", {
 					winner: result.winner,
 					player1Score: game.player1Score,
 					player2Score: game.player2Score,
@@ -134,7 +158,7 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 					player2Time: game.player2Time,
 				});
 
-				this.gameManager.removeGame(data.roomId);
+				this.gameManager.removeGame(roomId);
 				return;
 			}
 			else if (game.tournamentId)
@@ -157,6 +181,118 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 				return;
 			}
 		}
+	}
+
+	private random(min: number, max: number): number
+	{
+		return Math.floor(Math.random() * (max - min + 1)) + min;
+	}
+
+	private startAITurn(roomId: string)
+	{
+		const game = this.gameManager.getGame(roomId);
+
+		if (!game || !game.ai)
+			return;
+
+		if (game.ai.timeout)
+			clearTimeout(game.ai.timeout);
+
+		const question = game.questions[game.currentQuestion];
+		let accuracy: number;
+		let delay: number;
+
+		switch (question.difficulty)
+		{
+			case "easy":
+				accuracy = 0.80;
+				delay = this.random(4000, 14000);
+				break;
+
+			case "normal":
+				accuracy = 0.55;
+				delay = this.random(8000, 16000);
+				break;
+
+			case "hard":
+				accuracy = 0.30;
+				delay = this.random(10000, 18000);
+				break;
+
+			default:
+				accuracy = 0.55;
+				delay = this.random(8000, 16000);
+		}
+	game.ai.accuracy = accuracy;
+	game.ai.answerAt = Date.now() + delay;
+
+	game.ai.timeout = setTimeout(() =>
+	{
+		this.aiAnswer(roomId);
+	}, delay);
+	}
+
+	private async aiAnswer(roomId: string)
+	{
+		const game = this.gameManager.getGame(roomId);
+
+		if (!game || !game.ai)
+			return;
+
+		const question = game.questions[game.currentQuestion];
+
+		const success = Math.random() < game.ai.accuracy!;
+
+		let answer: string;
+
+		if (success)
+		{
+			answer = question.correct;
+		}
+		else
+		{
+			const wrongAnswers = question.answers.filter(
+				a => a !== question.correct,
+			);
+
+			answer = wrongAnswers[
+				this.random(0, wrongAnswers.length - 1)
+			];
+		}
+
+		await this.processAnswer(
+			"AI",
+			roomId,
+			answer,
+			10, // on améliorera ça plus tard
+		);
+	}
+
+	private accelerateAITurn(roomId: string)
+	{
+		const game = this.gameManager.getGame(roomId);
+
+		if (!game || !game.ai)
+			return;
+
+		if (!game.ai.timeout || !game.ai.answerAt)
+			return;
+
+		const remaining = game.ai.answerAt - Date.now();
+
+		// Déjà prévu dans moins de 3 secondes
+		if (remaining <= 3000)
+			return;
+		//console.log("before clear timeout : " game.ai.timeout);
+		clearTimeout(game.ai.timeout);
+		//console.log("clear timeout : " game.ai.timeout);
+
+		game.ai.answerAt = Date.now() + 3000;
+
+		game.ai.timeout = setTimeout(() =>
+		{
+			this.aiAnswer(roomId);
+		}, 3000);
 	}
 
 	private emitGameOver(socket: Socket, result: any, game: GameSession)
@@ -453,19 +589,21 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 		@MessageBody() data: { roomId: string },
 	)
 	{
+		console.log("MESSAGE: PLAYER READY");
 		const ready = this.gameManager.markPlayerReady(
 			data.roomId,
 			client,
 		);
-
+		
 		if (!ready)
 			return;
-
+		
 		const game = this.gameManager.getGame(data.roomId);
 
 		if (!game)
 			return;
 
+		console.log("EMIT : P1 GAME STARTED");
 		game.player1.emit("game_started", {
 			questions: game.questions.map(question => ({
 				...question,
@@ -477,6 +615,7 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 			})),
 		});
 
+		console.log("EMIT : P2 GAME STARTED");
 		game.player2.emit("game_started", {
 			questions: game.questions.map(question => ({
 				...question,
@@ -506,6 +645,10 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 			return;
 
 		this.server.to(data.roomId).emit("start_game");
+		const game = this.gameManager.getGame(data.roomId);
+
+		if (game?.ai)
+			this.startAITurn(data.roomId);
 	}
 
 	@SubscribeMessage("join_queue")
@@ -528,6 +671,7 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 			`${game.player1.id} matched with ${game.player2.id}`,
 		);
 
+		console.log("EMIT : MATCH FOUND");
 		this.server.to(game.roomId).emit("match_found", {
 			roomId: game.roomId,
 			tournamentId: game.tournamentId,
@@ -542,16 +686,18 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 			},
 		});
 	}	
+
 	@SubscribeMessage("join_ai")
 	async handleJoinAI(
 		@ConnectedSocket() client: Socket,
 	)
 	{
 		const game = await this.gameManager.createAIMatch(client);
-
-		console.log("Handle join AI");
+console.log("[AI] handleJoinAI", client.id);
+console.trace();
 		client.join(game.roomId);
 
+		console.log("[AI] Emitting match_found");
 		client.emit("match_found", {
 			roomId: game.roomId,
 
