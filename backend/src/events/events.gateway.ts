@@ -541,41 +541,28 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 	{
 		const cookies = parse(client.handshake.headers.cookie ?? "");
 
-<<<<<<< HEAD
 		try
 		{
 			const payload = this.jwtService.verify<{
-					sub: string;
-					username: string;
-					tfa: string;
-				}>(cookies.access_token);
-				
+				sub: string;
+				username: string;
+				tfa: string;
+			}>(cookies.access_token);
+
 			client.data.userId = payload.sub;
 			this.gameManager.registerPlayer(
 				client.data.userId,
 				client,
 			);
 			client.data.username = payload.username;
+
+			await this.enforceSingleSession(client);
 		}
 		catch
 		{
 			console.log("Invalid JWT");
 			client.disconnect();
-=======
-		const payload = this.jwtService.verify<{
-				sub: string;
-				username: string;
-				tfa: string;
-			}>(cookies.access_token);
-
-		client.data.userId = payload.sub;
-		this.gameManager.registerPlayer(
-			client.data.userId,
-			client,
-		);
-		client.data.username = payload.username;
-
-		await this.enforceSingleSession(client);
+		}
 	}
 
 	// Un même compte ne doit être connecté que depuis une seule fenêtre à
@@ -606,7 +593,6 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 		catch (error)
 		{
 			console.error("Failed to enforce single session:", error);
->>>>>>> origin/main
 		}
 	}
 
