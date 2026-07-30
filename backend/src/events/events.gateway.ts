@@ -7,6 +7,11 @@ import { parse } from "cookie";
 import { TournamentService } from "../tournament/tournament.service";
 import { GameSession } from "../game/game.session";
 import { TournamentState } from "../tournament/tournament.state";
+import { GameResultsService } from "../game-results/game-results.service";
+import { GamificationService } from "../gamification/gamification.service";
+import { StatsService } from "../stats/stats.service";
+import { StatsGateway } from "../stats/stats.gateway";
+import { PrismaService } from "../prisma/prisma.service";
 
 /**
 	* EventsGateway
@@ -41,6 +46,11 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 	private readonly jwtService: JwtService,
 	private readonly tournamentService: TournamentService,
 	private readonly tournamentState: TournamentState,
+	private readonly gameResultsService: GameResultsService,
+	private readonly gamificationService: GamificationService,
+	private readonly statsService: StatsService,
+	private readonly statsGateway: StatsGateway,
+	private readonly prisma: PrismaService,
 	) {}
 
 	@WebSocketServer()
@@ -134,6 +144,8 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 					player2Time: game.player2Time,
 				});
 
+				await this.recordOneVsOneMatch(game, result.winner ?? 0);
+
 				this.gameManager.removeGame(data.roomId);
 				return;
 			}
@@ -170,6 +182,46 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 		});
 	}
 
+	// Enregistre les réponses d'un match de tournoi (semi-finale ou finale)
+	// qui vient réellement d'être joué. Les participants existent déjà en
+	// base (créés au démarrage du tournoi), on ne fait qu'ajouter les
+	// réponses de chaque joueur.
+	private async recordTournamentMatchAnswers(
+		game: GameSession,
+		winner: 0 | 1 | 2,
+	)
+	{
+		try
+		{
+			const roomParticipants =
+				await this.tournamentService.getRoomParticipants(game.roomId);
+
+			const participant1 =
+				roomParticipants.find(p => p.userId === game.player1Id);
+
+			const participant2 =
+				roomParticipants.find(p => p.userId === game.player2Id);
+
+			if (!participant1 || !participant2)
+			{
+				console.error("Unable to find both room participants for answer recording");
+				return;
+			}
+
+			await this.gameResultsService.recordAnswersForRoom(
+				participant1.id,
+				participant2.id,
+				game.questionHistory,
+			);
+		}
+		catch (error)
+		{
+			console.error("Failed to record tournament match answers:", error);
+		}
+
+		await this.awardGamification(game, winner);
+	}
+
 	private async finishTournamentMatch(
 		game: GameSession,
 		winnerSocket: Socket,
@@ -180,7 +232,15 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 			await this.tournamentService.reportWinnerFromUser(
 				game.roomId,
 				winnerSocket.data.userId,
+				[
+					{ userId: game.player1Id, score: game.player1Score },
+					{ userId: game.player2Id, score: game.player2Score },
+				],
 			);
+
+		const winnerSlot: 1 | 2 = winnerSocket === game.player1 ? 1 : 2;
+
+		await this.recordTournamentMatchAnswers(game, winnerSlot);
 
 		const tournament =
 			this.tournamentState.findTournamentBySemiFinal(game.roomId);
@@ -208,6 +268,12 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 					tournamentResult.nextRoomId!,
 					winnerSocket.data.userId,
 				);
+
+				await this.gamificationService.awardTournamentChampionBonus(
+					winnerSocket.data.userId,
+				);
+
+				await this.pushStatsUpdate(winnerSocket.data.userId);
 
 				winnerSocket.emit("tournament_champion", {
 					reason: "forfeit",
@@ -313,6 +379,13 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 			return;
 		}
 
+		// La finale vient d'être remportée réellement (pas par forfait).
+		await this.gamificationService.awardTournamentChampionBonus(
+			winnerSocket.data.userId,
+		);
+
+		await this.pushStatsUpdate(winnerSocket.data.userId);
+
 		this.emitGameOver(winnerSocket, {
 			winner:
 				winnerSocket === game.player1
@@ -330,7 +403,7 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 		this.gameManager.removeGame(game.roomId);
 	}
 
-	handleConnection(client: Socket)
+	async handleConnection(client: Socket)
 	{
 		const cookies = parse(client.handshake.headers.cookie ?? "");
 
@@ -339,13 +412,46 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 				username: string;
 				tfa: string;
 			}>(cookies.access_token);
-			
+
 		client.data.userId = payload.sub;
 		this.gameManager.registerPlayer(
 			client.data.userId,
 			client,
 		);
 		client.data.username = payload.username;
+
+		await this.enforceSingleSession(client);
+	}
+
+	// Un même compte ne doit être connecté que depuis une seule fenêtre à
+	// la fois. Si une session était déjà active ailleurs, on déconnecte
+	// activement l'ancienne au profit de celle-ci (plutôt que de refuser
+	// la nouvelle connexion).
+	private async enforceSingleSession(client: Socket)
+	{
+		try
+		{
+			const user = await this.prisma.user.findUnique({
+				where: { id: client.data.userId },
+				select: { activeSocketId: true },
+			});
+
+			const previousSocketId = user?.activeSocketId;
+
+			if (previousSocketId && previousSocketId !== client.id)
+			{
+				this.server.sockets.sockets.get(previousSocketId)?.disconnect(true);
+			}
+
+			await this.prisma.user.update({
+				where: { id: client.data.userId },
+				data: { activeSocketId: client.id },
+			});
+		}
+		catch (error)
+		{
+			console.error("Failed to enforce single session:", error);
+		}
 	}
 
 	async handleDisconnect(client: Socket)
@@ -355,9 +461,31 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 		if (client.data.userId)
 		{
 			this.gameManager.unregisterPlayer(client.data.userId);
+			await this.clearActiveSession(client);
 		}
 		this.gameManager.removeWaitingPlayer(client);
 		await this.handlePlayerForfeit(client);
+	}
+
+	// Ne libère activeSocketId que s'il correspond encore à CE socket :
+	// si une nouvelle connexion l'a déjà remplacé entre-temps, on ne veut
+	// surtout pas effacer la trace de cette session plus récente.
+	private async clearActiveSession(client: Socket)
+	{
+		try
+		{
+			await this.prisma.user.updateMany({
+				where: {
+					id: client.data.userId,
+					activeSocketId: client.id,
+				},
+				data: { activeSocketId: null },
+			});
+		}
+		catch (error)
+		{
+			console.error("Failed to clear active session:", error);
+		}
 	}
 
 	private async handlePlayerForfeit(client: Socket)
@@ -419,7 +547,84 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 			reason: "disconnect",
 		});
 
+		await this.recordOneVsOneMatch(game, p1won ? 1 : 2);
+
 		this.gameManager.removeGame(game.roomId);
+	}
+
+	// Persiste une partie 1v1 hors-tournoi (score + réponses) une fois
+	// terminée, qu'elle se finisse normalement ou par abandon.
+	private async recordOneVsOneMatch(
+		game: GameSession,
+		winner: 0 | 1 | 2,
+	)
+	{
+		try
+		{
+			await this.gameResultsService.recordMatch({
+				winner,
+				player1Id: game.player1Id,
+				player2Id: game.player2Id,
+				player1Score: game.player1Score,
+				player2Score: game.player2Score,
+				questions: game.questionHistory,
+			});
+
+			await this.awardGamification(game, winner);
+		}
+		catch (error)
+		{
+			console.error("Failed to record 1v1 match result:", error);
+		}
+	}
+
+	// Calcule l'XP et évalue les badges pour une partie qui vient d'être
+	// persistée (1v1 ou tournoi). Sans effet si player1Id/player2Id ne sont
+	// pas renseignés (ne devrait pas arriver, gardé par sécurité).
+	private async awardGamification(game: GameSession, winner: 0 | 1 | 2)
+	{
+		if (!game.player1Id || !game.player2Id)
+			return;
+
+		try
+		{
+			const player1CorrectCount =
+				game.questionHistory.filter(q => q.player1Correct).length;
+
+			const player2CorrectCount =
+				game.questionHistory.filter(q => q.player2Correct).length;
+
+			await this.gamificationService.processMatchResult({
+				player1Id: game.player1Id,
+				player2Id: game.player2Id,
+				winner,
+				player1CorrectCount,
+				player2CorrectCount,
+				totalQuestions: game.questionHistory.length,
+			});
+
+			await this.pushStatsUpdate(game.player1Id);
+			await this.pushStatsUpdate(game.player2Id);
+		}
+		catch (error)
+		{
+			console.error("Failed to process gamification for match:", error);
+		}
+	}
+
+	// Pousse en temps réel le résumé de stats à jour au joueur concerné
+	// (s'il a un profil ouvert et un abonnement `stats:subscribe` actif).
+	private async pushStatsUpdate(userId: string)
+	{
+		try
+		{
+			const summary = await this.statsService.getSummary(userId);
+			this.statsGateway.notifyStatsUpdate(userId, summary);
+		}
+		catch (error)
+		{
+			console.error("Failed to push stats update:", error);
+		}
 	}
 
 	@SubscribeMessage("leave_game")

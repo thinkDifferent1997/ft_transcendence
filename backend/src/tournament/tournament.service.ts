@@ -107,7 +107,11 @@ export class TournamentService {
   );
   }
 
-  async reportRoomWinner(roomId: string, winnerParticipantId: string) {
+  async reportRoomWinner(
+    roomId: string,
+    winnerParticipantId: string,
+    scores?: { userId: string; score: number }[],
+  ) {
     return this.prisma.$transaction(async (tx) => {
       const room = await tx.room.findUnique({
         where: { id: roomId },
@@ -131,10 +135,28 @@ export class TournamentService {
         );
       }
 
+      // Persiste le score réel de chaque participant (sinon il reste à 0,
+      // ce qui fausse les stats victoire/défaite basées sur le score).
+      if (scores) {
+        for (const entry of scores) {
+          const participant = room.participants.find(
+            (p) => p.userId === entry.userId,
+          );
+
+          if (participant) {
+            await tx.roomParticipant.update({
+              where: { id: participant.id },
+              data: { score: entry.score },
+            });
+          }
+        }
+      }
+
       await tx.room.update({
         where: { id: room.id },
         data: {
           status: RoomStatus.FINISHED,
+          winnerParticipantId: winnerParticipantId,
         },
       });
 
@@ -358,7 +380,11 @@ export class TournamentService {
     );
   }
 
-  async reportWinnerFromUser(roomId: string, userId: string)
+  async reportWinnerFromUser(
+	roomId: string,
+	userId: string,
+	scores?: { userId: string; score: number }[],
+)
 	{
 		const participant = await this.prisma.roomParticipant.findFirst({
 			where: {
@@ -370,7 +396,7 @@ export class TournamentService {
 		if (!participant)
 			throw new NotFoundException("Participant not found.");
 
-		return this.reportRoomWinner(roomId, participant.id);
+		return this.reportRoomWinner(roomId, participant.id, scores);
 	}
 
   // Retire un joueur du tournoi en cours.

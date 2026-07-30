@@ -11,7 +11,7 @@ import QuizCallback from "./routes/QuizCallback";
 import useAuthSession from "./hooks/useAuthSession";
 
 export default function App() {
-  const { authChecked, isLoggedIn, username, setUsername, setIsLoggedIn } = useAuthSession();
+  const { authChecked, isLoggedIn, username, userId, setUsername, setIsLoggedIn } = useAuthSession();
   const navigate = useNavigate();
 
   const handleLogin = (name?: string) => {
@@ -45,7 +45,7 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route
             path="/profile"
-            element={<ProfilePage username={username} onBack={() => navigate("/")} />}
+            element={<ProfilePage username={username} userId={userId} onBack={() => navigate("/")} />}
           />
           <Route
             path="/tournament"
