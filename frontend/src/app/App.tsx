@@ -11,12 +11,15 @@ import QuizCallback from "./routes/QuizCallback";
 import useAuthSession from "./hooks/useAuthSession";
 
 export default function App() {
-  const { authChecked, isLoggedIn, username, userId, setUsername, setIsLoggedIn } = useAuthSession();
+  const { authChecked, isLoggedIn, username, userId, recheckSession, setIsLoggedIn } = useAuthSession();
   const navigate = useNavigate();
 
-  const handleLogin = (name?: string) => {
-    if (name) setUsername(name);
-    setIsLoggedIn(true);
+  const handleLogin = async () => {
+    // Le backend ne renvoie pas le username dans la réponse de login/2FA :
+    // on relit /api/auth/me pour récupérer le vrai profil depuis le cookie
+    // qui vient d'être posé, plutôt que de faire confiance à une valeur
+    // locale potentiellement vide.
+    await recheckSession();
   };
 
   const handleLogout = async () => {
