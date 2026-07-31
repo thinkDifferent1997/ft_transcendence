@@ -45,6 +45,10 @@ export default function App() {
             path="/profile"
             element={<ProfilePage username={username} onBack={() => navigate("/")} />}
           />
+          <Route 
+            path= "/profile/:targetUsername"
+            element={<ProfilePage username={username} onBack={() => navigate("/")} />}
+          />
           <Route
             path="/tournament"
             element={

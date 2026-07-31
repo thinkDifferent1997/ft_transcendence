@@ -145,18 +145,32 @@ return (
 			  {Array.isArray(messages) && messages.length === 0 ? (
 				<p className="text-gray-500 text-sm text-center mt-4">Aucun message pour l'instant...</p>
 			  ) : (
-				Array.isArray(messages) && messages.map((msg, index) => (
-				  <div key={index} className="flex flex-col">
-					<span className="text-xs font-bold text-gray-600 ml-1">
-					  {msg.author?.username || msg.authorId || "Inconnu"}
-					</span>
-					<div className="bg-white p-2 rounded-xl shadow-sm border border-gray-100 w-fit max-w-[85%] text-sm text-gray-800 mt-1">
-					  {msg.content}
-					</div>
-				  </div>
-				))
-			  )}
-			  <div ref={messagesEndRef} />
+
+              Array.isArray(messages) && messages.map((msg, index) => {
+                  // On sécurise la récupération du pseudo au cas où
+                const authorName = msg.author?.username || "Inconnu";
+                return (
+                    <div key={index} className="flex flex-col gap-1">
+                    {/* Pseudo (Cliquable) */}
+                    <span
+                    onClick={() => {
+                        if (authorName !== "Inconnu") {
+                            navigate(`/profile/${authorName}`);
+                        }
+                    }}
+                    className="text-xs font-bold text-gray-600 ml-1 hover:text-blue-600 hover:underline cursor-pointer transition-colors w-fit"
+                    >
+                    {authorName}
+                    </span>
+                    {/* Bulle du message */}
+                    <div className="bg-white p-2 rounded-xl shadow-sm border border-gray-100 w-fit max-w-[85%] text-sm text-gray-800">
+                    {msg.content}
+                    </div>
+                    </div>
+      );
+    })
+  )}
+							  <div ref={messagesEndRef} />
 			</div>
 
 			<div className="p-3 bg-white border-t border-gray-100 flex gap-2">
