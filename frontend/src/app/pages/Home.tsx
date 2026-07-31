@@ -2,18 +2,18 @@ import { Brain, Users, Bot, Trophy, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const gameModes = [
-  {
-    id: "solo",
-    title: "Solo",
-    description: "Test tes connaissances dans un mode solo",
-    icon: Brain,
-    color: "from-blue-500 to-cyan-500",
-    hoverColor: "hover:from-blue-600 hover:to-cyan-600",
-  },
+  // {
+  //   id: "solo",
+  //   title: "Solo",
+  //   description: "Test tes connaissances dans un mode solo",
+  //   icon: Brain,
+  //   color: "from-blue-500 to-cyan-500",
+  //   hoverColor: "hover:from-blue-600 hover:to-cyan-600",
+  // },
   {
     id: "ai",
     title: "1v1 AI",
-    description: "Challenge notre IA Emilien !",
+    description: "Challenge our AI TriviaBot!",
     icon: Bot,
     color: "from-purple-500 to-pink-500",
     hoverColor: "hover:from-purple-600 hover:to-pink-600",
@@ -21,7 +21,7 @@ const gameModes = [
   {
     id: "party",
     title: "1v1 Party",
-    description: "Defi tes amis dans un duel en temps reel",
+    description: "Duel your friends in a 1v1 party game !",
     icon: Users,
     color: "from-orange-500 to-red-500",
     hoverColor: "hover:from-orange-600 hover:to-red-600",
@@ -30,7 +30,7 @@ const gameModes = [
     id: "tournament",
     title: "Tournoi",
     description:
-      "Rejoins un tournoi pour te hisser a la premiere place !",
+      "Compete in a 4-player tournament and become the champion !",
     icon: Trophy,
     color: "from-yellow-500 to-amber-500",
     hoverColor: "hover:from-yellow-600 hover:to-amber-600",
@@ -118,25 +118,6 @@ export default function Home() {
             </button>
           );
         })}
-      </div>
-
-      {/* Stats or Info Section */}
-      <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="text-center p-8 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 text-white shadow-lg hover:shadow-xl transition-shadow">
-          <div className="mb-2"></div>
-          <div className="opacity-90">X joueurs en ligne</div>
-        </div>
-        <div className="text-center p-8 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 text-white shadow-lg hover:shadow-xl transition-shadow">
-          <div className="mb-2"></div>
-          <div className="opacity-90">
-            XX% de bonne reponse
-          </div>
-        </div>
-        <div className="text-center p-8 rounded-2xl bg-gradient-to-br from-orange-500 to-red-500 text-white shadow-lg hover:shadow-xl transition-shadow">
-          <div className="opacity-90">
-            Aucun tournoi en cours
-          </div>
-        </div>
       </div>
     </div>
   );

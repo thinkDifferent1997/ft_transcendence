@@ -13,6 +13,12 @@ export interface QuestionHistory {
     player2Correct: boolean;
 }
 
+export interface AIPlayer {
+	timeout?: NodeJS.Timeout;
+	answerAt?: number;
+	accuracy? : number;
+}
+
 export class GameSession
 {
     constructor(
@@ -22,8 +28,11 @@ export class GameSession
 		public readonly tournamentId?: string,
     ) {}
 
+	gameStarted: boolean = false;
+
 	player1Id!: string;
 	player2Id!: string;
+	ai?: AIPlayer;
 
     questions: {
 		question: string;
