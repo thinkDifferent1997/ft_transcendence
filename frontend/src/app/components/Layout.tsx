@@ -69,6 +69,7 @@ export default function Layout({ username, onLogout }: LayoutProps) {
         navigate(path);
       }, 100);
 			socket.emit("leave_game");
+			return;
 		}
 
 		navigate(path);
