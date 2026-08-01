@@ -30,6 +30,10 @@ export class GameSession
 
 	gameStarted: boolean = false;
 
+	// Empêche l'enregistrement du résultat en base plus d'une fois pour la
+	// même partie (fin normale suivie d'un forfait/déconnexion en course).
+	resultRecorded: boolean = false;
+
 	player1Id!: string;
 	player2Id!: string;
 	ai?: AIPlayer;

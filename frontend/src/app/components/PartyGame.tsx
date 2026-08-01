@@ -72,6 +72,12 @@ export default function QuizPage()
 		const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
 		const [revealed, setRevealed] = useState(false);
 
+	useEffect(() =>
+	{
+		if (game.gameOver)
+			setIsInGame(false);
+	}, [game.gameOver]);
+
 	// Keep stable values inside Socket.IO callbacks with useRef.
 
 	const roomIdRef = useRef("");
