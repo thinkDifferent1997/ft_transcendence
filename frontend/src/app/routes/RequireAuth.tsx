@@ -4,7 +4,7 @@ import LoginPage from "../components/LoginPage";
 interface RequireAuthProps {
   authChecked: boolean;
   isLoggedIn: boolean;
-  onLogin: (username?: string) => void;
+  onLogin: () => void;
 }
 
 export default function RequireAuth({ authChecked, isLoggedIn, onLogin }: RequireAuthProps) {

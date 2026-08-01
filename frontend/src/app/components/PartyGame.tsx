@@ -72,6 +72,12 @@ export default function QuizPage()
 		const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
 		const [revealed, setRevealed] = useState(false);
 
+	useEffect(() =>
+	{
+		if (game.gameOver)
+			setIsInGame(false);
+	}, [game.gameOver]);
+
 	// Keep stable values inside Socket.IO callbacks with useRef.
 
 	const roomIdRef = useRef("");
@@ -155,6 +161,7 @@ export default function QuizPage()
 
 		const joinGame = () =>
 		{
+			console.log("mode : ", mode);
 			switch (mode)
 			{
 				case "party":
@@ -166,6 +173,8 @@ export default function QuizPage()
 					break;
 
 				case "ai":
+					console.count("join_ai emit");
+					console.trace();
 					socket.emit("join_ai");
 					break;
 
@@ -190,6 +199,7 @@ export default function QuizPage()
 		});
 
 		socket.on("match_found", (data) => {
+			console.log("match_found");
 			if (data.isFinal)
 			{
 				setOpponentReady(true);
@@ -465,12 +475,15 @@ export default function QuizPage()
 
 	useEffect(() =>
 	{
+		console.log("roomId changed:", game.roomId);
 		if (!game.roomId)
 			return;
-
+		console.log("EMIT player_ready");
+		console.log("connected ?", socket.connected);
 		socket.emit("player_ready", {
 			roomId: game.roomId,
 		});
+		console.log("EMITTTED player_ready");
 
 	}, [game.roomId]);
 
@@ -541,6 +554,7 @@ export default function QuizPage()
 			<MatchmakingScreen
 				onCancel={() => {
 					socket.emit("leave_queue");
+					navigate("/");
 				}}
 			/>
 		);

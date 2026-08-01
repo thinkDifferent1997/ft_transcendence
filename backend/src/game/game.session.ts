@@ -13,6 +13,12 @@ export interface QuestionHistory {
     player2Correct: boolean;
 }
 
+export interface AIPlayer {
+	timeout?: NodeJS.Timeout;
+	answerAt?: number;
+	accuracy? : number;
+}
+
 export class GameSession
 {
     constructor(
@@ -22,8 +28,15 @@ export class GameSession
 		public readonly tournamentId?: string,
     ) {}
 
+	gameStarted: boolean = false;
+
+	// Empêche l'enregistrement du résultat en base plus d'une fois pour la
+	// même partie (fin normale suivie d'un forfait/déconnexion en course).
+	resultRecorded: boolean = false;
+
 	player1Id!: string;
 	player2Id!: string;
+	ai?: AIPlayer;
 
     questions: {
 		question: string;

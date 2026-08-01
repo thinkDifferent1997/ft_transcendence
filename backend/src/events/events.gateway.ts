@@ -8,6 +8,10 @@ import { TournamentService } from "../tournament/tournament.service";
 import { GameSession } from "../game/game.session";
 import { TournamentState } from "../tournament/tournament.state";
 import { PrismaService } from '../prisma/prisma.service';
+import { GameResultsService } from "../game-results/game-results.service";
+import { GamificationService } from "../gamification/gamification.service";
+import { StatsService } from "../stats/stats.service";
+import { StatsGateway } from "../stats/stats.gateway";
 
 /**
 	* EventsGateway
@@ -43,6 +47,11 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 	private readonly tournamentService: TournamentService,
 	private readonly tournamentState: TournamentState,
     private readonly prisma: PrismaService,
+	private readonly gameResultsService: GameResultsService,
+	private readonly gamificationService: GamificationService,
+	private readonly statsService: StatsService,
+	private readonly statsGateway: StatsGateway,
+	private readonly prisma: PrismaService,
 	) {}
 
 	@WebSocketServer()
@@ -59,24 +68,43 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 		@MessageBody() data: { roomId: string; answer: string | null; timeLeft: number;},
 	)
 	{
-		const result = this.gameManager.submitAnswer(
-			data.roomId,
+		await this.processAnswer(
 			client,
+			data.roomId,
 			data.answer,
 			data.timeLeft,
 		);
+	}
+
+	private async processAnswer(
+		client: Socket | "AI",
+		roomId: string,
+		answer: string | null,
+		timeLeft: number,
+	)
+	{
+		const result = this.gameManager.submitAnswer(
+			roomId,
+			client,
+			answer,
+			timeLeft,
+		);
+
 		if (!result)
 			return;
 
-		const game = this.gameManager.getGame(data.roomId);
+		const game = this.gameManager.getGame(roomId);
 
 		if (!game)
 			return;
 
+		if (game && game.ai && client !== "AI" && !result.nextQuestion && !game.player2Answered && timeLeft > 5)
+		   	this.accelerateAITurn(roomId);
+	
 		// Broadcast updated scores and bonus states after every answer.
 
-		this.server.to(data.roomId).emit("player_answered", {
-		    playerId: client.id,
+		this.server.to(roomId).emit("player_answered", {
+		    playerId: client === "AI" ? "AI" : client.id,
 			correct: result.correct,
 			player1Score: result.player1Score,
 			player2Score: result.player2Score,
@@ -108,17 +136,22 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 				questionIndex: result.questionIndex,
 			});
 
-			game.player2.emit("next_question", {
-				question: {
-					...question,
-					answers: this.gameManager.buildDisplayedAnswers(
-						question,
-						result.player2ThreeChoice ?? false,
-						result.player1HideAnswer ?? false,
-					),
-				},
-				questionIndex: result.questionIndex,
-			});
+			if (!game.ai)
+			{
+				game.player2.emit("next_question", {
+					question: {
+						...question,
+						answers: this.gameManager.buildDisplayedAnswers(
+							question,
+							result.player2ThreeChoice ?? false,
+							result.player1HideAnswer ?? false,
+						),
+					},
+					questionIndex: result.questionIndex,
+				});
+			}
+			if (game.ai)
+				this.startAITurn(game.roomId);
 		}
 
 		// The match is over.
@@ -128,15 +161,15 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 		{
 			if (!game.tournamentId)
 			{
-				this.server.to(data.roomId).emit("game_over", {
+				this.server.to(roomId).emit("game_over", {
 					winner: result.winner,
 					player1Score: game.player1Score,
 					player2Score: game.player2Score,
 					player1Time: game.player1Time,
 					player2Time: game.player2Time,
 				});
-
-				this.gameManager.removeGame(data.roomId);
+				await this.recordOneVsOneMatch(game, result.winner ?? 0);
+				this.gameManager.removeGame(roomId);
 				return;
 			}
 			else if (game.tournamentId)
@@ -161,6 +194,118 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 		}
 	}
 
+	private random(min: number, max: number): number
+	{
+		return Math.floor(Math.random() * (max - min + 1)) + min;
+	}
+
+	private startAITurn(roomId: string)
+	{
+		const game = this.gameManager.getGame(roomId);
+
+		if (!game || !game.ai)
+			return;
+
+		if (game.ai.timeout)
+			clearTimeout(game.ai.timeout);
+
+		const question = game.questions[game.currentQuestion];
+		let accuracy: number;
+		let delay: number;
+
+		switch (question.difficulty)
+		{
+			case "easy":
+				accuracy = 0.80;
+				delay = this.random(4000, 14000);
+				break;
+
+			case "normal":
+				accuracy = 0.55;
+				delay = this.random(8000, 16000);
+				break;
+
+			case "hard":
+				accuracy = 0.30;
+				delay = this.random(10000, 18000);
+				break;
+
+			default:
+				accuracy = 0.55;
+				delay = this.random(8000, 16000);
+		}
+	game.ai.accuracy = accuracy;
+	game.ai.answerAt = Date.now() + delay;
+
+	game.ai.timeout = setTimeout(() =>
+	{
+		this.aiAnswer(roomId);
+	}, delay);
+	}
+
+	private async aiAnswer(roomId: string)
+	{
+		const game = this.gameManager.getGame(roomId);
+
+		if (!game || !game.ai)
+			return;
+
+		const question = game.questions[game.currentQuestion];
+
+		const success = Math.random() < game.ai.accuracy!;
+
+		let answer: string;
+
+		if (success)
+		{
+			answer = question.correct;
+		}
+		else
+		{
+			const wrongAnswers = question.answers.filter(
+				a => a !== question.correct,
+			);
+
+			answer = wrongAnswers[
+				this.random(0, wrongAnswers.length - 1)
+			];
+		}
+
+		await this.processAnswer(
+			"AI",
+			roomId,
+			answer,
+			10, // on améliorera ça plus tard
+		);
+	}
+
+	private accelerateAITurn(roomId: string)
+	{
+		const game = this.gameManager.getGame(roomId);
+
+		if (!game || !game.ai)
+			return;
+
+		if (!game.ai.timeout || !game.ai.answerAt)
+			return;
+
+		const remaining = game.ai.answerAt - Date.now();
+
+		// Déjà prévu dans moins de 3 secondes
+		if (remaining <= 3000)
+			return;
+		//console.log("before clear timeout : " game.ai.timeout);
+		clearTimeout(game.ai.timeout);
+		//console.log("clear timeout : " game.ai.timeout);
+
+		game.ai.answerAt = Date.now() + 3000;
+
+		game.ai.timeout = setTimeout(() =>
+		{
+			this.aiAnswer(roomId);
+		}, 3000);
+	}
+
 	private emitGameOver(socket: Socket, result: any, game: GameSession)
 	{
 		socket.emit("game_over", {
@@ -170,6 +315,46 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 			player1Time: game.player1Time,
 			player2Time: game.player2Time,
 		});
+	}
+
+	// Enregistre les réponses d'un match de tournoi (semi-finale ou finale)
+	// qui vient réellement d'être joué. Les participants existent déjà en
+	// base (créés au démarrage du tournoi), on ne fait qu'ajouter les
+	// réponses de chaque joueur.
+	private async recordTournamentMatchAnswers(
+		game: GameSession,
+		winner: 0 | 1 | 2,
+	)
+	{
+		try
+		{
+			const roomParticipants =
+				await this.tournamentService.getRoomParticipants(game.roomId);
+
+			const participant1 =
+				roomParticipants.find(p => p.userId === game.player1Id);
+
+			const participant2 =
+				roomParticipants.find(p => p.userId === game.player2Id);
+
+			if (!participant1 || !participant2)
+			{
+				console.error("Unable to find both room participants for answer recording");
+				return;
+			}
+
+			await this.gameResultsService.recordAnswersForRoom(
+				participant1.id,
+				participant2.id,
+				game.questionHistory,
+			);
+		}
+		catch (error)
+		{
+			console.error("Failed to record tournament match answers:", error);
+		}
+
+		await this.awardGamification(game, winner);
 	}
 
 	private async finishTournamentMatch(
@@ -182,7 +367,15 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 			await this.tournamentService.reportWinnerFromUser(
 				game.roomId,
 				winnerSocket.data.userId,
+				[
+					{ userId: game.player1Id, score: game.player1Score },
+					{ userId: game.player2Id, score: game.player2Score },
+				],
 			);
+
+		const winnerSlot: 1 | 2 = winnerSocket === game.player1 ? 1 : 2;
+
+		await this.recordTournamentMatchAnswers(game, winnerSlot);
 
 		const tournament =
 			this.tournamentState.findTournamentBySemiFinal(game.roomId);
@@ -210,6 +403,12 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 					tournamentResult.nextRoomId!,
 					winnerSocket.data.userId,
 				);
+
+				await this.gamificationService.awardTournamentChampionBonus(
+					winnerSocket.data.userId,
+				);
+
+				await this.pushStatsUpdate(winnerSocket.data.userId);
 
 				winnerSocket.emit("tournament_champion", {
 					reason: "forfeit",
@@ -315,6 +514,13 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 			return;
 		}
 
+		// La finale vient d'être remportée réellement (pas par forfait).
+		await this.gamificationService.awardTournamentChampionBonus(
+			winnerSocket.data.userId,
+		);
+
+		await this.pushStatsUpdate(winnerSocket.data.userId);
+
 		this.emitGameOver(winnerSocket, {
 			winner:
 				winnerSocket === game.player1
@@ -354,10 +560,41 @@ implements OnGatewayConnection, OnGatewayDisconnect{
                 where: { id: payload.sub },
                 data: { status: 'ONLINE' }
             });
+			await this.enforceSingleSession(client);
         }catch (error) {
             console.error("Socket Auth Error:", error.message);
             client.disconnect();
         }
+    }
+	// Un même compte ne doit être connecté que depuis une seule fenêtre à
+	// la fois. Si une session était déjà active ailleurs, on déconnecte
+	// activement l'ancienne au profit de celle-ci (plutôt que de refuser
+	// la nouvelle connexion).
+	private async enforceSingleSession(client: Socket)
+	{
+		try
+		{
+			const user = await this.prisma.user.findUnique({
+				where: { id: client.data.userId },
+				select: { activeSocketId: true },
+			});
+
+			const previousSocketId = user?.activeSocketId;
+
+			if (previousSocketId && previousSocketId !== client.id)
+			{
+				this.server.sockets.sockets.get(previousSocketId)?.disconnect(true);
+			}
+
+			await this.prisma.user.update({
+				where: { id: client.data.userId },
+				data: { activeSocketId: client.id },
+			});
+		}
+		catch (error)
+		{
+			console.error("Failed to enforce single session:", error);
+		}
 	}
 
 	async handleDisconnect(client: Socket)
@@ -375,9 +612,31 @@ implements OnGatewayConnection, OnGatewayDisconnect{
             } catch (error) {
                 console.error("Error while disconneting Prisma:", error.message);
             }
+			await this.clearActiveSession(client);
 		}
 		this.gameManager.removeWaitingPlayer(client);
 		await this.handlePlayerForfeit(client);
+	}
+
+	// Ne libère activeSocketId que s'il correspond encore à CE socket :
+	// si une nouvelle connexion l'a déjà remplacé entre-temps, on ne veut
+	// surtout pas effacer la trace de cette session plus récente.
+	private async clearActiveSession(client: Socket)
+	{
+		try
+		{
+			await this.prisma.user.updateMany({
+				where: {
+					id: client.data.userId,
+					activeSocketId: client.id,
+				},
+				data: { activeSocketId: null },
+			});
+		}
+		catch (error)
+		{
+			console.error("Failed to clear active session:", error);
+		}
 	}
 
 	private async handlePlayerForfeit(client: Socket)
@@ -439,7 +698,88 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 			reason: "disconnect",
 		});
 
+		await this.recordOneVsOneMatch(game, p1won ? 1 : 2);
+
 		this.gameManager.removeGame(game.roomId);
+	}
+
+	// Persiste une partie 1v1 hors-tournoi (score + réponses) une fois
+	// terminée, qu'elle se finisse normalement ou par abandon.
+	private async recordOneVsOneMatch(
+		game: GameSession,
+		winner: 0 | 1 | 2,
+	)
+	{
+		if (game.resultRecorded)
+			return;
+		game.resultRecorded = true;
+
+		try
+		{
+			await this.gameResultsService.recordMatch({
+				winner,
+				player1Id: game.player1Id,
+				player2Id: game.player2Id,
+				player1Score: game.player1Score,
+				player2Score: game.player2Score,
+				questions: game.questionHistory,
+			});
+
+			await this.awardGamification(game, winner);
+		}
+		catch (error)
+		{
+			console.error("Failed to record 1v1 match result:", error);
+		}
+	}
+
+	// Calcule l'XP et évalue les badges pour une partie qui vient d'être
+	// persistée (1v1 ou tournoi). Sans effet si player1Id/player2Id ne sont
+	// pas renseignés (ne devrait pas arriver, gardé par sécurité).
+	private async awardGamification(game: GameSession, winner: 0 | 1 | 2)
+	{
+		if (!game.player1Id || !game.player2Id)
+			return;
+
+		try
+		{
+			const player1CorrectCount =
+				game.questionHistory.filter(q => q.player1Correct).length;
+
+			const player2CorrectCount =
+				game.questionHistory.filter(q => q.player2Correct).length;
+
+			await this.gamificationService.processMatchResult({
+				player1Id: game.player1Id,
+				player2Id: game.player2Id,
+				winner,
+				player1CorrectCount,
+				player2CorrectCount,
+				totalQuestions: game.questionHistory.length,
+			});
+
+			await this.pushStatsUpdate(game.player1Id);
+			await this.pushStatsUpdate(game.player2Id);
+		}
+		catch (error)
+		{
+			console.error("Failed to process gamification for match:", error);
+		}
+	}
+
+	// Pousse en temps réel le résumé de stats à jour au joueur concerné
+	// (s'il a un profil ouvert et un abonnement `stats:subscribe` actif).
+	private async pushStatsUpdate(userId: string)
+	{
+		try
+		{
+			const summary = await this.statsService.getSummary(userId);
+			this.statsGateway.notifyStatsUpdate(userId, summary);
+		}
+		catch (error)
+		{
+			console.error("Failed to push stats update:", error);
+		}
 	}
 
 	@SubscribeMessage("leave_game")
@@ -465,19 +805,21 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 		@MessageBody() data: { roomId: string },
 	)
 	{
+		console.log("MESSAGE: PLAYER READY");
 		const ready = this.gameManager.markPlayerReady(
 			data.roomId,
 			client,
 		);
-
+		
 		if (!ready)
 			return;
-
+		
 		const game = this.gameManager.getGame(data.roomId);
 
 		if (!game)
 			return;
 
+		console.log("EMIT : P1 GAME STARTED");
 		game.player1.emit("game_started", {
 			questions: game.questions.map(question => ({
 				...question,
@@ -489,6 +831,7 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 			})),
 		});
 
+		console.log("EMIT : P2 GAME STARTED");
 		game.player2.emit("game_started", {
 			questions: game.questions.map(question => ({
 				...question,
@@ -518,6 +861,10 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 			return;
 
 		this.server.to(data.roomId).emit("start_game");
+		const game = this.gameManager.getGame(data.roomId);
+
+		if (game?.ai)
+			this.startAITurn(data.roomId);
 	}
 
 	@SubscribeMessage("join_queue")
@@ -540,6 +887,7 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 			`${game.player1.id} matched with ${game.player2.id}`,
 		);
 
+		console.log("EMIT : MATCH FOUND");
 		this.server.to(game.roomId).emit("match_found", {
 			roomId: game.roomId,
 			tournamentId: game.tournamentId,
@@ -554,4 +902,32 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 			},
 		});
 	}	
+
+	@SubscribeMessage("join_ai")
+	async handleJoinAI(
+		@ConnectedSocket() client: Socket,
+	)
+	{
+		const game = await this.gameManager.createAIMatch(client);
+console.log("[AI] handleJoinAI", client.id);
+console.trace();
+		client.join(game.roomId);
+
+		console.log("[AI] Emitting match_found");
+		client.emit("match_found", {
+			roomId: game.roomId,
+
+			player1: {
+				id: client.id,
+				username: client.data.username,
+			},
+
+			player2: {
+				id: "AI",
+				username: "TriviaBot",
+			},
+
+			ai: true,
+		});
+	}
 }

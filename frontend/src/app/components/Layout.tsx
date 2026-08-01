@@ -45,6 +45,7 @@ const handleNavigate = (path: string) =>
         navigate(path);
       }, 100);
 			socket.emit("leave_game");
+			return;
 		}
 		navigate(path);
 	};
@@ -90,7 +91,21 @@ return (
 	  {/* Top Navigation Bar */}
 	  <nav className="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-md border-b border-gray-200 shadow-sm z-40">
 		<div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-		  
+		 
+        {/* Bloc de Gauche : Logo et Titre */}
+		<button
+			onClick={() => handleNavigate("/")}
+			className="flex items-center gap-3 cursor-pointer"
+		>
+			<div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center">
+				<Sparkles className="w-6 h-6 text-white" />
+			</div>
+
+			<span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent font-bold">
+				Culture Quiz
+			</span>
+		</button>
+ 
 		  <div className="flex items-center gap-3">
 			<div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center">
 			  <Sparkles className="w-6 h-6 text-white" />

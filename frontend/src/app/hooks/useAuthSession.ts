@@ -4,6 +4,7 @@ interface AuthSession {
   authChecked: boolean;
   isLoggedIn: boolean;
   username: string;
+  userId: string;
   setUsername: (username: string) => void;
   setIsLoggedIn: (isLoggedIn: boolean) => void;
   recheckSession: () => Promise<void>;
@@ -13,17 +14,21 @@ export default function useAuthSession(): AuthSession {
   const [authChecked, setAuthChecked] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [username, setUsername] = useState("Joueur");
+  const [userId, setUserId] = useState("");
 
   const recheckSession = useCallback(async () => {
     try {
       const res = await fetch("/api/auth/me", { credentials: "include" });
       if (res.ok) {
-        const data = await res.json();
         setIsLoggedIn(true);
         const foundName = data?.username || data?.user?.username || data?.login || data?.sub;
         if (foundName)
             setUsername(foundName);
-      }else
+      }
+      const foundId = data?.userId || data?.id;
+      if (foundId){
+          setUserId(foundId);
+      } else {
           setIsLoggedIn(false);
 
     } catch (err) {
@@ -37,5 +42,5 @@ export default function useAuthSession(): AuthSession {
     recheckSession();
   }, [recheckSession]);
 
-  return { authChecked, isLoggedIn, username, setUsername, setIsLoggedIn, recheckSession };
+  return { authChecked, isLoggedIn, username, userId, setUsername, setIsLoggedIn, recheckSession };
 }
