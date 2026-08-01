@@ -260,6 +260,7 @@ export default function ProfilePage({ username, userId, onBack }: ProfilePagePro
                   {avatar}
                 </div>
               </div>
+              {isMyProfile && (
               <div className="absolute bottom-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity">
                 <div className="relative">
                   <button className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white shadow-lg hover:shadow-xl transition-all">
@@ -277,7 +278,7 @@ export default function ProfilePage({ username, userId, onBack }: ProfilePagePro
                     ))}
                   </div>
                 </div>
-              </div>
+              </div>)}
             </div>
 
             <div className="flex-1 text-center md:text-left">
@@ -285,14 +286,9 @@ export default function ProfilePage({ username, userId, onBack }: ProfilePagePro
                 <h1 className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent text-4xl font-extrabold m-0">
                   {displayUsername}
                 </h1>
-                {isMyProfile && is2FAEnabled && (
-                  <span className="flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 text-sm font-bold rounded-full border border-green-200 shadow-sm">
-                    <CheckCircle className="w-4 h-4" /> 2FA Sécurisé
-                  </span>
-                )}
               </div>
 
-              {!is2FAEnabled && (
+              {isMyProfile && !is2FAEnabled && (
                 <button
                   onClick={handleSetup2FA}
                   className="inline-flex items-center gap-2 px-5 py-2.5 bg-gray-900 hover:bg-gray-800 text-white text-sm font-semibold rounded-xl transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5"

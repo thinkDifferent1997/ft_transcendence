@@ -46,7 +46,6 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 	private readonly jwtService: JwtService,
 	private readonly tournamentService: TournamentService,
 	private readonly tournamentState: TournamentState,
-    private readonly prisma: PrismaService,
 	private readonly gameResultsService: GameResultsService,
 	private readonly gamificationService: GamificationService,
 	private readonly statsService: StatsService,

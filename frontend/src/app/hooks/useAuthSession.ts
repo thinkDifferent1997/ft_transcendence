@@ -20,6 +20,7 @@ export default function useAuthSession(): AuthSession {
     try {
       const res = await fetch("/api/auth/me", { credentials: "include" });
       if (res.ok) {
+          const data = await res.json();
         setIsLoggedIn(true);
         const foundName = data?.username || data?.user?.username || data?.login || data?.sub;
         if (foundName)
@@ -30,7 +31,7 @@ export default function useAuthSession(): AuthSession {
           setUserId(foundId);
       } else {
           setIsLoggedIn(false);
-
+      }
     } catch (err) {
       console.error(err);
     } finally {

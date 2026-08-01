@@ -106,15 +106,6 @@ return (
 			</span>
 		</button>
  
-		  <div className="flex items-center gap-3">
-			<div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center">
-			  <Sparkles className="w-6 h-6 text-white" />
-			</div>
-			<span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent font-bold">
-			  Culture Quiz
-			</span>
-		  </div>
-
 		  <div className="flex items-center gap-4">
 			<button
 			  onClick={() => navigate("/profile")}
