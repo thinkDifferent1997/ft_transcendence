@@ -71,7 +71,8 @@ export default function ProfilePage({ username, userId, onBack }: ProfilePagePro
       if (startDate) params.set("startDate", startDate);
       if (endDate) params.set("endDate", endDate);
 
-      const res = await fetch(`/api/stats/${displayUsername}/summary?${params}`, { credentials: "include" });
+      const endpoint = isMyProfile ? "me" : displayUsername;
+      const res = await fetch(`/api/stats/${endpoint}/summary?${params}`, { credentials: "include" });
       if (res.ok) {
         setStats(await res.json());
       }
