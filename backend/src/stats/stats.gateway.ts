@@ -23,6 +23,11 @@ export class StatsGateway {
     @MessageBody() data: { userId: string },
     @ConnectedSocket() client: Socket,
   ) {
+    const previousUserId = client.data?.userId;
+    if (previousUserId && previousUserId !== data.userId) {
+      this.unregisterSocket(previousUserId, client.id);
+    }
+
     if (!this.userSockets.has(data.userId)) {
       this.userSockets.set(data.userId, new Set());
     }
@@ -33,8 +38,18 @@ export class StatsGateway {
 
   handleDisconnect(client: Socket) {
     const userId = client.data?.userId;
-    if (userId && this.userSockets.has(userId)) {
-      this.userSockets.get(userId)!.delete(client.id);
+    if (userId) {
+      this.unregisterSocket(userId, client.id);
+    }
+  }
+
+  private unregisterSocket(userId: string, socketId: string) {
+    const sockets = this.userSockets.get(userId);
+    if (!sockets) return;
+
+    sockets.delete(socketId);
+    if (sockets.size === 0) {
+      this.userSockets.delete(userId);
     }
   }
 
