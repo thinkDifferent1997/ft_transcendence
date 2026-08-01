@@ -107,14 +107,14 @@ export class StatsController {
     return this.statsService.getBadges(userId);
   }
 
-  @Get(':userId/summary')
+  @Get(':username/summary')
   async getSummary(
-    @Param('userId') userId: string,
+    @Param('username') username: string,
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
   ) {
-    return this.statsService.getSummary(
-      userId,
+    return this.statsService.getSummaryByUsername(
+      username,
       startDate ? new Date(startDate) : undefined,
       endDate ? new Date(endDate) : undefined,
     );
