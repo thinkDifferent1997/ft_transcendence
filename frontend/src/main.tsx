@@ -2,12 +2,15 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import App from './app/App.tsx'
-import './styles/index.css' // Lie le point d'entrée CSS du Figma
+import { GameProvider } from "./app/context/GameContext";
+import './styles/index.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <BrowserRouter>
-      <App />
-    </BrowserRouter>
+    <GameProvider>
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
+    </GameProvider>
   </React.StrictMode>,
 )

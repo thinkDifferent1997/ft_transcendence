@@ -8,6 +8,6 @@ import { StatsGateway } from './stats.gateway';
   imports: [PrismaModule],
   controllers: [StatsController],
   providers: [StatsService, StatsGateway],
-  exports: [StatsService],
+  exports: [StatsService, StatsGateway],
 })
 export class StatsModule {}

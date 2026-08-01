@@ -139,7 +139,7 @@ export class StatsService {
         },
       },
       include: {
-        room: { include: { participants: true } },
+        room: true,
       },
     });
 
@@ -148,15 +148,9 @@ export class StatsService {
     let draws = 0;
 
     for (const participation of participations) {
-      const scores = participation.room.participants.map((p) => p.score);
-      const maxScore = Math.max(...scores);
-      const topScorers = participation.room.participants.filter(
-        (p) => p.score === maxScore,
-      );
-
-      if (topScorers.length > 1) {
+      if (participation.room.winnerParticipantId === null) {
         draws += 1;
-      } else if (participation.score === maxScore) {
+      } else if (participation.room.winnerParticipantId === participation.id) {
         wins += 1;
       } else {
         losses += 1;
@@ -174,8 +168,38 @@ export class StatsService {
       });
     }
 
+  async getXp(userId: string): Promise<number> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { xp: true },
+    });
+
+    return user?.xp ?? 0;
+  }
+
+  // Catalogue complet des badges avec leur statut (débloqué ou non) pour ce
+  // joueur, pour permettre au front d'afficher aussi les badges verrouillés.
+  async getBadges(userId: string) {
+    const [allBadges, userBadges] = await Promise.all([
+      this.prisma.badge.findMany(),
+      this.prisma.userBadge.findMany({ where: { userId } }),
+    ]);
+
+    const earnedByBadgeId = new Map(
+      userBadges.map((userBadge) => [userBadge.badgeId, userBadge.earnedAt]),
+    );
+
+    return allBadges.map((badge) => ({
+      code: badge.code,
+      name: badge.name,
+      description: badge.description,
+      earned: earnedByBadgeId.has(badge.id),
+      earnedAt: earnedByBadgeId.get(badge.id) ?? null,
+    }));
+  }
+
   async getSummary(userId: string, startDate?: Date, endDate?: Date) {
-    const [gamesPlayed, answers, avgResponseTime, categories, winLoss, tournamentsWon] =
+    const [gamesPlayed, answers, avgResponseTime, categories, winLoss, tournamentsWon, xp, badges] =
       await Promise.all([
         this.getGamesPlayed(userId, startDate, endDate),
         this.getAnswerStats(userId, startDate, endDate),
@@ -183,8 +207,10 @@ export class StatsService {
         this.getCategoryStats(userId, startDate, endDate),
         this.getWinLossStats(userId, startDate, endDate),
         this.getTournamentsWon(userId),
+        this.getXp(userId),
+        this.getBadges(userId),
       ]);
-    
-    return { gamesPlayed, answers, avgResponseTime, categories, winLoss, tournamentsWon };
+
+    return { gamesPlayed, answers, avgResponseTime, categories, winLoss, tournamentsWon, xp, badges };
   }
 }

@@ -2,7 +2,7 @@ import { Sparkles, Mail, Lock, User, AlertCircle, Key, Github } from "lucide-rea
 import { useState } from "react";
 
 interface LoginPageProps {
-  onLogin?: (username?: string) => void;
+  onLogin?: () => void;
   force2FA?: boolean;
 }
 
@@ -53,7 +53,7 @@ export default function LoginPage({ onLogin, force2FA = false }: LoginPageProps)
         }
 
         console.log("Connecté avec succès !", data);
-        if (onLogin) onLogin(data.username || username); 
+        if (onLogin) onLogin();
       } else {
         setErrorMsg(data.message || "Erreur lors de la connexion");
       }

@@ -10,6 +10,7 @@ export class GameManager
     private waitingPlayer: Socket | null = null;
 
     private games = new Map<string, GameSession>();
+	private connectedPlayers = new Map<string, Socket>();
 
 // -----------------------------------------------------------------------------
 // Matchmaking
@@ -17,6 +18,17 @@ export class GameManager
 
     async createMatch(player: Socket): Promise<GameSession | null>
     {
+		// Un joueur déjà engagé dans une partie (ex. il redemande un 1v1
+		// depuis un autre onglet/page sans avoir quitté la partie en
+		// cours) ne doit pas redevenir disponible pour le matchmaking :
+		// sinon il "vole" la place de son adversaire actuel au profit
+		// d'un nouveau joueur, qui se retrouve bloqué indéfiniment.
+		if (this.findGameByPlayer(player))
+		{
+			console.log(`${player.id} is already in a game.`);
+			return null;
+		}
+
 		 if (this.waitingPlayer?.id === player.id)
         {
             console.log(`${player.id} is already waiting.`);
@@ -30,31 +42,96 @@ export class GameManager
         }
 
         const roomId = `room-${Date.now()}`;
+        const opponent = this.waitingPlayer;
 
-        const game = new GameSession(
-            roomId,
-            this.waitingPlayer,
-            player,
-        );
-//		game.questions = await this.triviaService.getTestQuestions();
-		game.questions = await this.triviaService.getQuestions();
-
-        this.games.set(roomId, game);
-
-		console.log("Game created:", roomId);
-
+        // Le joueur en attente est retiré immédiatement : si la suite
+        // échoue (ex. récupération des questions), il ne doit pas rester
+        // bloqué indéfiniment comme "en attente" pour tout le monde.
         this.waitingPlayer = null;
 
-        return game;
+        try
+        {
+            const game = new GameSession(
+                roomId,
+                opponent,
+                player,
+            );
+
+            game.player1Id = opponent.data.userId;
+            game.player2Id = player.data.userId;
+
+//			game.questions = await this.triviaService.getTestQuestions();
+			game.questions = await this.triviaService.getQuestions();
+
+            this.games.set(roomId, game);
+
+            return game;
+        }
+        catch (error)
+        {
+            console.error("Failed to create match:", error);
+            return null;
+        }
     }
-	
+
+	async createTournamentMatch(
+		player1: Socket,
+		player2: Socket,
+		roomId: string,
+		tournamentId: string
+	): Promise<GameSession>
+	{
+		const game = new GameSession(
+			roomId,
+			player1,
+			player2,
+			tournamentId,
+		);
+
+		game.player1Id = player1.data.userId;
+		game.player2Id = player2.data.userId;
+
+		game.questions = await this.triviaService.getQuestions();
+
+		this.games.set(roomId, game);
+
+		console.log("Tournament game created:", roomId);
+
+		return game;
+	}
+
+	async createAIMatch(
+		player: Socket,
+	): Promise<GameSession>
+	{
+		const roomId = `room-${Date.now()}`;
+
+		const game = new GameSession(
+			roomId,
+			player,
+			player,
+		);
+
+		game.player1Id = player.data.userId;
+		game.player2Id = "AI";
+
+		game.ai = {};
+
+		game.questions = await this.triviaService.getQuestions();
+
+		this.games.set(roomId, game);
+		console.log("[AI] Match created", roomId);
+
+		return game;
+	}
+
 // -----------------------------------------------------------------------------
 // Gameplay
 // -----------------------------------------------------------------------------
 
 	submitAnswer(
 		roomId: string,
-		player: Socket,
+		player: Socket | "AI",
 		answer: string | null,
 		timeLeft: number,
 	)
@@ -68,6 +145,12 @@ export class GameManager
             console.log("Game not found");
             return;
         }
+
+		const isAI = player === "AI";
+
+		const isPlayer1 =
+			!isAI &&
+			player.id === game.player1.id;
 
 		const question = game.questions[game.currentQuestion];
 
@@ -96,7 +179,7 @@ export class GameManager
 			};
 		}
 
-		if (player.id === game.player1.id)
+		if (isPlayer1)
 		{
 			game.player1Time += usedTime;
 			game.questionHistory[game.currentQuestion].player1Answer = answer;
@@ -110,13 +193,11 @@ export class GameManager
 		}
 
 
-		const hadThreeChoice =
-			player.id === game.player1.id
+		const hadThreeChoice = isPlayer1
 				? game.player1ThreeChoice
 				: game.player2ThreeChoice;
 
-		const hadHideAnswer =
-			player.id === game.player1.id
+		const hadHideAnswer = isPlayer1
 				? game.player1HideAnswer
 				: game.player2HideAnswer;
 
@@ -134,7 +215,7 @@ export class GameManager
 		if (game.player2HideAnswer)
 			game.player2HideAnswer = false;
 
-		if (player.id === game.player1.id)
+		if (isPlayer1)
 		{
 			game.player1Streak = this.updateCorrectStreak(
 				game.player1Streak,
@@ -153,7 +234,7 @@ export class GameManager
 
 		if (isCorrect)
 		{
-			if (player.id === game.player1.id)
+			if (isPlayer1)
 			{
 				if (game.player1DoublePoint)
 				{
@@ -175,7 +256,7 @@ export class GameManager
 			}
 		}
 		
-		if (player.id === game.player1.id)
+		if (isPlayer1)
 			game.player1Answered = true;
 		else
 			game.player2Answered = true;
@@ -227,7 +308,7 @@ export class GameManager
 					stats: matchStats,
 				};
 			}
-			if (player.id === game.player1.id)
+			if (isPlayer1)
 			{
 				if (hadThreeChoice)
 					game.player1ThreeChoice = false;
@@ -243,8 +324,6 @@ export class GameManager
 				if (hadHideAnswer)
 					game.player2HideAnswer = false;
 			}
-
-			console.log(game.questionHistory);
 			return {
 				nextQuestion: true,
 				gameOver: false,
@@ -264,7 +343,7 @@ export class GameManager
 			};
 		}
 
-		if (player.id === game.player1.id)
+		if (isPlayer1)
 		{
 			if (hadThreeChoice)
 				game.player1ThreeChoice = false;
@@ -276,7 +355,6 @@ export class GameManager
 				game.player2ThreeChoice = false;
 
 		}
-		console.log(game.questionHistory[0]);
 		return {
 			nextQuestion: false,
 			gameOver: false,
@@ -390,7 +468,7 @@ export class GameManager
 
 	markPlayerReady(
 		roomId: string,
-		player: Socket,
+		player: Socket | "AI",
 	): boolean
 	{
 		const game = this.games.get(roomId);
@@ -398,17 +476,27 @@ export class GameManager
 		if (!game)
 			return false;
 
-		if (player.id === game.player1.id)
+		const isAI = player === "AI";
+
+		const isPlayer1 =
+			!isAI &&
+			player.id === game.player1.id;
+
+		if (isPlayer1)
 			game.player1Ready = true;
 		else
 			game.player2Ready = true;
+
+		if (game.ai)
+			game.player2Ready = true;
+
 
 		return game.player1Ready && game.player2Ready;
 	}
 
 	markQuestionsLoaded(
 		roomId: string,
-		player: Socket,
+		player: Socket | "AI",
 	): boolean
 	{
 		const game = this.games.get(roomId);
@@ -416,15 +504,32 @@ export class GameManager
 		if (!game)
 			return false;
 
-		if (player.id === game.player1.id)
+		
+		const isAI = player === "AI";
+
+		if (!isAI && player.id === game.player1.id)
 			game.player1QuestionsLoaded = true;
 		else
 			game.player2QuestionsLoaded = true;
 
-		return (
-			game.player1QuestionsLoaded &&
-			game.player2QuestionsLoaded
-		);
+		// En mode IA, le second joueur est toujours prêt.
+		if (game.ai)
+			game.player2QuestionsLoaded = true;
+
+		// Les deux joueurs ne sont pas encore prêts.
+		if (
+			!game.player1QuestionsLoaded ||
+			!game.player2QuestionsLoaded
+		)
+			return false;
+
+		// La partie a déjà été démarrée.
+		if (game.gameStarted)
+			return false;
+
+		game.gameStarted = true;
+		console.log("START GAME");
+		return true;
 	}
 
 // !!!!!!!!!!!!!!!!!!!!
@@ -453,6 +558,11 @@ export class GameManager
 
 	removeGame(roomId: string): void
 	{
+		const game = this.games.get(roomId);
+
+    	if (game?.ai?.timeout)
+        	clearTimeout(game.ai.timeout);
+
 		this.games.delete(roomId);
 	}
 
@@ -463,4 +573,19 @@ export class GameManager
 			this.waitingPlayer = null;
 		}
 	}
-}
+
+	registerPlayer(userId: string, socket: Socket): void
+	{
+		this.connectedPlayers.set(userId, socket);
+	}
+
+	unregisterPlayer(userId: string): void
+	{
+		this.connectedPlayers.delete(userId);
+	}
+
+	getPlayerSocket(userId: string): Socket | undefined
+	{
+		return this.connectedPlayers.get(userId);
+	}
+			}
