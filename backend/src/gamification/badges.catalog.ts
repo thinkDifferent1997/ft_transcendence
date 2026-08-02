@@ -20,7 +20,7 @@ export const BADGE_CATALOG: BadgeDefinition[] = [
   },
   {
     code: 'WINS_50',
-    name: 'Regular',
+    name: 'Emilien',
     description: 'Win 50 matchs',
   },
   {
