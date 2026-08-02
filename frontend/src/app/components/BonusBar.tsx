@@ -27,14 +27,14 @@ export default function PlayerBonus({ streak, threeChoice, hideAnswer, doublePoi
                 <div className={`flex flex-col items-center justify-center px-3 py-2 rounded-xl border-2 transition-all ${
                     threeChoice ? 'border-indigo-400 bg-indigo-50 shadow-md scale-105' : 'border-gray-200 bg-gray-50 opacity-40 grayscale'
                 }`}>
-                    <span className="text-xs font-bold text-indigo-700">50 / 50</span>
+                    <span className="text-xs font-bold text-indigo-700">75 / 25</span>
                 </div>
                 
                 {/* Cacher une réponse */}
                 <div className={`flex flex-col items-center justify-center px-3 py-2 rounded-xl border-2 transition-all ${
                     hideAnswer ? 'border-purple-400 bg-purple-50 shadow-md scale-105' : 'border-gray-200 bg-gray-50 opacity-40 grayscale'
                 }`}>
-                    <span className="text-xs font-bold text-purple-700">Cacher 1</span>
+                    <span className="text-xs font-bold text-purple-700">Hide for ennemy</span>
                 </div>
                 
                 {/* Points x2 */}

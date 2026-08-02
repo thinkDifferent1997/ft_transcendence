@@ -1,7 +1,6 @@
 import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import LoginPage from "./components/LoginPage";
 import ProfilePage from "./components/ProfilePage";
-import TournamentLobby from "./components/TournamentLobby";
 import TournamentLobbyTest from "./pages/TournamentLobbyTest";
 import Layout from "./components/Layout";
 import Home from "./pages/Home";

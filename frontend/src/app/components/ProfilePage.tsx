@@ -242,7 +242,7 @@ export default function ProfilePage({ username, userId, onBack }: ProfilePagePro
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            Retour
+            Back
           </button>
         )}
 
@@ -293,7 +293,7 @@ export default function ProfilePage({ username, userId, onBack }: ProfilePagePro
                   className="inline-flex items-center gap-2 px-5 py-2.5 bg-gray-900 hover:bg-gray-800 text-white text-sm font-semibold rounded-xl transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5"
                 >
                   <Shield className="w-4 h-4 text-blue-400" />
-                  Sécuriser mon compte (Activer 2FA)
+                  Secure my account (2FA)
                 </button>
               )}
             </div>
@@ -303,19 +303,19 @@ export default function ProfilePage({ username, userId, onBack }: ProfilePagePro
                 <div className="bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent text-2xl font-bold">
                   {stats?.gamesPlayed ?? 0}
                 </div>
-                <div className="text-sm text-gray-600 font-medium">Parties</div>
+                <div className="text-sm text-gray-600 font-medium">Games</div>
               </div>
               <div className="px-4">
                 <div className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent text-2xl font-bold">
                   {stats?.answers.successRate ?? 0}%
                 </div>
-                <div className="text-sm text-gray-600 font-medium">Précision</div>
+                <div className="text-sm text-gray-600 font-medium">Accuracy</div>
               </div>
               <div className="px-4">
                 <div className="bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent text-2xl font-bold">
                   {stats?.winLoss.wins ?? 0}
                 </div>
-                <div className="text-sm text-gray-600 font-medium">Victoires</div>
+                <div className="text-sm text-gray-600 font-medium">Victory</div>
               </div>
               <div className="px-4">
                 <div className="bg-gradient-to-r from-yellow-500 to-amber-600 bg-clip-text text-transparent text-2xl font-bold">
@@ -330,7 +330,7 @@ export default function ProfilePage({ username, userId, onBack }: ProfilePagePro
         {/* Filtres de date + Export */}
         <div className="bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl p-6 border border-white/50 mb-8 flex flex-wrap gap-4 items-end">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Depuis</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">From</label>
             <input
               type="date"
               value={startDate}
@@ -339,7 +339,7 @@ export default function ProfilePage({ username, userId, onBack }: ProfilePagePro
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Jusqu'à</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">To</label>
             <input
               type="date"
               value={endDate}
@@ -394,17 +394,17 @@ export default function ProfilePage({ username, userId, onBack }: ProfilePagePro
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="text-center p-6 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 text-white shadow-lg">
                 <div className="mb-2 text-3xl font-black">{stats?.gamesPlayed ?? 0}</div>
-                <div className="opacity-90 font-medium">Parties jouées</div>
+                <div className="opacity-90 font-medium">Games played</div>
               </div>
 
               <div className="text-center p-6 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 text-white shadow-lg">
                 <div className="mb-2 text-3xl font-black">{stats?.answers.successRate ?? 0}%</div>
-                <div className="opacity-90 font-medium">Taux de réussite global</div>
+                <div className="opacity-90 font-medium">Correct answer rate</div>
               </div>
 
               <div className="text-center p-6 rounded-2xl bg-gradient-to-br from-orange-500 to-red-500 text-white shadow-lg">
                 <div className="mb-2 text-3xl font-black">{stats?.tournamentsWon ?? 0}</div>
-                <div className="opacity-90 font-medium">Victoires en tournoi</div>
+                <div className="opacity-90 font-medium">Tournament win</div>
               </div>
             </div>
           </div>
@@ -414,7 +414,7 @@ export default function ProfilePage({ username, userId, onBack }: ProfilePagePro
         <div className="bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl p-6 border border-white/50 mb-8">
           <h3 className="mb-6 flex items-center gap-2 text-xl font-bold text-gray-800">
             <Target className="w-6 h-6 text-indigo-600" />
-            Statistiques par thème
+            Stats by category
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {(stats?.categories ?? []).map((stat, index) => (
@@ -434,7 +434,7 @@ export default function ProfilePage({ username, userId, onBack }: ProfilePagePro
                     style={{ width: `${stat.successRate}%` }}
                   />
                 </div>
-                <p className="text-sm text-gray-500 font-medium text-right m-0">{stat.total} question(s) répondue(s)</p>
+                <p className="text-sm text-gray-500 font-medium text-right m-0">{stat.total} answered</p>
               </div>
             ))}
             {(stats?.categories ?? []).length === 0 && (
@@ -492,7 +492,7 @@ export default function ProfilePage({ username, userId, onBack }: ProfilePagePro
             <div className="bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl p-6 border border-white/50">
               <h3 className="mb-6 flex items-center gap-2 text-xl font-bold text-gray-800">
                 <Award className="w-6 h-6 text-pink-600" />
-                Réponses par thème
+                Answers by category
               </h3>
               <ChartContainer config={chartConfig} className="h-[280px] w-full">
                 <BarChart data={stats!.categories}>
@@ -512,7 +512,7 @@ export default function ProfilePage({ username, userId, onBack }: ProfilePagePro
             <div className="bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl p-6 border border-white/50">
               <h3 className="mb-6 flex items-center gap-2 text-xl font-bold text-gray-800">
                 <Trophy className="w-6 h-6 text-amber-600" />
-                Résultats des parties
+                Match results
               </h3>
               <ChartContainer config={chartConfig} className="h-[280px] w-full">
                 <PieChart>
