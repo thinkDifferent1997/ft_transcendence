@@ -82,7 +82,7 @@ export default function TournamentLobby({ username, onBack, onStartGame }: Tourn
             <Trophy className="w-10 h-10 text-white" />
           </div>
           <h1 className="mb-2 bg-gradient-to-r from-yellow-600 via-orange-600 to-red-600 bg-clip-text text-transparent">
-            Lobby Tournoi
+            Tournament lobby
           </h1>
           <p className="text-gray-700">En attente de joueurs...</p>
         </div>
@@ -112,7 +112,7 @@ export default function TournamentLobby({ username, onBack, onStartGame }: Tourn
             <div className="mt-6 text-center">
               <div className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg animate-pulse">
                 <Clock className="w-5 h-5" />
-                <span>Le tournoi commence dans {countdown}s</span>
+                <span>Tournament begin in {countdown}s</span>
               </div>
             </div>
           )}
