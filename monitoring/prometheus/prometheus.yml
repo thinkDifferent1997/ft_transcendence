@@ -1,0 +1,36 @@
+# **************************************************************************** #
+#                                                                              #
+#                                                         :::      ::::::::    #
+#    prometheus.yml                                     :+:      :+:    :+:    #
+#                                                     +:+ +:+         +:+      #
+#    By: jbaumfal < jbaumfal@student.42.fr>         +#+  +:+       +#+         #
+#                                                 +#+#+#+#+#+   +#+            #
+#    Created: 2026/08/02 19:39:09 by jbaumfal          #+#    #+#              #
+#    Updated: 2026/08/02 19:51:13 by jbaumfal         ###   ########.fr        #
+#                                                                              #
+# **************************************************************************** #
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - /etc/prometheus/alerts.yml
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['alertmanager:9093']
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: backend
+    scheme: https
+    tls_config:
+      # our cert is self-signed, so skip verification
+      insecure_skip_verify: true
+    static_configs:
+      - targets: ['backend:3000']
