@@ -1,4 +1,4 @@
-import { Sparkles, MessageCircle, Send, X, Minus, LogOut } from "lucide-react";
+import { Sparkles, MessageCircle, Send, X, Minus, LogOut, Trophy } from "lucide-react";
 import { useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { socket } from "../../socket/socket";
@@ -97,6 +97,15 @@ export default function Layout({ username, onLogout }: LayoutProps) {
 
           {/* Bloc de Droite : Profil et Déconnexion */}
           <div className="flex items-center gap-4">
+
+            {/* Bouton Classement */}
+            <button
+              onClick={() => handleNavigate("/leaderboard")}
+              className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/60 hover:bg-white text-gray-700 hover:text-amber-600 border border-gray-200 transition-all shadow-sm hover:shadow-md"
+            >
+              <Trophy className="w-4 h-4" />
+              <span className="hidden sm:inline font-medium">Classement</span>
+            </button>
 
             {/* Bouton Profil */}
             <button
