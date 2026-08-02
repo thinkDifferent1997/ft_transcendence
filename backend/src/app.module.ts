@@ -11,6 +11,7 @@ import { ImportModule } from './import/import.module';
 import { TriviaModule } from './trivia/trivia.module';
 import { GameModule } from './game/game.module';
 import { GameResultsModule } from './game-results/game-results.module';
+import { MetricsModule } from './metrics/metrics.module';
 
 @Module({
   imports: [
@@ -23,7 +24,8 @@ import { GameResultsModule } from './game-results/game-results.module';
     ImportModule,
     TriviaModule,
     GameModule,
-    GameResultsModule
+    GameResultsModule,
+    MetricsModule
   ],
   controllers: [AppController],
   providers: [AppService],
