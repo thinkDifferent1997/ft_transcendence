@@ -20,7 +20,7 @@ const gameModes = [
   },
   {
     id: "party",
-    title: "1v1 Party",
+    title: "1v1",
     description: "Duel your friends in a 1v1 party game !",
     icon: Users,
     color: "from-orange-500 to-red-500",
@@ -28,7 +28,7 @@ const gameModes = [
   },
   {
     id: "tournament",
-    title: "Tournoi",
+    title: "Tournament",
     description:
       "Compete in a 4-player tournament and become the champion !",
     icon: Trophy,
@@ -51,8 +51,7 @@ export default function Home() {
           Culture Quiz
         </h1>
         <p className="text-gray-700 max-w-2xl mx-auto">
-          Choisis ton mode de jeu et devient un roi de la
-          culture !
+          Choose your gamemode to be the new king of culture !
         </p>
       </div>
 

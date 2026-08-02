@@ -18,6 +18,17 @@ export class GameManager
 
     async createMatch(player: Socket): Promise<GameSession | null>
     {
+		// Un joueur déjà engagé dans une partie (ex. il redemande un 1v1
+		// depuis un autre onglet/page sans avoir quitté la partie en
+		// cours) ne doit pas redevenir disponible pour le matchmaking :
+		// sinon il "vole" la place de son adversaire actuel au profit
+		// d'un nouveau joueur, qui se retrouve bloqué indéfiniment.
+		if (this.findGameByPlayer(player))
+		{
+			console.log(`${player.id} is already in a game.`);
+			return null;
+		}
+
 		 if (this.waitingPlayer?.id === player.id)
         {
             console.log(`${player.id} is already waiting.`);
@@ -31,24 +42,36 @@ export class GameManager
         }
 
         const roomId = `room-${Date.now()}`;
+        const opponent = this.waitingPlayer;
 
-        const game = new GameSession(
-            roomId,
-            this.waitingPlayer,
-            player,
-        );
-
-		game.player1Id = this.waitingPlayer.data.userId;
-		game.player2Id = player.data.userId;
-
-//		game.questions = await this.triviaService.getTestQuestions();
-		game.questions = await this.triviaService.getQuestions();
-
-        this.games.set(roomId, game);
-
+        // Le joueur en attente est retiré immédiatement : si la suite
+        // échoue (ex. récupération des questions), il ne doit pas rester
+        // bloqué indéfiniment comme "en attente" pour tout le monde.
         this.waitingPlayer = null;
 
-        return game;
+        try
+        {
+            const game = new GameSession(
+                roomId,
+                opponent,
+                player,
+            );
+
+            game.player1Id = opponent.data.userId;
+            game.player2Id = player.data.userId;
+
+//			game.questions = await this.triviaService.getTestQuestions();
+			game.questions = await this.triviaService.getQuestions();
+
+            this.games.set(roomId, game);
+
+            return game;
+        }
+        catch (error)
+        {
+            console.error("Failed to create match:", error);
+            return null;
+        }
     }
 
 	async createTournamentMatch(

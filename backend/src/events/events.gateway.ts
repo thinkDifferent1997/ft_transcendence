@@ -701,6 +701,10 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 		winner: 0 | 1 | 2,
 	)
 	{
+		if (game.resultRecorded)
+			return;
+		game.resultRecorded = true;
+
 		try
 		{
 			await this.gameResultsService.recordMatch({

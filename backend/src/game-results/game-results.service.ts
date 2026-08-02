@@ -104,11 +104,11 @@ export class GameResultsService {
   }
 
   private async upsertCategory(tx: Prisma.TransactionClient, name: string) {
-    const existing = await tx.category.findFirst({ where: { name } });
-
-    if (existing) return existing;
-
-    return tx.category.create({ data: { name } });
+    return tx.category.upsert({
+      where: { name },
+      update: {},
+      create: { name },
+    });
   }
 
   private async upsertQuestion(
