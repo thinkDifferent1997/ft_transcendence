@@ -1,3 +1,9 @@
+import {Clock, CheckCircle, ArrowLeft} from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import BonusBar from "./BonusBar";
+import GameSettings from "./GameSettings";
+import type { GameState } from "../types/GameState";
+
 export default function GamePage({
     game,
     selectedAnswer,
@@ -6,16 +12,6 @@ export default function GamePage({
     onBack,
 }: Props)
 
-import {
-  Clock,
-  CheckCircle,
-  ArrowLeft,
-} from "lucide-react";
-
-import BonusBar from "./BonusBar";
-
-
-import type { GameState } from "../types/GameState";
 
 
 interface Props {
@@ -38,12 +34,76 @@ const MODE_CONFIG = {
 		waitingForOpponent,
 	}: Props) {
 
-		const currentQ = game.currentQuestion;
+	const currentQ = game.currentQuestion;
 
-		const config =
-			MODE_CONFIG[game.mode as keyof typeof MODE_CONFIG];
+	const config =
+		MODE_CONFIG[game.mode as keyof typeof MODE_CONFIG];
 
-		const hasOpponent = config.opponent;
+	const hasOpponent = config.opponent;
+	const [theme, setTheme] = useState(
+		localStorage.getItem("game-theme") ?? "default",
+	);
+	const audioRef = useRef<HTMLAudioElement | null>(null);
+
+	const [musicEnabled, setMusicEnabled] = useState(
+		localStorage.getItem("music-enabled") !== "false",
+	);
+
+	const [volume, setVolume] = useState(
+		Number(localStorage.getItem("music-volume") ?? 50),
+	);
+
+	useEffect(() =>
+	{
+		audioRef.current = new Audio("/music/forest_river_spirits.mp3");
+
+		audioRef.current.loop = true;
+
+		audioRef.current.volume = 0.5;
+
+		if (musicEnabled)
+		{
+			audioRef.current.play().catch(() =>
+			{
+				console.log("Autoplay blocked.");
+			});
+		}
+
+		return () =>
+		{
+			audioRef.current?.pause();
+			audioRef.current = null;
+		};
+	}, []);
+
+	useEffect(() =>
+	{
+		if (!audioRef.current)
+			return;
+
+		if (musicEnabled)
+			audioRef.current.play();
+		else
+			audioRef.current.pause();
+
+		localStorage.setItem(
+			"music-enabled",
+			String(musicEnabled),
+		);
+	}, [musicEnabled]);
+
+	useEffect(() =>
+	{
+		if (!audioRef.current)
+			return;
+
+		audioRef.current.volume = volume / 100;
+
+		localStorage.setItem(
+			"music-volume",
+			String(volume),
+		);
+	}, [volume]);
 
 	if (!currentQ) {
 		return (
@@ -60,9 +120,19 @@ const MODE_CONFIG = {
 		: game.time_left > 7
 	  ? "from-yellow-400 to-orange-400"
 	  : "from-red-400 to-pink-400";
+	
+	const backgrounds = {
+		default: "bg-gradient-to-br from-violet-900 via-purple-900 to-indigo-900",
+
+		forest: "bg-gradient-to-br from-green-900 via-emerald-800 to-lime-900",
+
+		space: "bg-gradient-to-br from-slate-950 via-indigo-950 to-black",
+
+		neon: "bg-gradient-to-br from-fuchsia-700 via-pink-700 to-cyan-600",
+	};
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-violet-900 via-purple-900 to-indigo-900 flex flex-col">
+	  <div className={`min-h-screen ${backgrounds[theme as keyof typeof backgrounds]} flex flex-col transition-all duration-500`}>
       {/* Top bar */}
       <div className="flex items-center justify-between px-6 py-4">
         <button
@@ -72,10 +142,20 @@ const MODE_CONFIG = {
           <ArrowLeft className="w-5 h-5" />
           <span>Leave</span>
         </button>
+			<div className="flex items-center gap-4">
+				<div className="text-white/70 text-sm">
+					{game.questionIndex} / 8
+				</div>
+				<GameSettings
+					theme={theme}
+					setTheme={setTheme}
+					musicEnabled={musicEnabled}
+					setMusicEnabled={setMusicEnabled}
+					volume={volume}
+					setVolume={setVolume}
+				/>
 
-        <div className="text-white/70 text-sm">
-          {game.questionIndex} / 8
-        </div>
+			</div>
       </div>
 
       {/* Score bar (opponent game.mode) */}
