@@ -6,7 +6,7 @@
 #    By: jbaumfal < jbaumfal@student.42.fr>         +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2026/08/02 19:39:09 by jbaumfal          #+#    #+#              #
-#    Updated: 2026/08/02 19:51:13 by jbaumfal         ###   ########.fr        #
+#    Updated: 2026/08/03 03:14:55 by jbaumfal         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -34,3 +34,10 @@ scrape_configs:
       insecure_skip_verify: true
     static_configs:
       - targets: ['backend:3000']
+  - job_name: postgres
+    static_configs:
+      - targets: ['postgres-exporter:9187']
+
+  - job_name: nginx
+    static_configs:
+      - targets: ['nginx-exporter:9113']

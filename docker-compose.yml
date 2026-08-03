@@ -82,6 +82,7 @@ services:
       - transcend_net
     restart: unless-stopped
 
+# MONITORING SERVICES
 # Prometheus 
   prometheus:
     image: docker.io/prom/prometheus:v3.13.2
@@ -98,7 +99,31 @@ services:
     networks:
       - transcend_net
     restart: unless-stopped
+# Postgres exporter
+  postgres-exporter:
+    image: docker.io/prometheuscommunity/postgres-exporter:v0.20.1
+    container_name: postgres_exporter
+    env_file:
+      - .env
+    environment:
+      DATA_SOURCE_NAME: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - transcend_net
+    restart: unless-stopped
 
+  nginx-exporter:
+    image: docker.io/nginx/nginx-prometheus-exporter:1.5.1
+    container_name: nginx_exporter
+    command:
+      - --nginx.scrape-uri=http://nginx:8080/stub_status
+    depends_on:
+      - nginx
+    networks:
+      - transcend_net
+    restart: unless-stopped
 
 # -------------------------------------------------------------------------- #
 #                             Volume                                         #
