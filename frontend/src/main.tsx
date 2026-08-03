@@ -7,10 +7,10 @@ import './styles/index.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <GameProvider>
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
-    </GameProvider>
+  	<GameProvider>
+		<BrowserRouter>
+			<App />
+		</BrowserRouter>
+	</GameProvider>
   </React.StrictMode>,
 )
