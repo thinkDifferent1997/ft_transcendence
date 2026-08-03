@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { RoomStatus } from '@prisma/client';
+import { RoomMode, RoomStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { computeLevel } from '../gamification/level.util';
 
 
 interface CategoryStatEntry {
@@ -168,6 +169,51 @@ export class StatsService {
       });
     }
 
+  // Classement des joueurs par XP décroissant. Le volume de joueurs étant
+  // faible, on réutilise getWinLossStats() par joueur plutôt que de
+  // dupliquer sa logique dans une requête agrégée.
+  async getLeaderboard(limit = 20, offset = 0) {
+    const users = await this.prisma.user.findMany({
+      orderBy: { xp: 'desc' },
+      take: limit,
+      skip: offset,
+      select: { id: true, username: true, avatar: true, xp: true },
+    });
+
+    return Promise.all(
+      users.map(async (user, index) => {
+        const winLoss = await this.getWinLossStats(user.id);
+
+        return {
+          rank: offset + index + 1,
+          userId: user.id,
+          username: user.username,
+          avatar: user.avatar,
+          xp: user.xp,
+          gamesPlayed: winLoss.played,
+          wins: winLoss.wins,
+          ...computeLevel(user.xp),
+        };
+      }),
+    );
+  }
+
+  // Position du joueur dans le classement global par XP (1 = premier).
+  async getRank(userId: string): Promise<number | null> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { xp: true },
+    });
+
+    if (!user) return null;
+
+    const higherRanked = await this.prisma.user.count({
+      where: { xp: { gt: user.xp } },
+    });
+
+    return higherRanked + 1;
+  }
+
   async getXp(userId: string): Promise<number> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -198,6 +244,54 @@ export class StatsService {
     }));
   }
 
+  // Historique des parties 1v1 (hors tournoi) d'un joueur, la plus
+  // récente en premier : date, adversaire et résultat.
+  async getMatchHistory(userId: string, limit = 20, offset = 0) {
+    const participations = await this.prisma.roomParticipant.findMany({
+      where: {
+        userId,
+        room: {
+          mode: RoomMode.DUEL,
+          status: RoomStatus.FINISHED,
+        },
+      },
+      include: {
+        room: {
+          include: {
+            participants: { include: { user: true } },
+          },
+        },
+      },
+      orderBy: { room: { createdAt: 'desc' } },
+      take: limit,
+      skip: offset,
+    });
+
+    return participations.map((participation) => {
+      const opponent = participation.room.participants.find(
+        (p) => p.id !== participation.id,
+      );
+
+      const result =
+        participation.room.winnerParticipantId === null
+          ? 'draw'
+          : participation.room.winnerParticipantId === participation.id
+            ? 'win'
+            : 'loss';
+
+      return {
+        roomId: participation.roomId,
+        date: participation.room.createdAt,
+        opponent: opponent?.isBot
+          ? 'IA'
+          : (opponent?.user?.username ?? 'Adversaire inconnu'),
+        score: participation.score,
+        opponentScore: opponent?.score ?? 0,
+        result,
+      };
+    });
+  }
+
   async getSummary(userId: string, startDate?: Date, endDate?: Date) {
     const [gamesPlayed, answers, avgResponseTime, categories, winLoss, tournamentsWon, xp, badges] =
       await Promise.all([
@@ -211,6 +305,16 @@ export class StatsService {
         this.getBadges(userId),
       ]);
 
-    return { gamesPlayed, answers, avgResponseTime, categories, winLoss, tournamentsWon, xp, badges };
+    return {
+      gamesPlayed,
+      answers,
+      avgResponseTime,
+      categories,
+      winLoss,
+      tournamentsWon,
+      xp,
+      badges,
+      ...computeLevel(xp),
+    };
   }
 }

@@ -29,6 +29,17 @@ export class StatsController {
     );
   }
 
+  @Get('leaderboard')
+  async getLeaderboard(
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
+  ) {
+    return this.statsService.getLeaderboard(
+      limit ? parseInt(limit, 10) : undefined,
+      offset ? parseInt(offset, 10) : undefined,
+    );
+  }
+
   @Get(':userId/games-played')
   async getGamesPlayed(
     @Param('userId') userId: string,
@@ -100,6 +111,25 @@ export class StatsController {
   async getTournamentsWon(@Param('userId') userId: string) {
     const count = await this.statsService.getTournamentsWon(userId);
     return { tournamentsWon: count };
+  }
+
+  @Get(':userId/history')
+  async getMatchHistory(
+    @Param('userId') userId: string,
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
+  ) {
+    return this.statsService.getMatchHistory(
+      userId,
+      limit ? parseInt(limit, 10) : undefined,
+      offset ? parseInt(offset, 10) : undefined,
+    );
+  }
+
+  @Get(':userId/rank')
+  async getRank(@Param('userId') userId: string) {
+    const rank = await this.statsService.getRank(userId);
+    return { rank };
   }
 
   @Get(':userId/badges')
