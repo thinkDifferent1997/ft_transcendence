@@ -3,13 +3,13 @@
 #   Run `make help` to see what's available.
 # ============================================================
 
-COMPOSE       := docker compose
+COMPOSE	   := docker compose
 COMPOSE_PROD  := -f docker-compose.yml
 COMPOSE_DEV   := -f docker-compose.yml -f docker-compose.dev.yml
 
-CERT_DIR      := nginx/certs
-CERT_KEY      := $(CERT_DIR)/selfsigned.key
-CERT_CRT      := $(CERT_DIR)/selfsigned.crt
+CERT_DIR	  := nginx/certs
+CERT_KEY	  := $(CERT_DIR)/selfsigned.key
+CERT_CRT	  := $(CERT_DIR)/selfsigned.crt
 
 # Default goal when running `make` with no args
 .DEFAULT_GOAL := help
@@ -23,7 +23,7 @@ help: ## Show this help message
 	@echo "  ft_transcendence — available targets:"
 	@echo ""
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
-		awk 'BEGIN {FS = ":.*?## "}; {printf "    \033[36m%-14s\033[0m %s\n", $$1, $$2}'
+		awk 'BEGIN {FS = ":.*?## "}; {printf "	\033[36m%-14s\033[0m %s\n", $$1, $$2}'
 	@echo ""
 
 # ============================================================
@@ -37,6 +37,12 @@ env: ## Create .env from .env.example if it does not exist
 	else \
 		echo ".env already exists, skipping."; \
 	fi
+	@if [ ! -f monitoring/alertmanager/discord_webhook_url ]; then \
+			  cp monitoring/alertmanager/discord_webhook_url.example monitoring/alertmanager/discord_webhook_url; \
+			  echo "monitoring/alertmanager/discord_webhook_url created from example file, paste the Discord webhook URL into it!"; \
+	  else \
+			  echo "discord_webhook_url already exists, skipping."; \
+	  fi
 
 certs: $(CERT_CRT) ## Generate self-signed TLS certificates (idempotent)
 	@# openssl creates the key 0600, readable only by the host user. The prod
