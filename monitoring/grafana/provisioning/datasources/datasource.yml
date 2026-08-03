@@ -1,0 +1,21 @@
+# **************************************************************************** #
+#                                                                              #
+#                                                         :::      ::::::::    #
+#    datasource.yml                                     :+:      :+:    :+:    #
+#                                                     +:+ +:+         +:+      #
+#    By: jbaumfal < jbaumfal@student.42.fr>         +#+  +:+       +#+         #
+#                                                 +#+#+#+#+#+   +#+            #
+#    Created: 2026/08/03 12:38:10 by jbaumfal          #+#    #+#              #
+#    Updated: 2026/08/03 12:38:29 by jbaumfal         ###   ########.fr        #
+#                                                                              #
+# **************************************************************************** #
+
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: false
