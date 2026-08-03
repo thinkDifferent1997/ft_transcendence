@@ -4,16 +4,6 @@ import BonusBar from "./BonusBar";
 import GameSettings from "./GameSettings";
 import type { GameState } from "../types/GameState";
 
-export default function GamePage({
-    game,
-    selectedAnswer,
-    revealed,
-    onAnswer,
-    onBack,
-}: Props)
-
-
-
 interface Props {
     game: GameState;
 	waitingForOpponent: boolean;
@@ -82,7 +72,7 @@ const MODE_CONFIG = {
 			return;
 
 		if (musicEnabled)
-			audioRef.current.play();
+			audioRef.current.play().catch(() => console.log("Autoplay blocked."));
 		else
 			audioRef.current.pause();
 
