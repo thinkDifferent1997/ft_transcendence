@@ -1,87 +1,98 @@
 import { Sparkles, MessageCircle, Send, X, Minus, LogOut, Trophy } from "lucide-react";
-import { useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
 import { socket } from "../../socket/socket";
 import { useGame } from "../context/GameContext";
 
 interface LayoutProps {
-  username: string;
-  onLogout: () => void;
+	username: string;
+	onLogout: () => void;
 }
 
 export default function Layout({ username, onLogout }: LayoutProps) {
-  const navigate = useNavigate();
-  const [isChatOpen, setIsChatOpen] = useState(false);
-  const [message, setMessage] = useState("");
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      user: "Alex",
-      avatar: "🎨",
-      text: "Anyone up for a tournament?",
-      time: "2m ago",
-    },
-    {
-      id: 2,
-      user: "Sam",
-      avatar: "🚀",
-      text: "Just beat the AI in hard mode!",
-      time: "5m ago",
-    },
-    {
-      id: 3,
-      user: "Jordan",
-      avatar: "🌟",
-      text: "Looking for party mode players!",
-      time: "8m ago",
-    },
-  ]);
+const navigate = useNavigate();
 
-	const { isInGame } = useGame();
+const [userAvatar, setUserAvatar] = useState<string | null>(null);
 
-  const handleSendMessage = () => {
-    if (message.trim()) {
-      setMessages([
-        ...messages,
-        {
-          id: messages.length + 1,
-          user: "You",
-          avatar: "😊",
-          text: message,
-          time: "Just now",
-        },
-      ]);
-      setMessage("");
-    }
-  };
+// --- LOGIQUE DU CHAT ---
+const [isChatOpen, setIsChatOpen] = useState(false);
+const [messages, setMessages] = useState<any[]>([]);
+const [newMessage, setNewMessage] = useState("");
+const messagesEndRef = useRef<HTMLDivElement>(null);
+const { isInGame } = useGame();
 
-	const handleNavigate = (path: string) =>
-	{
-		if (isInGame)
-		{
-			const leave = window.confirm(
-				"Leaving the game will count as a defeat. Continue?"
-			);
+const handleSendMessage = () => {
+    if (newMessage.trim() === "") return;
+    console.log("📤 Envoi :", newMessage);
+    socket.emit("send_message", {
+        authorId: username || "Anonyme",
+        content: newMessage
+    });
+    setNewMessage("");
+};
 
-			if (!leave)
-				return;
+const handleNavigate = (path: string) =>
+  {
+      if (isInGame)
+          {
+              const leave = window.confirm(
+                  "Leaving the game will count as a defeat. Continue?"
+              );
+
+              if (!leave)
+                  return;
       setTimeout(() => {
         navigate(path);
       }, 100);
 			socket.emit("leave_game");
 			return;
 		}
-
 		navigate(path);
 	};
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-violet-100 via-pink-50 to-cyan-100">
-      {/* Top Navigation Bar */}
-      <nav className="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-md border-b border-gray-200 shadow-sm z-40">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+    useEffect(() => {
+        fetch("/api/auth/me")
+        .then((res) => res.json())
+        .then((data) => {
+            if (data?.avatar) setUserAvatar(data.avatar);
+        })
+        .catch((err) => console.error("Erreur profil:", err));
 
-          {/* Bloc de Gauche : Logo et Titre */}
+        fetch("/api/chat/history")
+        .then((res) => res.json())
+        .then((data) => {
+            if (Array.isArray(data)) setMessages(data);
+            else setMessages([]);
+        })
+        .catch((err) => {
+        console.error("Erreur historique:", err);
+        setMessages([]);
+      });
+}, []);
+
+    useEffect(() => {
+        socket.connect();
+        socket.on("receive_message", (msg) => {
+            console.log("📥 Message reçu :", msg);
+            setMessages((prev) => [...prev, msg]);
+	});
+	return () => {
+		socket.off("receive_message");
+    };
+}, []);
+
+	useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, [messages, isChatOpen]);
+
+
+return (
+	<div className="min-h-screen bg-gradient-to-br from-violet-100 via-pink-50 to-cyan-100">
+	  {/* Top Navigation Bar */}
+	  <nav className="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-md border-b border-gray-200 shadow-sm z-40">
+		<div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+		 
+        {/* Bloc de Gauche : Logo et Titre */}
 		<button
 			onClick={() => handleNavigate("/")}
 			className="flex items-center gap-3 cursor-pointer"
@@ -94,6 +105,47 @@ export default function Layout({ username, onLogout }: LayoutProps) {
 				Culture Quiz
 			</span>
 		</button>
+ 
+		  <div className="flex items-center gap-4">
+			<button
+			  onClick={() => navigate("/profile")}
+			  className="group flex items-center gap-3 px-4 py-2 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 transition-all shadow-md hover:shadow-lg"
+			>
+			  <span className="text-white font-medium">{username}</span>
+			  <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-2xl ring-2 ring-white/50">
+			  {userAvatar ? (
+				  <img src={userAvatar} alt={username} className="w-full h-full object-cover" />
+			  ) : (
+			  <span>😊</span>
+			  )}
+			  </div>
+			</button>
+
+			<button
+			  onClick={onLogout}
+			  className="flex items-center justify-center w-10 h-10 rounded-full bg-white/80 border border-gray-200 text-gray-500 hover:text-red-500 hover:bg-red-50 transition-all shadow-sm hover:shadow-md"
+			  title="Logout"
+			>
+			  <LogOut className="w-5 h-5" />
+			</button>
+		  </div>
+		</div>
+	  </nav>
+
+	  <div className="pt-20">
+		<Outlet />
+	  </div>
+
+	  {/* --- WIDGET CHAT --- */}
+	  <div className="fixed bottom-6 right-6 z-50">
+		{isChatOpen ? (
+		  <div className="w-80 h-96 bg-white rounded-2xl shadow-2xl flex flex-col border border-gray-200 overflow-hidden">
+			<div className="bg-gradient-to-r from-purple-500 to-indigo-600 p-4 flex justify-between items-center text-white">
+			  <span className="font-bold">Chat Global</span>
+			  <button onClick={() => setIsChatOpen(false)} className="hover:bg-white/20 p-1 rounded transition-colors">
+				<X className="w-5 h-5" />
+			  </button>
+			</div>
 
           {/* Bloc de Droite : Profil et Déconnexion */}
           <div className="flex items-center gap-4">
@@ -149,8 +201,7 @@ export default function Layout({ username, onLogout }: LayoutProps) {
       <div className="pt-20">
         <Outlet />
       </div>
-
-      {/* Chat Widget */}
+{/* Chat Widget */}
       <div className="fixed bottom-6 right-6 z-50">
         {isChatOpen ? (
           <div className="bg-white rounded-2xl shadow-2xl w-96 h-[32rem] flex flex-col overflow-hidden border-2 border-purple-200">
@@ -181,66 +232,85 @@ export default function Layout({ username, onLogout }: LayoutProps) {
 
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
-              {messages.map((msg) => (
-                <div
-                  key={msg.id}
-                  className="flex gap-3 animate-in fade-in slide-in-from-bottom-2"
-                >
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-purple-400 flex items-center justify-center flex-shrink-0 text-lg">
-                    {msg.avatar}
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-sm text-gray-900">
-                        {msg.user}
-                      </span>
-                      <span className="text-xs text-gray-400">
-                        {msg.time}
-                      </span>
+              {Array.isArray(messages) && messages.length === 0 ? (
+                <p className="text-gray-500 text-sm text-center mt-4">Aucun message pour l'instant...</p>
+              ) : (
+                Array.isArray(messages) && messages.map((msg, index) => {
+                  // On sécurise la récupération du pseudo
+                  const authorName = msg.author?.username || msg.user || "Inconnu";
+                  
+                  return (
+                    <div
+                      key={msg.id || index}
+                      className="flex gap-3 animate-in fade-in slide-in-from-bottom-2"
+                    >
+                      {/* Avatar */}
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-purple-400 flex items-center justify-center flex-shrink-0 text-lg">
+                        {msg.avatar || "😊"}
+                      </div>
+                      
+                      <div className="flex-1">
+                        <div className="flex items-baseline gap-2">
+                          {/* Pseudo (Cliquable) */}
+                          <span
+                            onClick={() => {
+                                if (authorName !== "Inconnu") {
+                                    navigate(`/profile/${authorName}`);
+                                }
+                            }}
+                            className="text-sm font-bold text-gray-900 hover:text-blue-600 hover:underline cursor-pointer transition-colors"
+                          >
+                            {authorName}
+                          </span>
+                          {/* Heure */}
+                          {msg.time && (
+                            <span className="text-xs text-gray-400">
+                              {msg.time}
+                            </span>
+                          )}
+                        </div>
+                        
+                        {/* Bulle du message */}
+                        <div className="bg-white p-2 rounded-xl shadow-sm border border-gray-100 mt-1 w-fit max-w-[95%] text-sm text-gray-800">
+                          {msg.content}
+                        </div>
+                      </div>
                     </div>
-                    <p className="text-sm text-gray-700 mt-1">
-                      {msg.text}
-                    </p>
-                  </div>
-                </div>
-              ))}
+                  );
+                })
+              )}
+              {/* auto-scroll en bas du chat */}
+              <div ref={messagesEndRef} />
             </div>
 
-            {/* Input */}
-            <div className="p-4 border-t border-gray-200 bg-white">
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  onKeyPress={(e) =>
-                    e.key === "Enter" && handleSendMessage()
-                  }
-                  placeholder="Type a message..."
-                  className="flex-1 px-4 py-2 rounded-full bg-gray-100 border-none focus:outline-none focus:ring-2 focus:ring-purple-400"
-                />
-                <button
-                  onClick={handleSendMessage}
-                  className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white hover:from-purple-600 hover:to-pink-600 transition-all shadow-md hover:shadow-lg"
-                >
-                  <Send className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <button
-            onClick={() => setIsChatOpen(true)}
-            className="w-16 h-16 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white shadow-2xl hover:shadow-purple-400/50 transition-all hover:scale-110 relative"
-          >
-            <MessageCircle className="w-7 h-7" />
-            {/* Notification badge */}
-            <span className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-xs animate-pulse">
-              3
-            </span>
-          </button>
-        )}
-      </div>
-    </div>
-  );
+			<div className="p-3 bg-white border-t border-gray-100 flex gap-2">
+			  <input
+				type="text"
+				placeholder="Écrire un message..."
+				value={newMessage}
+				onChange={(e) => setNewMessage(e.target.value)}
+				onKeyDown={(e) => {
+				  if (e.key === "Enter") handleSendMessage();
+				}}
+				className="flex-1 bg-gray-100 rounded-full px-4 py-2 outline-none text-sm focus:ring-2 focus:ring-purple-300"
+			  />
+			  <button 
+				onClick={handleSendMessage}
+				className="bg-purple-500 text-white p-2 rounded-full hover:bg-purple-600 transition-colors"
+			  >
+				<Send className="w-4 h-4" />
+			  </button>
+			</div>
+		  </div>
+		) : (
+		  <button
+			onClick={() => setIsChatOpen(true)}
+			className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white p-4 rounded-full shadow-lg hover:shadow-xl hover:scale-105 transition-all flex items-center justify-center"
+		  >
+			<MessageCircle className="w-6 h-6" />
+		  </button>
+		)}
+	  </div>
+	</div>
+	);
 }

@@ -7,7 +7,13 @@ generator client {
   provider = "prisma-client-js"
 }
 
-// ─── Utilisateur ───
+// ─── Utilisateur: informations, oauth, profile avatar, status, friends, chat ───
+
+enum UserStatus {
+	OFFLINE
+	ONLINE
+	IN_GAME
+}
 
 model User {
   id                  String   @id @default(uuid())
@@ -22,6 +28,12 @@ model User {
   fortyTwoId          String? @unique
   githubId            String? @unique
   avatar              String?
+
+  status              UserStatus @default(OFFLINE)
+  
+  sentFriendRequests      Friendship[] @relation("SentFriendships")
+  receivedFriendRequests  Friendship[] @relation("ReceivedFriendships")
+  messages                GlobalMessage[]
 
   // Id du socket Socket.IO de la session active (une seule fenêtre à la
   // fois par compte). null = personne connecté en ce moment.
@@ -52,6 +64,40 @@ model UserBadge {
 
   @@unique([userId, badgeId])
 }
+
+
+// ─── Friendships and General Chat ───
+
+enum FriendshipStatus {
+	PENDING
+	ACCEPTED
+	DECLINED
+}
+
+model Friendship {
+	id                  String				@id @default(uuid())
+	status				FriendshipStatus	@default(PENDING)
+	createdAt			DateTime			@default(now())
+	updatedAt			DateTime			@updatedAt
+
+	senderId			String
+	sender				User @relation("SentFriendships", fields: [senderId], references: [id])
+
+	receiverId			String
+	receiver			User @relation("ReceivedFriendships", fields: [receiverId], references: [id])
+
+	@@unique([senderId, receiverId])
+}
+
+model GlobalMessage {
+	id                  String				@id @default(uuid())
+	content             String
+	createdAt			DateTime			@default(now())
+
+	authorId			String
+	author				User				@relation(fields: [authorId], references: [id])
+}
+
 
 // ─── Banque de questions ───
 
