@@ -13,16 +13,13 @@
     },
     "annotations": {
       "grafana.app/createdBy": "user:efu27nxw23ri8b",
-      "grafana.app/folder": "cfu27o34qfnr4c",
       "grafana.app/managedBy": "classic-file-provisioning",
       "grafana.app/managerId": "Quiz Arena",
       "grafana.app/sourceChecksum": "780d9716a9706a1467b40646f2e5b25b",
       "grafana.app/sourcePath": "/var/lib/grafana/dashboards/quiz-arena-overview.json",
       "grafana.app/sourceTimestamp": "1785771787000",
       "grafana.app/updatedBy": "access-policy:service",
-      "grafana.app/updatedTimestamp": "2026-08-03T15:43:10Z",
-      "grafana.app/folderTitle": "Quiz Arena",
-      "grafana.app/folderUrl": "/grafana/dashboards/f/cfu27o34qfnr4c/quiz-arena"
+      "grafana.app/updatedTimestamp": "2026-08-03T15:43:10Z"
     }
   },
   "spec": {

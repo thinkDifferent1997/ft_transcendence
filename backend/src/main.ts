@@ -18,8 +18,7 @@ async function bootstrap() {
         app = await NestFactory.create(AppModule);
     }
 
-    app.setGlobalPrefix('api');
-
+    app.setGlobalPrefix('api', { exclude: ['metrics'] }); // i had to exclude metrics, so its not exposed to the public
     app.use(cookieParser());
     app.useGlobalPipes(
         new ValidationPipe({
