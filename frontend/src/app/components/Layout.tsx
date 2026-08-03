@@ -1,5 +1,4 @@
 import { Sparkles, MessageCircle, Send, X, Minus, LogOut, Trophy } from "lucide-react";
-import { useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { socket } from "../../socket/socket";
