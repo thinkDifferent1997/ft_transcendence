@@ -1,0 +1,29 @@
+# **************************************************************************** #
+#                                                                              #
+#                                                         :::      ::::::::    #
+#    alertmanager.yml                                   :+:      :+:    :+:    #
+#                                                     +:+ +:+         +:+      #
+#    By: jbaumfal < jbaumfal@student.42.fr>         +#+  +:+       +#+         #
+#                                                 +#+#+#+#+#+   +#+            #
+#    Created: 2026/07/21 18:41:11 by jbaumfal          #+#    #+#              #
+#    Updated: 2026/08/03 19:29:48 by jbaumfal         ###   ########.fr        #
+#                                                                              #
+# **************************************************************************** #
+
+route:
+  receiver: discord
+  group_by: ['alertname']
+  group_wait: 10s
+  group_interval: 1m
+  repeat_interval: 2h
+ 
+receivers:
+  - name: discord
+    discord_configs:
+      # url lives in a gitignored file, alertmanager does not expand env vars
+      - webhook_url_file: /etc/alertmanager/discord_webhook_url
+        title: '{{ if eq .Status "firing" }}🚨🚨🚨 {{ .CommonAnnotations.summary | toUpper }} 🚨🚨🚨{{ else }}✅ RESOLVED: {{ .CommonAnnotations.summary }}{{ end }}'
+        message: |-
+          {{ range .Alerts }}{{ .Annotations.description }}
+          {{ end }}
+          Dashboard: https://localhost:8443/grafana/d/ad2cg9f/monitoring-dashboard

@@ -146,6 +146,17 @@ services:
     networks:
       - transcend_net
     restart: unless-stopped
+  alertmanager:
+    image: docker.io/prom/alertmanager:v0.32.0
+    container_name: alertmanager
+    volumes:
+      - ./monitoring/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - ./monitoring/alertmanager/discord_webhook_url:/etc/alertmanager/discord_webhook_url:ro
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yml
+    networks:
+      - transcend_net
+    restart: unless-stopped
 # -------------------------------------------------------------------------- #
 #                             Volume                                         #
 #               (Permanent. Wiped only by 'make clean')                      #
