@@ -4,7 +4,7 @@ import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { EventsModule } from './events/events.module';
-import { TournamentModule } from './tournament/tournament.module'
+import { TournamentModule } from './tournament/tournament.module';
 import { ChatModule } from './chat/chat.module';
 import { StatsModule } from './stats/stats.module';
 import { ExportModule } from './export/export.module';
