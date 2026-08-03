@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { RoomMode, RoomStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { computeLevel } from '../gamification/level.util';
@@ -317,4 +317,16 @@ export class StatsService {
       ...computeLevel(xp),
     };
   }
+  async getSummaryByUsername(username: string, startDate?: Date, endDate?: Date) {
+    const user = await this.prisma.user.findUnique({
+      where: { username },
+    });
+
+    if (!user) {
+      throw new NotFoundException(`Le joueur ${username} n'existe pas.`);
+    }
+
+    return this.getSummary(user.id, startDate, endDate);
+  }
+
 }
