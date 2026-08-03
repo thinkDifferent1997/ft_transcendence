@@ -1,4 +1,4 @@
-import { Trophy, Target, TrendingUp, Star, Camera, Award, Zap, Shield, QrCode, X, CheckCircle, Download, FileText, Lock } from "lucide-react";
+import { Trophy, Target, TrendingUp, Star, Camera, Award, Zap, Shield, QrCode, X, CheckCircle, Download, FileText, Lock, History, Minus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "./ui/chart";
@@ -28,6 +28,19 @@ interface SummaryData {
   tournamentsWon: number;
   xp: number;
   badges: BadgeStat[];
+  level: number;
+  currentLevelXp: number;
+  xpForNextLevel: number;
+  progressPercent: number;
+}
+
+interface MatchHistoryEntry {
+  roomId: string;
+  date: string;
+  opponent: string;
+  score: number;
+  opponentScore: number;
+  result: "win" | "loss" | "draw";
 }
 
 const themeColors = [
@@ -50,6 +63,8 @@ export default function ProfilePage({ username, userId, onBack }: ProfilePagePro
   const [statsLoading, setStatsLoading] = useState(true);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [matchHistory, setMatchHistory] = useState<MatchHistoryEntry[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(true);
 
   // États pour le 2FA
   const [is2FAEnabled, setIs2FAEnabled] = useState(false);
@@ -76,9 +91,24 @@ export default function ProfilePage({ username, userId, onBack }: ProfilePagePro
     }
   };
 
+  const fetchMatchHistory = async () => {
+    setHistoryLoading(true);
+    try {
+      const res = await fetch(`/api/stats/${userId}/history?limit=10`, { credentials: "include" });
+      if (res.ok) {
+        setMatchHistory(await res.json());
+      }
+    } catch (err) {
+      console.error("Erreur lors du chargement de l'historique :", err);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
   // Chargement initial
   useEffect(() => {
     fetchStats();
+    fetchMatchHistory();
   }, []);
 
   // Temps réel : écoute les mises à jour de stats poussées par le serveur
@@ -96,6 +126,7 @@ export default function ProfilePage({ username, userId, onBack }: ProfilePagePro
       // pour ne pas écraser une vue filtrée par l'utilisateur.
       if (!startDate && !endDate) {
         setStats(data);
+        fetchMatchHistory();
       }
     };
 
@@ -296,9 +327,29 @@ export default function ProfilePage({ username, userId, onBack }: ProfilePagePro
                   Secure my account (2FA)
                 </button>
               )}
+
+              {/* Progression du niveau */}
+              <div className="mt-4 max-w-xs mx-auto md:mx-0">
+                <div className="flex items-center justify-between text-xs font-medium text-gray-500 mb-1">
+                  <span>Niveau {stats?.level ?? 1}</span>
+                  <span>{stats?.currentLevelXp ?? 0} / 100 XP</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2.5 shadow-inner">
+                  <div
+                    className="bg-gradient-to-r from-yellow-400 to-amber-500 h-2.5 rounded-full transition-all"
+                    style={{ width: `${stats?.progressPercent ?? 0}%` }}
+                  />
+                </div>
+              </div>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center mt-6 md:mt-0">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-center mt-6 md:mt-0">
+              <div className="px-4">
+                <div className="bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent text-2xl font-bold">
+                  {stats?.level ?? 1}
+                </div>
+                <div className="text-sm text-gray-600 font-medium">Level</div>
+              </div>
               <div className="px-4">
                 <div className="bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent text-2xl font-bold">
                   {stats?.gamesPlayed ?? 0}
@@ -524,6 +575,91 @@ export default function ProfilePage({ username, userId, onBack }: ProfilePagePro
                   <ChartTooltip content={<ChartTooltipContent />} />
                 </PieChart>
               </ChartContainer>
+            </div>
+          )}
+        </div>
+
+        {/* Historique des parties */}
+        <div className="bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl p-6 border border-white/50 mt-8">
+          <h3 className="mb-6 flex items-center gap-2 text-xl font-bold text-gray-800">
+            <History className="w-6 h-6 text-blue-600" />
+            Historique des parties
+          </h3>
+
+          {historyLoading ? (
+            <p className="text-gray-400 text-center py-6">Chargement...</p>
+          ) : matchHistory.length === 0 ? (
+            <p className="text-gray-400 text-center py-6">
+              Aucune partie 1v1 pour l'instant — lance-toi !
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {matchHistory.map((match) => (
+                <div
+                  key={match.roomId}
+                  className={`flex items-center justify-between gap-4 p-4 rounded-2xl border ${
+                    match.result === "win"
+                      ? "bg-green-50 border-green-200"
+                      : match.result === "loss"
+                      ? "bg-red-50 border-red-200"
+                      : "bg-gray-50 border-gray-200"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${
+                        match.result === "win"
+                          ? "bg-green-500"
+                          : match.result === "loss"
+                          ? "bg-red-500"
+                          : "bg-gray-400"
+                      }`}
+                    >
+                      {match.result === "win" ? (
+                        <Trophy className="w-4 h-4 text-white" />
+                      ) : match.result === "loss" ? (
+                        <X className="w-4 h-4 text-white" />
+                      ) : (
+                        <Minus className="w-4 h-4 text-white" />
+                      )}
+                    </div>
+                    <div>
+                      <p className="font-bold text-gray-800 m-0">
+                        vs {match.opponent}
+                      </p>
+                      <p className="text-xs text-gray-500 m-0">
+                        {new Date(match.date).toLocaleDateString("fr-FR", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-black text-gray-800 m-0">
+                      {match.score} - {match.opponentScore}
+                    </p>
+                    <p
+                      className={`text-xs font-bold m-0 ${
+                        match.result === "win"
+                          ? "text-green-600"
+                          : match.result === "loss"
+                          ? "text-red-600"
+                          : "text-gray-500"
+                      }`}
+                    >
+                      {match.result === "win"
+                        ? "Victoire"
+                        : match.result === "loss"
+                        ? "Défaite"
+                        : "Égalité"}
+                    </p>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
