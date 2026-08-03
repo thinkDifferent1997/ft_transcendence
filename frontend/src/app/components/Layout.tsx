@@ -87,69 +87,28 @@ const handleNavigate = (path: string) =>
 
 
 return (
-	<div className="min-h-screen bg-gradient-to-br from-violet-100 via-pink-50 to-cyan-100">
-	  {/* Top Navigation Bar */}
-	  <nav className="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-md border-b border-gray-200 shadow-sm z-40">
-		<div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-		 
-        {/* Bloc de Gauche : Logo et Titre */}
-		<button
-			onClick={() => handleNavigate("/")}
-			className="flex items-center gap-3 cursor-pointer"
-		>
-			<div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center">
-				<Sparkles className="w-6 h-6 text-white" />
-			</div>
-
-			<span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent font-bold">
-				Culture Quiz
-			</span>
-		</button>
+    <div className="min-h-screen bg-gradient-to-br from-violet-100 via-pink-50 to-cyan-100">
+      
+      {/* --- 1. BARRE DE NAVIGATION (NAVBAR) --- */}
+      <nav className="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-md border-b border-gray-200 shadow-sm z-40">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+          
+          {/* Bloc de Gauche : Logo et Titre */}
+          <button
+            onClick={() => handleNavigate("/")}
+            className="flex items-center gap-3 cursor-pointer"
+          >
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center">
+              <Sparkles className="w-6 h-6 text-white" />
+            </div>
+            <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent font-bold">
+              Culture Quiz
+            </span>
+          </button>
  
-		  <div className="flex items-center gap-4">
-			<button
-			  onClick={() => navigate("/profile")}
-			  className="group flex items-center gap-3 px-4 py-2 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 transition-all shadow-md hover:shadow-lg"
-			>
-			  <span className="text-white font-medium">{username}</span>
-			  <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-2xl ring-2 ring-white/50">
-			  {userAvatar ? (
-				  <img src={userAvatar} alt={username} className="w-full h-full object-cover" />
-			  ) : (
-			  <span>😊</span>
-			  )}
-			  </div>
-			</button>
-
-			<button
-			  onClick={onLogout}
-			  className="flex items-center justify-center w-10 h-10 rounded-full bg-white/80 border border-gray-200 text-gray-500 hover:text-red-500 hover:bg-red-50 transition-all shadow-sm hover:shadow-md"
-			  title="Logout"
-			>
-			  <LogOut className="w-5 h-5" />
-			</button>
-		  </div>
-		</div>
-	  </nav>
-
-	  <div className="pt-20">
-		<Outlet />
-	  </div>
-
-	  {/* --- WIDGET CHAT --- */}
-	  <div className="fixed bottom-6 right-6 z-50">
-		{isChatOpen ? (
-		  <div className="w-80 h-96 bg-white rounded-2xl shadow-2xl flex flex-col border border-gray-200 overflow-hidden">
-			<div className="bg-gradient-to-r from-purple-500 to-indigo-600 p-4 flex justify-between items-center text-white">
-			  <span className="font-bold">Chat Global</span>
-			  <button onClick={() => setIsChatOpen(false)} className="hover:bg-white/20 p-1 rounded transition-colors">
-				<X className="w-5 h-5" />
-			  </button>
-			</div>
-
-          {/* Bloc de Droite : Profil et Déconnexion */}
+          {/* Bloc de Droite : Leaderboard, Profil et Déconnexion */}
           <div className="flex items-center gap-4">
-
+            
             {/* Bouton Classement */}
             <button
               onClick={() => handleNavigate("/leaderboard")}
@@ -159,57 +118,56 @@ return (
               <span className="hidden sm:inline font-medium">Classement</span>
             </button>
 
-            {/* Bouton Profil */}
+            {/* Bouton Profil (avec avatar dynamique) */}
             <button
               onClick={() => handleNavigate("/profile")}
               className="group flex items-center gap-3 px-4 py-2 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 transition-all shadow-md hover:shadow-lg"
             >
               <span className="text-white font-medium">{username}</span>
-              <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-2xl ring-2 ring-white/50">
-                😊
+              <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-2xl ring-2 ring-white/50 overflow-hidden">
+                {userAvatar ? (
+                  <img src={userAvatar} alt={username} className="w-full h-full object-cover" />
+                ) : (
+                  <span>😊</span>
+                )}
               </div>
             </button>
 
-            {/* VRAI BOUTON DÉCONNEXION FIGMA STYLE */}
+            {/* Bouton Déconnexion */}
             <button
-				onClick={() =>
-				{
-					if (isInGame)
-					{
-						const leave = window.confirm(
-							"Leaving the game will count as a defeat. Continue?"
-						);
-
-						if (!leave)
-							return;
-
-						socket.emit("leave_game");
-					}
-
-					onLogout();
-				}}
+              onClick={() => {
+                if (isInGame) {
+                  const leave = window.confirm("Leaving the game will count as a defeat. Continue?");
+                  if (!leave) return;
+                  socket.emit("leave_game");
+                }
+                onLogout();
+              }}
               className="flex items-center justify-center w-10 h-10 rounded-full bg-white/80 border border-gray-200 text-gray-500 hover:text-red-500 hover:bg-red-50 transition-all shadow-sm hover:shadow-md"
               title="Logout"
             >
               <LogOut className="w-5 h-5" />
             </button>
-
           </div>
+
         </div>
       </nav>
 
+      {/* --- 2. CONTENU PRINCIPAL DE LA PAGE --- */}
       <div className="pt-20">
         <Outlet />
       </div>
-{/* Chat Widget */}
+
+      {/* --- 3. WIDGET CHAT --- */}
       <div className="fixed bottom-6 right-6 z-50">
         {isChatOpen ? (
           <div className="bg-white rounded-2xl shadow-2xl w-96 h-[32rem] flex flex-col overflow-hidden border-2 border-purple-200">
+            
             {/* Chat Header */}
             <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-4 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <MessageCircle className="w-5 h-5 text-white" />
-                <span className="text-white">Chat</span>
+                <span className="text-white font-bold">Chat Global</span>
                 <span className="bg-white/30 text-white px-2 py-0.5 rounded-full text-sm">
                   245 online
                 </span>
@@ -230,13 +188,12 @@ return (
               </div>
             </div>
 
-            {/* Messages */}
+            {/* Messages (Zone de texte) */}
             <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
               {Array.isArray(messages) && messages.length === 0 ? (
                 <p className="text-gray-500 text-sm text-center mt-4">Aucun message pour l'instant...</p>
               ) : (
                 Array.isArray(messages) && messages.map((msg, index) => {
-                  // On sécurise la récupération du pseudo
                   const authorName = msg.author?.username || msg.user || "Inconnu";
                   
                   return (
@@ -251,7 +208,7 @@ return (
                       
                       <div className="flex-1">
                         <div className="flex items-baseline gap-2">
-                          {/* Pseudo (Cliquable) */}
+                          {/* Pseudo Cliquable */}
                           <span
                             onClick={() => {
                                 if (authorName !== "Inconnu") {
@@ -271,7 +228,7 @@ return (
                         </div>
                         
                         {/* Bulle du message */}
-                        <div className="bg-white p-2 rounded-xl shadow-sm border border-gray-100 mt-1 w-fit max-w-[95%] text-sm text-gray-800">
+                        <div className="bg-white p-2 rounded-xl shadow-sm border border-gray-100 mt-1 w-fit max-w-[95%] text-sm text-gray-800 break-words">
                           {msg.content}
                         </div>
                       </div>
@@ -279,38 +236,43 @@ return (
                   );
                 })
               )}
-              {/* auto-scroll en bas du chat */}
+              {/* Le ref pour l'auto-scroll en bas du chat */}
               <div ref={messagesEndRef} />
             </div>
 
-			<div className="p-3 bg-white border-t border-gray-100 flex gap-2">
-			  <input
-				type="text"
-				placeholder="Écrire un message..."
-				value={newMessage}
-				onChange={(e) => setNewMessage(e.target.value)}
-				onKeyDown={(e) => {
-				  if (e.key === "Enter") handleSendMessage();
-				}}
-				className="flex-1 bg-gray-100 rounded-full px-4 py-2 outline-none text-sm focus:ring-2 focus:ring-purple-300"
-			  />
-			  <button 
-				onClick={handleSendMessage}
-				className="bg-purple-500 text-white p-2 rounded-full hover:bg-purple-600 transition-colors"
-			  >
-				<Send className="w-4 h-4" />
-			  </button>
-			</div>
-		  </div>
-		) : (
-		  <button
-			onClick={() => setIsChatOpen(true)}
-			className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white p-4 rounded-full shadow-lg hover:shadow-xl hover:scale-105 transition-all flex items-center justify-center"
-		  >
-			<MessageCircle className="w-6 h-6" />
-		  </button>
-		)}
-	  </div>
-	</div>
-	);
+            {/* Input (Taper un message) */}
+            <div className="p-3 bg-white border-t border-gray-100 flex gap-2">
+              <input
+                type="text"
+                placeholder="Écrire un message..."
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleSendMessage();
+                }}
+                className="flex-1 bg-gray-100 rounded-full px-4 py-2 outline-none text-sm focus:ring-2 focus:ring-purple-300"
+              />
+              <button 
+                onClick={handleSendMessage}
+                className="bg-purple-500 text-white p-2 rounded-full hover:bg-purple-600 transition-colors flex-shrink-0"
+              >
+                <Send className="w-4 h-4" />
+              </button>
+            </div>
+
+          </div>
+        ) : (
+          
+          /* Bouton pour ouvrir le chat (quand il est fermé) */
+          <button
+            onClick={() => setIsChatOpen(true)}
+            className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white p-4 rounded-full shadow-lg hover:shadow-xl hover:scale-105 transition-all flex items-center justify-center"
+          >
+            <MessageCircle className="w-6 h-6" />
+          </button>
+
+        )}
+      </div>
+    </div>
+  );
 }
