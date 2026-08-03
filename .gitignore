@@ -13,4 +13,4 @@ dist/
 
 *test*
 
-monitoring/alert_buddy/discord_webhook_url
+monitoring/alertmanager/discord_webhook_url
