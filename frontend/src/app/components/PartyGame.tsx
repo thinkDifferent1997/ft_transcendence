@@ -507,7 +507,7 @@ export default function QuizPage()
 
 	useEffect(() =>
 			{
-				if (game.time_left < 0)
+				if (game.time_left <= 0)
 				{
 					socket.emit("answer", {
 						roomId: game.roomId,
