@@ -1,4 +1,5 @@
-import { Sparkles, LogOut, MessageCircle, X, Send } from "lucide-react";
+import { Sparkles, MessageCircle, Send, X, Minus, LogOut, Trophy } from "lucide-react";
+import { useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { socket } from "../../socket/socket";
@@ -147,37 +148,141 @@ return (
 			  </button>
 			</div>
 
-			<div className="flex-1 p-4 bg-gray-50 overflow-y-auto flex flex-col gap-3">
-			  {Array.isArray(messages) && messages.length === 0 ? (
-				<p className="text-gray-500 text-sm text-center mt-4">Aucun message pour l'instant...</p>
-			  ) : (
+          {/* Bloc de Droite : Profil et Déconnexion */}
+          <div className="flex items-center gap-4">
 
-              Array.isArray(messages) && messages.map((msg, index) => {
-                  // On sécurise la récupération du pseudo au cas où
-                const authorName = msg.author?.username || "Inconnu";
-                return (
-                    <div key={index} className="flex flex-col gap-1">
-                    {/* Pseudo (Cliquable) */}
-                    <span
-                    onClick={() => {
-                        if (authorName !== "Inconnu") {
-                            navigate(`/profile/${authorName}`);
-                        }
-                    }}
-                    className="text-xs font-bold text-gray-600 ml-1 hover:text-blue-600 hover:underline cursor-pointer transition-colors w-fit"
+            {/* Bouton Classement */}
+            <button
+              onClick={() => handleNavigate("/leaderboard")}
+              className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/60 hover:bg-white text-gray-700 hover:text-amber-600 border border-gray-200 transition-all shadow-sm hover:shadow-md"
+            >
+              <Trophy className="w-4 h-4" />
+              <span className="hidden sm:inline font-medium">Classement</span>
+            </button>
+
+            {/* Bouton Profil */}
+            <button
+              onClick={() => handleNavigate("/profile")}
+              className="group flex items-center gap-3 px-4 py-2 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 transition-all shadow-md hover:shadow-lg"
+            >
+              <span className="text-white font-medium">{username}</span>
+              <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-2xl ring-2 ring-white/50">
+                😊
+              </div>
+            </button>
+
+            {/* VRAI BOUTON DÉCONNEXION FIGMA STYLE */}
+            <button
+				onClick={() =>
+				{
+					if (isInGame)
+					{
+						const leave = window.confirm(
+							"Leaving the game will count as a defeat. Continue?"
+						);
+
+						if (!leave)
+							return;
+
+						socket.emit("leave_game");
+					}
+
+					onLogout();
+				}}
+              className="flex items-center justify-center w-10 h-10 rounded-full bg-white/80 border border-gray-200 text-gray-500 hover:text-red-500 hover:bg-red-50 transition-all shadow-sm hover:shadow-md"
+              title="Logout"
+            >
+              <LogOut className="w-5 h-5" />
+            </button>
+
+          </div>
+        </div>
+      </nav>
+
+      <div className="pt-20">
+        <Outlet />
+      </div>
+{/* Chat Widget */}
+      <div className="fixed bottom-6 right-6 z-50">
+        {isChatOpen ? (
+          <div className="bg-white rounded-2xl shadow-2xl w-96 h-[32rem] flex flex-col overflow-hidden border-2 border-purple-200">
+            {/* Chat Header */}
+            <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <MessageCircle className="w-5 h-5 text-white" />
+                <span className="text-white">Chat</span>
+                <span className="bg-white/30 text-white px-2 py-0.5 rounded-full text-sm">
+                  245 online
+                </span>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setIsChatOpen(false)}
+                  className="text-white/80 hover:text-white transition-colors"
+                >
+                  <Minus className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={() => setIsChatOpen(false)}
+                  className="text-white/80 hover:text-white transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
+              {Array.isArray(messages) && messages.length === 0 ? (
+                <p className="text-gray-500 text-sm text-center mt-4">Aucun message pour l'instant...</p>
+              ) : (
+                Array.isArray(messages) && messages.map((msg, index) => {
+                  // On sécurise la récupération du pseudo
+                  const authorName = msg.author?.username || msg.user || "Inconnu";
+                  
+                  return (
+                    <div
+                      key={msg.id || index}
+                      className="flex gap-3 animate-in fade-in slide-in-from-bottom-2"
                     >
-                    {authorName}
-                    </span>
-                    {/* Bulle du message */}
-                    <div className="bg-white p-2 rounded-xl shadow-sm border border-gray-100 w-fit max-w-[85%] text-sm text-gray-800">
-                    {msg.content}
+                      {/* Avatar */}
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-purple-400 flex items-center justify-center flex-shrink-0 text-lg">
+                        {msg.avatar || "😊"}
+                      </div>
+                      
+                      <div className="flex-1">
+                        <div className="flex items-baseline gap-2">
+                          {/* Pseudo (Cliquable) */}
+                          <span
+                            onClick={() => {
+                                if (authorName !== "Inconnu") {
+                                    navigate(`/profile/${authorName}`);
+                                }
+                            }}
+                            className="text-sm font-bold text-gray-900 hover:text-blue-600 hover:underline cursor-pointer transition-colors"
+                          >
+                            {authorName}
+                          </span>
+                          {/* Heure */}
+                          {msg.time && (
+                            <span className="text-xs text-gray-400">
+                              {msg.time}
+                            </span>
+                          )}
+                        </div>
+                        
+                        {/* Bulle du message */}
+                        <div className="bg-white p-2 rounded-xl shadow-sm border border-gray-100 mt-1 w-fit max-w-[95%] text-sm text-gray-800">
+                          {msg.content}
+                        </div>
+                      </div>
                     </div>
-                    </div>
-      );
-    })
-  )}
-							  <div ref={messagesEndRef} />
-			</div>
+                  );
+                })
+              )}
+              {/* auto-scroll en bas du chat */}
+              <div ref={messagesEndRef} />
+            </div>
 
 			<div className="p-3 bg-white border-t border-gray-100 flex gap-2">
 			  <input

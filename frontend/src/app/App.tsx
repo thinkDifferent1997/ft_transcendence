@@ -1,7 +1,7 @@
 import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import LoginPage from "./components/LoginPage";
 import ProfilePage from "./components/ProfilePage";
-import TournamentLobby from "./components/TournamentLobby";
+import LeaderboardPage from "./pages/Leaderboard";
 import TournamentLobbyTest from "./pages/TournamentLobbyTest";
 import Layout from "./components/Layout";
 import Home from "./pages/Home";
@@ -51,6 +51,10 @@ export default function App() {
           <Route 
             path= "/profile/:targetUsername"
             element={<ProfilePage username={username} onBack={() => navigate("/")} />}
+          />
+          <Route
+            path="/leaderboard"
+            element={<LeaderboardPage userId={userId} onBack={() => navigate("/")} />}
           />
           <Route
             path="/tournament"

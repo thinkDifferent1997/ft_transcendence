@@ -88,35 +88,35 @@ export class ExportService {
     const doc = new PDFDocument({ margin: 50 });
     doc.pipe(res);
 
-    doc.fontSize(20).text('Export de données personnelles', { align: 'center' });
+    doc.fontSize(20).text('Personal Data Export', { align: 'center' });
     doc.moveDown();
 
-    doc.fontSize(12).text(`Généré le : ${new Date(data.exportedAt).toLocaleString('fr-FR')}`);
+    doc.fontSize(12).text(`Generated on : ${new Date(data.exportedAt).toLocaleString('fr-FR')}`);
     doc.moveDown();
 
-    doc.fontSize(16).text('Profil');
+    doc.fontSize(16).text('Profile');
     doc.fontSize(12);
-    doc.text(`Nom d'utilisateur : ${data.user?.username ?? '-'}`);
+    doc.text(`Username : ${data.user?.username ?? '-'}`);
     doc.text(`Email : ${data.user?.email ?? '-'}`);
     doc.text(
-      `Membre depuis : ${data.user?.createdAt ? new Date(data.user.createdAt).toLocaleDateString('fr-FR') : '-'}`,
+      `Since : ${data.user?.createdAt ? new Date(data.user.createdAt).toLocaleDateString('fr-FR') : '-'}`,
     );
     doc.moveDown();
 
-    doc.fontSize(16).text('Parties jouées');
+    doc.fontSize(16).text('Games played');
     doc.fontSize(12);
     for (const p of data.participations) {
-      doc.text(`- Mode ${p.room.mode}, statut ${p.room.status}, score ${p.score}`);
+      doc.text(`- Mode ${p.room.mode}, status ${p.room.status}, score ${p.score}`);
     }
     doc.moveDown();
 
-    doc.fontSize(16).text('Tournois remportés');
+    doc.fontSize(16).text('Tournaments won');
     doc.fontSize(12);
     if (data.tournamentsWon.length === 0) {
-      doc.text('Aucun tournoi remporté.');
+      doc.text('No tournament won.');
     } else {
       for (const t of data.tournamentsWon) {
-        doc.text(`- Tournoi du ${new Date(t.createdAt).toLocaleDateString('fr-FR')}`);
+        doc.text(`- Tournament won on ${new Date(t.createdAt).toLocaleDateString('fr-FR')}`);
       }
     }
 

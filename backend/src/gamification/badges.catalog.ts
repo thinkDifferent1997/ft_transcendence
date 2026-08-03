@@ -10,37 +10,37 @@ export interface BadgeDefinition {
 export const BADGE_CATALOG: BadgeDefinition[] = [
   {
     code: 'FIRST_WIN',
-    name: 'Première victoire',
-    description: 'Remporter sa première partie.',
+    name: 'First victory',
+    description: 'Win your first match.',
   },
   {
     code: 'WINS_10',
-    name: 'Habitué',
-    description: 'Remporter 10 parties.',
+    name: 'Regular',
+    description: 'Win 10 matches.',
   },
   {
     code: 'WINS_50',
-    name: 'Vétéran',
-    description: 'Remporter 50 parties.',
+    name: 'Emilien',
+    description: 'Win 50 matchs',
   },
   {
     code: 'GAMES_10',
-    name: 'Assidu',
-    description: 'Jouer 10 parties.',
+    name: 'Dedicated',
+    description: 'Play 10 matches.',
   },
   {
     code: 'GAMES_100',
-    name: 'Inconditionnel',
-    description: 'Jouer 100 parties.',
+    name: 'True competitor',
+    description: 'Play 100 games.',
   },
   {
     code: 'TOURNAMENT_CHAMPION',
-    name: 'Champion',
-    description: 'Remporter un tournoi.',
+    name: 'Chicken Chicken Winner Chicken',
+    description: 'Win a tournament.',
   },
   {
     code: 'PERFECT_GAME',
-    name: 'Sans faute',
-    description: 'Terminer une partie avec 100% de bonnes réponses.',
+    name: 'Perfect game',
+    description: 'Finish a match with a 100% correct answer rate.',
   },
 ];
