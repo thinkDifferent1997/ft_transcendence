@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import LoginPage from "./components/LoginPage";
 import ProfilePage from "./components/ProfilePage";
+import LeaderboardPage from "./pages/Leaderboard";
 import TournamentLobbyTest from "./pages/TournamentLobbyTest";
 import Layout from "./components/Layout";
 import Home from "./pages/Home";
@@ -23,15 +24,13 @@ export default function App() {
 
   const handleLogout = async () => {
     try {
-      // On prévient le backend pour qu'il détruise le cookie
       await fetch("/api/auth/logout", {
         method: "POST",
-        credentials: "include", // Important pour que le backend sache quel cookie supprimer
+        credentials: "include",
       });
     } catch (err) {
       console.error("Erreur lors de la déconnexion backend :", err);
     } finally {
-      // Quoi qu'il arrive (même si le réseau flanche), on déconnecte le front
       setIsLoggedIn(false);
       navigate("/");
     }
@@ -48,6 +47,14 @@ export default function App() {
           <Route
             path="/profile"
             element={<ProfilePage username={username} userId={userId} onBack={() => navigate("/")} />}
+          />
+          <Route 
+            path= "/profile/:targetUsername"
+            element={<ProfilePage username={username} onBack={() => navigate("/")} />}
+          />
+          <Route
+            path="/leaderboard"
+            element={<LeaderboardPage userId={userId} onBack={() => navigate("/")} />}
           />
           <Route
             path="/tournament"

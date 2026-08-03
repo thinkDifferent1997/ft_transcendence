@@ -8,7 +8,7 @@ interface AuthedRequest {
   user: AuthenticatedRequestUser;
 }
 
-@Controller('api/stats')
+@Controller('stats')
 export class StatsController {
   constructor(
     private readonly statsService: StatsService,
@@ -26,6 +26,17 @@ export class StatsController {
       req.user.userId,
       startDate ? new Date(startDate) : undefined,
       endDate ? new Date(endDate) : undefined,
+    );
+  }
+
+  @Get('leaderboard')
+  async getLeaderboard(
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
+  ) {
+    return this.statsService.getLeaderboard(
+      limit ? parseInt(limit, 10) : undefined,
+      offset ? parseInt(offset, 10) : undefined,
     );
   }
 
@@ -102,19 +113,38 @@ export class StatsController {
     return { tournamentsWon: count };
   }
 
+  @Get(':userId/history')
+  async getMatchHistory(
+    @Param('userId') userId: string,
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
+  ) {
+    return this.statsService.getMatchHistory(
+      userId,
+      limit ? parseInt(limit, 10) : undefined,
+      offset ? parseInt(offset, 10) : undefined,
+    );
+  }
+
+  @Get(':userId/rank')
+  async getRank(@Param('userId') userId: string) {
+    const rank = await this.statsService.getRank(userId);
+    return { rank };
+  }
+
   @Get(':userId/badges')
   async getBadges(@Param('userId') userId: string) {
     return this.statsService.getBadges(userId);
   }
 
-  @Get(':userId/summary')
+  @Get(':username/summary')
   async getSummary(
-    @Param('userId') userId: string,
+    @Param('username') username: string,
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
   ) {
-    return this.statsService.getSummary(
-      userId,
+    return this.statsService.getSummaryByUsername(
+      username,
       startDate ? new Date(startDate) : undefined,
       endDate ? new Date(endDate) : undefined,
     );

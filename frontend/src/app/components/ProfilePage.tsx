@@ -1,9 +1,10 @@
-import { Trophy, Target, TrendingUp, Star, Camera, Award, Zap, Shield, QrCode, X, CheckCircle, Download, FileText, Lock } from "lucide-react";
+import { Trophy, Target, TrendingUp, Star, Camera, Award, Zap, Shield, QrCode, X, CheckCircle, Download, FileText, Lock, History, Minus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "./ui/chart";
 import { socket } from "../../socket/socket";
 import { statsSocket } from "../../socket/socket";
+import { useParams } from "react-router-dom";
 
 interface ProfilePageProps {
   username: string;
@@ -28,6 +29,19 @@ interface SummaryData {
   tournamentsWon: number;
   xp: number;
   badges: BadgeStat[];
+  level: number;
+  currentLevelXp: number;
+  xpForNextLevel: number;
+  progressPercent: number;
+}
+
+interface MatchHistoryEntry {
+  roomId: string;
+  date: string;
+  opponent: string;
+  score: number;
+  opponentScore: number;
+  result: "win" | "loss" | "draw";
 }
 
 const themeColors = [
@@ -50,7 +64,12 @@ export default function ProfilePage({ username, userId, onBack }: ProfilePagePro
   const [statsLoading, setStatsLoading] = useState(true);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-
+  const { targetUsername } = useParams();
+  const displayUsername = targetUsername || username;
+  const isMyProfile = displayUsername === username;
+  const [matchHistory, setMatchHistory] = useState<MatchHistoryEntry[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(true);
+  
   // États pour le 2FA
   const [is2FAEnabled, setIs2FAEnabled] = useState(false);
   const [show2FAModal, setShow2FAModal] = useState(false);
@@ -58,6 +77,7 @@ export default function ProfilePage({ username, userId, onBack }: ProfilePagePro
   const [verificationCode, setVerificationCode] = useState("");
   const [error2FA, setError2FA] = useState("");
 
+ 
   const fetchStats = async () => {
     setStatsLoading(true);
     try {
@@ -65,7 +85,8 @@ export default function ProfilePage({ username, userId, onBack }: ProfilePagePro
       if (startDate) params.set("startDate", startDate);
       if (endDate) params.set("endDate", endDate);
 
-      const res = await fetch(`/api/stats/me/summary?${params}`, { credentials: "include" });
+      const endpoint = isMyProfile ? "me" : displayUsername;
+      const res = await fetch(`/api/stats/${endpoint}/summary?${params}`, { credentials: "include" });
       if (res.ok) {
         setStats(await res.json());
       }
@@ -76,10 +97,25 @@ export default function ProfilePage({ username, userId, onBack }: ProfilePagePro
     }
   };
 
+  const fetchMatchHistory = async () => {
+    setHistoryLoading(true);
+    try {
+      const res = await fetch(`/api/stats/${userId}/history?limit=10`, { credentials: "include" });
+      if (res.ok) {
+        setMatchHistory(await res.json());
+      }
+    } catch (err) {
+      console.error("Erreur lors du chargement de l'historique :", err);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
   // Chargement initial
   useEffect(() => {
     fetchStats();
-  }, []);
+    fetchMatchHistory();
+    }, [displayUsername]);
 
   // Temps réel : écoute les mises à jour de stats poussées par le serveur
   useEffect(() => {
@@ -87,15 +123,15 @@ export default function ProfilePage({ username, userId, onBack }: ProfilePagePro
       statsSocket.connect();
     }
 
-    if (!userId) return;
-
-    statsSocket.emit("stats:subscribe", { userId });
+    if (!displayUsername) return;
+    statsSocket.emit("stats:subscribe", { userId: displayUsername });
 
     const handleUpdate = (data: SummaryData) => {
       // On ne remplace que si aucun filtre de date n'est actif,
       // pour ne pas écraser une vue filtrée par l'utilisateur.
       if (!startDate && !endDate) {
         setStats(data);
+        fetchMatchHistory();
       }
     };
 
@@ -104,7 +140,7 @@ export default function ProfilePage({ username, userId, onBack }: ProfilePagePro
     return () => {
       statsSocket.off("stats:updated", handleUpdate);
     };
-  }, [userId, startDate, endDate]);
+  }, [displayUsername, startDate, endDate]);
 
   const emojis = ["😊", "🎨", "🚀", "🌟", "🎯", "🔥", "💫", "🎮", "🏆", "⚡"];
 
@@ -255,6 +291,7 @@ export default function ProfilePage({ username, userId, onBack }: ProfilePagePro
                   {avatar}
                 </div>
               </div>
+              {isMyProfile && (
               <div className="absolute bottom-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity">
                 <div className="relative">
                   <button className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white shadow-lg hover:shadow-xl transition-all">
@@ -272,22 +309,17 @@ export default function ProfilePage({ username, userId, onBack }: ProfilePagePro
                     ))}
                   </div>
                 </div>
-              </div>
+              </div>)}
             </div>
 
             <div className="flex-1 text-center md:text-left">
               <div className="flex flex-col md:flex-row items-center gap-3 mb-2 justify-center md:justify-start">
                 <h1 className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent text-4xl font-extrabold m-0">
-                  {username}
+                  {displayUsername}
                 </h1>
-                {is2FAEnabled && (
-                  <span className="flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 text-sm font-bold rounded-full border border-green-200 shadow-sm">
-                    <CheckCircle className="w-4 h-4" /> 2FA Sécurisé
-                  </span>
-                )}
               </div>
 
-              {!is2FAEnabled && (
+              {isMyProfile && !is2FAEnabled && (
                 <button
                   onClick={handleSetup2FA}
                   className="inline-flex items-center gap-2 px-5 py-2.5 bg-gray-900 hover:bg-gray-800 text-white text-sm font-semibold rounded-xl transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5"
@@ -296,9 +328,29 @@ export default function ProfilePage({ username, userId, onBack }: ProfilePagePro
                   Secure my account (2FA)
                 </button>
               )}
+
+              {/* Progression du niveau */}
+              <div className="mt-4 max-w-xs mx-auto md:mx-0">
+                <div className="flex items-center justify-between text-xs font-medium text-gray-500 mb-1">
+                  <span>Niveau {stats?.level ?? 1}</span>
+                  <span>{stats?.currentLevelXp ?? 0} / 100 XP</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2.5 shadow-inner">
+                  <div
+                    className="bg-gradient-to-r from-yellow-400 to-amber-500 h-2.5 rounded-full transition-all"
+                    style={{ width: `${stats?.progressPercent ?? 0}%` }}
+                  />
+                </div>
+              </div>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center mt-6 md:mt-0">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-center mt-6 md:mt-0">
+              <div className="px-4">
+                <div className="bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent text-2xl font-bold">
+                  {stats?.level ?? 1}
+                </div>
+                <div className="text-sm text-gray-600 font-medium">Level</div>
+              </div>
               <div className="px-4">
                 <div className="bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent text-2xl font-bold">
                   {stats?.gamesPlayed ?? 0}
@@ -365,9 +417,8 @@ export default function ProfilePage({ username, userId, onBack }: ProfilePagePro
               Réinitialiser
             </button>
           )}
-
+          {isMyProfile && (
           <div className="flex gap-2 ml-auto">
-            
              <a href="/api/export/me/csv"
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-gray-200 hover:bg-gray-50 text-sm font-medium text-gray-700 transition-all"
             >
@@ -382,6 +433,7 @@ export default function ProfilePage({ username, userId, onBack }: ProfilePagePro
               Export PDF
             </a>
           </div>
+          )}
         </div>
 
         {/* Stats Grid */}
@@ -524,6 +576,91 @@ export default function ProfilePage({ username, userId, onBack }: ProfilePagePro
                   <ChartTooltip content={<ChartTooltipContent />} />
                 </PieChart>
               </ChartContainer>
+            </div>
+          )}
+        </div>
+
+        {/* Historique des parties */}
+        <div className="bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl p-6 border border-white/50 mt-8">
+          <h3 className="mb-6 flex items-center gap-2 text-xl font-bold text-gray-800">
+            <History className="w-6 h-6 text-blue-600" />
+            Historique des parties
+          </h3>
+
+          {historyLoading ? (
+            <p className="text-gray-400 text-center py-6">Chargement...</p>
+          ) : matchHistory.length === 0 ? (
+            <p className="text-gray-400 text-center py-6">
+              Aucune partie 1v1 pour l'instant — lance-toi !
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {matchHistory.map((match) => (
+                <div
+                  key={match.roomId}
+                  className={`flex items-center justify-between gap-4 p-4 rounded-2xl border ${
+                    match.result === "win"
+                      ? "bg-green-50 border-green-200"
+                      : match.result === "loss"
+                      ? "bg-red-50 border-red-200"
+                      : "bg-gray-50 border-gray-200"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${
+                        match.result === "win"
+                          ? "bg-green-500"
+                          : match.result === "loss"
+                          ? "bg-red-500"
+                          : "bg-gray-400"
+                      }`}
+                    >
+                      {match.result === "win" ? (
+                        <Trophy className="w-4 h-4 text-white" />
+                      ) : match.result === "loss" ? (
+                        <X className="w-4 h-4 text-white" />
+                      ) : (
+                        <Minus className="w-4 h-4 text-white" />
+                      )}
+                    </div>
+                    <div>
+                      <p className="font-bold text-gray-800 m-0">
+                        vs {match.opponent}
+                      </p>
+                      <p className="text-xs text-gray-500 m-0">
+                        {new Date(match.date).toLocaleDateString("fr-FR", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-black text-gray-800 m-0">
+                      {match.score} - {match.opponentScore}
+                    </p>
+                    <p
+                      className={`text-xs font-bold m-0 ${
+                        match.result === "win"
+                          ? "text-green-600"
+                          : match.result === "loss"
+                          ? "text-red-600"
+                          : "text-gray-500"
+                      }`}
+                    >
+                      {match.result === "win"
+                        ? "Victoire"
+                        : match.result === "loss"
+                        ? "Défaite"
+                        : "Égalité"}
+                    </p>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>

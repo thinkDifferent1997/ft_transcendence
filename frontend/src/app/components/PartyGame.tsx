@@ -5,8 +5,6 @@ import { useRef } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { useGame } from "../context/GameContext";
 
-import QuestionCard from "./QuestionCard";
-import PlayerBonusPanel from "./PlayerBonus";
 import GamePage from "./GamePage";
 import MatchmakingScreen from "./MatchmakingScreen";
 import ResultsScreen from "./ResultScreen";
@@ -498,7 +496,7 @@ export default function QuizPage()
 						setGame((previousGame) => (
 							{
 								...previousGame,
-								time_left: previousGame.time_left - 1,
+								time_left: Math.max(0, previousGame.time_left - 1)
 							}));
 					}, 1000);
 
@@ -509,7 +507,7 @@ export default function QuizPage()
 
 	useEffect(() =>
 			{
-				if (game.time_left < 0)
+				if (game.time_left <= 0)
 				{
 					socket.emit("answer", {
 						roomId: game.roomId,

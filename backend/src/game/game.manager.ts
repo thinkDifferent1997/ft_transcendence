@@ -104,6 +104,14 @@ export class GameManager
 		player: Socket,
 	): Promise<GameSession>
 	{
+		// Comme pour createMatch : un montage en double (React StrictMode,
+		// double-clic...) ne doit pas créer une deuxième partie IA pour le
+		// même joueur — on renvoie la partie déjà existante plutôt que
+		// d'en fabriquer une orpheline en plus.
+		const existingGame = this.findGameByPlayer(player);
+		if (existingGame)
+			return existingGame;
+
 		const roomId = `room-${Date.now()}`;
 
 		const game = new GameSession(

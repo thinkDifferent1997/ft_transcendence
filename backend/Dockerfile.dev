@@ -25,6 +25,8 @@ RUN npm ci
 COPY prisma ./prisma
 RUN npx prisma generate
 
+RUN chown -R node:node /etc/nginx/certs 2>/dev/null || true
+
 EXPOSE 3000
 
 # CMD is set in docker-compose.dev.yml
