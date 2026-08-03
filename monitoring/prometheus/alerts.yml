@@ -6,7 +6,7 @@
 #    By: jbaumfal < jbaumfal@student.42.fr>         +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2026/08/02 19:43:04 by jbaumfal          #+#    #+#              #
-#    Updated: 2026/08/03 19:44:12 by jbaumfal         ###   ########.fr        #
+#    Updated: 2026/08/04 01:05:21 by jbaumfal         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -20,7 +20,7 @@ groups:
           severity: critical
         annotations:
           summary: backend unreachable
-          description: prometheus could not scrape the backend for 1 minute
+          description: prometheus could not scrape the backend for 25 seconds
 
       - alert: PostgresDown
         expr: pg_up == 0 or up{job="postgres"} == 0
@@ -38,7 +38,7 @@ groups:
           severity: warning
         annotations:
           summary: elevated 5xx rate
-          description: more than 0.5 server errors per second over 2 minutes
+          description: more than 0.5 server errors per second over 25 seconds
 
       - alert: HighLatencyP95
         expr: histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket[5m]))) > 1
