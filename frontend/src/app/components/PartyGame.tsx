@@ -498,7 +498,7 @@ export default function QuizPage()
 						setGame((previousGame) => (
 							{
 								...previousGame,
-								time_left: previousGame.time_left - 1,
+								time_left: Math.max(0, previousGame.time_left - 1)
 							}));
 					}, 1000);
 

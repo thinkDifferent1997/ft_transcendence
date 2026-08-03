@@ -220,12 +220,12 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 				break;
 
 			case "normal":
-				accuracy = 0.55;
+				accuracy = 0.60;
 				delay = this.random(8000, 16000);
 				break;
 
 			case "hard":
-				accuracy = 0.30;
+				accuracy = 0.40;
 				delay = this.random(10000, 18000);
 				break;
 
