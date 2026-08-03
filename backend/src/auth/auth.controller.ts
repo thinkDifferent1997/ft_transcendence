@@ -17,7 +17,7 @@ import { OptionalJwtAuthGuard } from './jwt/optional-jwt.guard';
 import type { AuthenticatedRequestUser } from './jwt/jwt.strategy';
 import { PUBLIC_URL } from '../config/public-url';
 
-@Controller('api/auth')
+@Controller('auth')
 export class AuthController {
   constructor(
     private readonly authService: AuthService,

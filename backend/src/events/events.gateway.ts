@@ -7,11 +7,11 @@ import { parse } from "cookie";
 import { TournamentService } from "../tournament/tournament.service";
 import { GameSession } from "../game/game.session";
 import { TournamentState } from "../tournament/tournament.state";
+import { PrismaService } from '../prisma/prisma.service';
 import { GameResultsService } from "../game-results/game-results.service";
 import { GamificationService } from "../gamification/gamification.service";
 import { StatsService } from "../stats/stats.service";
 import { StatsGateway } from "../stats/stats.gateway";
-import { PrismaService } from "../prisma/prisma.service";
 
 /**
 	* EventsGateway
@@ -539,32 +539,32 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 
 	async handleConnection(client: Socket)
 	{
-		const cookies = parse(client.handshake.headers.cookie ?? "");
+        try{
+            const cookies = parse(client.handshake.headers.cookie ?? "");
+            const payload = this.jwtService.verify<{
+                    sub: string;
+                    username: string;
+                    tfa: string;
+                }>(cookies.access_token);
+                
+            client.data.userId = payload.sub;
+            client.data.username = payload.username;
 
-		try
-		{
-			const payload = this.jwtService.verify<{
-				sub: string;
-				username: string;
-				tfa: string;
-			}>(cookies.access_token);
+            this.gameManager.registerPlayer(
+                client.data.userId,
+                client,
+            );
 
-			client.data.userId = payload.sub;
-			this.gameManager.registerPlayer(
-				client.data.userId,
-				client,
-			);
-			client.data.username = payload.username;
-
+            await this.prisma.user.update({
+                where: { id: payload.sub },
+                data: { status: 'ONLINE' }
+            });
 			await this.enforceSingleSession(client);
-		}
-		catch
-		{
-			console.log("Invalid JWT");
-			client.disconnect();
-		}
-	}
-
+        }catch (error) {
+            console.error("Socket Auth Error:", error.message);
+            client.disconnect();
+        }
+    }
 	// Un même compte ne doit être connecté que depuis une seule fenêtre à
 	// la fois. Si une session était déjà active ailleurs, on déconnecte
 	// activement l'ancienne au profit de celle-ci (plutôt que de refuser
@@ -603,6 +603,14 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 		if (client.data.userId)
 		{
 			this.gameManager.unregisterPlayer(client.data.userId);
+            try {
+                await this.prisma.user.update ({
+                    where: { id: client.data.userId },
+                    data: { status: 'OFFLINE' }
+                });
+            } catch (error) {
+                console.error("Error while disconneting Prisma:", error.message);
+            }
 			await this.clearActiveSession(client);
 		}
 		this.gameManager.removeWaitingPlayer(client);

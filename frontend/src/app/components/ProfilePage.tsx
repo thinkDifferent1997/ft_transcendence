@@ -4,6 +4,7 @@ import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid } from 
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "./ui/chart";
 import { socket } from "../../socket/socket";
 import { statsSocket } from "../../socket/socket";
+import { useParams } from "react-router-dom";
 
 interface ProfilePageProps {
   username: string;
@@ -63,9 +64,12 @@ export default function ProfilePage({ username, userId, onBack }: ProfilePagePro
   const [statsLoading, setStatsLoading] = useState(true);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const { targetUsername } = useParams();
+  const displayUsername = targetUsername || username;
+  const isMyProfile = displayUsername === username;
   const [matchHistory, setMatchHistory] = useState<MatchHistoryEntry[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
-
+  
   // États pour le 2FA
   const [is2FAEnabled, setIs2FAEnabled] = useState(false);
   const [show2FAModal, setShow2FAModal] = useState(false);
@@ -73,6 +77,7 @@ export default function ProfilePage({ username, userId, onBack }: ProfilePagePro
   const [verificationCode, setVerificationCode] = useState("");
   const [error2FA, setError2FA] = useState("");
 
+ 
   const fetchStats = async () => {
     setStatsLoading(true);
     try {
@@ -80,7 +85,8 @@ export default function ProfilePage({ username, userId, onBack }: ProfilePagePro
       if (startDate) params.set("startDate", startDate);
       if (endDate) params.set("endDate", endDate);
 
-      const res = await fetch(`/api/stats/me/summary?${params}`, { credentials: "include" });
+      const endpoint = isMyProfile ? "me" : displayUsername;
+      const res = await fetch(`/api/stats/${endpoint}/summary?${params}`, { credentials: "include" });
       if (res.ok) {
         setStats(await res.json());
       }
@@ -109,7 +115,7 @@ export default function ProfilePage({ username, userId, onBack }: ProfilePagePro
   useEffect(() => {
     fetchStats();
     fetchMatchHistory();
-  }, []);
+    }, [displayUsername]);
 
   // Temps réel : écoute les mises à jour de stats poussées par le serveur
   useEffect(() => {
@@ -117,9 +123,8 @@ export default function ProfilePage({ username, userId, onBack }: ProfilePagePro
       statsSocket.connect();
     }
 
-    if (!userId) return;
-
-    statsSocket.emit("stats:subscribe", { userId });
+    if (!displayUsername) return;
+    statsSocket.emit("stats:subscribe", { userId: displayUsername });
 
     const handleUpdate = (data: SummaryData) => {
       // On ne remplace que si aucun filtre de date n'est actif,
@@ -135,7 +140,7 @@ export default function ProfilePage({ username, userId, onBack }: ProfilePagePro
     return () => {
       statsSocket.off("stats:updated", handleUpdate);
     };
-  }, [userId, startDate, endDate]);
+  }, [displayUsername, startDate, endDate]);
 
   const emojis = ["😊", "🎨", "🚀", "🌟", "🎯", "🔥", "💫", "🎮", "🏆", "⚡"];
 
@@ -286,6 +291,7 @@ export default function ProfilePage({ username, userId, onBack }: ProfilePagePro
                   {avatar}
                 </div>
               </div>
+              {isMyProfile && (
               <div className="absolute bottom-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity">
                 <div className="relative">
                   <button className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white shadow-lg hover:shadow-xl transition-all">
@@ -303,22 +309,17 @@ export default function ProfilePage({ username, userId, onBack }: ProfilePagePro
                     ))}
                   </div>
                 </div>
-              </div>
+              </div>)}
             </div>
 
             <div className="flex-1 text-center md:text-left">
               <div className="flex flex-col md:flex-row items-center gap-3 mb-2 justify-center md:justify-start">
                 <h1 className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent text-4xl font-extrabold m-0">
-                  {username}
+                  {displayUsername}
                 </h1>
-                {is2FAEnabled && (
-                  <span className="flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 text-sm font-bold rounded-full border border-green-200 shadow-sm">
-                    <CheckCircle className="w-4 h-4" /> 2FA Sécurisé
-                  </span>
-                )}
               </div>
 
-              {!is2FAEnabled && (
+              {isMyProfile && !is2FAEnabled && (
                 <button
                   onClick={handleSetup2FA}
                   className="inline-flex items-center gap-2 px-5 py-2.5 bg-gray-900 hover:bg-gray-800 text-white text-sm font-semibold rounded-xl transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5"
@@ -416,9 +417,8 @@ export default function ProfilePage({ username, userId, onBack }: ProfilePagePro
               Réinitialiser
             </button>
           )}
-
+          {isMyProfile && (
           <div className="flex gap-2 ml-auto">
-            
              <a href="/api/export/me/csv"
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-gray-200 hover:bg-gray-50 text-sm font-medium text-gray-700 transition-all"
             >
@@ -433,6 +433,7 @@ export default function ProfilePage({ username, userId, onBack }: ProfilePagePro
               Export PDF
             </a>
           </div>
+          )}
         </div>
 
         {/* Stats Grid */}
