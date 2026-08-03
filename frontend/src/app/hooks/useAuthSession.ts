@@ -19,15 +19,11 @@ export default function useAuthSession(): AuthSession {
   const recheckSession = useCallback(async () => {
     try {
       const res = await fetch("/api/auth/me", { credentials: "include" });
-      if (res.ok) {
-        const data = await res.json();
-        if (data && data.username) {
-          setUsername(data.username);
-          setUserId(data.userId ?? "");
-          setIsLoggedIn(true);
-        } else {
-          setIsLoggedIn(false);
-        }
+      const data = await res.json();
+      if (data && data.authenticated) {
+        setUsername(data.username);
+        setUserId(data.userId ?? "");
+        setIsLoggedIn(true);
       } else {
         setIsLoggedIn(false);
       }
