@@ -11,7 +11,10 @@ import { OAuthFailureFilter } from './oauth-failed.filter';
 import type { Response } from 'express';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
+import { LoginDto } from './dto/login.dto';
 import { JwtTokenService } from './jwt/jwt-token.service';
+import { OptionalJwtAuthGuard } from './jwt/optional-jwt.guard';
+import type { AuthenticatedRequestUser } from './jwt/jwt.strategy';
 import { PUBLIC_URL } from '../config/public-url';
 
 @Controller('auth')
@@ -28,7 +31,7 @@ export class AuthController {
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  async login(@Body() dto: any, @Res({ passthrough: true }) res: Response) {
+  async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
     const user = await this.authService.login(dto);
     // Sets a pending-token cookie when the user has 2FA enabled (the
     // client must then complete POST /api/auth/2fa/login), otherwise a
@@ -65,11 +68,17 @@ export class AuthController {
     );
   }
 
+  // Guard optionnel : ne rejette jamais la requête (pas de 401) même sans
+  // session valide — pour la vérification "est-ce que quelqu'un est
+  // connecté ?" au chargement de l'app, où un 401 n'est pas une erreur
+  // mais une réponse normale, et polluerait quand même la console.
   @Get('me')
-  @UseGuards(AuthGuard('jwt'))
-  getProfile(@Req() req){
-    return req.user;
-  
+  @UseGuards(OptionalJwtAuthGuard)
+  getProfile(@Req() req: { user: AuthenticatedRequestUser | null }) {
+    if (!req.user) {
+      return { authenticated: false };
+    }
+    return { authenticated: true, ...req.user };
   }
 
   @Post('logout')
