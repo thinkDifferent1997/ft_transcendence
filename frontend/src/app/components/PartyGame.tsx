@@ -5,8 +5,6 @@ import { useRef } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { useGame } from "../context/GameContext";
 
-import QuestionCard from "./QuestionCard";
-import PlayerBonusPanel from "./PlayerBonus";
 import GamePage from "./GamePage";
 import MatchmakingScreen from "./MatchmakingScreen";
 import ResultsScreen from "./ResultScreen";
