@@ -112,7 +112,7 @@ sh-frontend: ## Open a shell inside the frontend container
 	$(COMPOSE) $(COMPOSE_DEV) exec frontend sh
 
 sh-db: ## Open psql inside the postgres container
-	$(COMPOSE) $(COMPOSE_DEV) exec postgres psql -U $$POSTGRES_USER -d ft_transcendence
+	$(COMPOSE) $(COMPOSE_DEV) exec postgres sh -c 'psql -U "$$POSTGRES_USER" -d ft_transcendence'
 
 # ============================================================
 #   Database (Prisma)
