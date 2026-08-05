@@ -23,6 +23,31 @@ export class TournamentGateway
 	private waitingPlayers: Socket[] = [];
 	private tournamentStarting = false;
 
+	public removeWaitingPlayer(client: Socket)
+	{
+		if (this.tournamentStarting)
+			return;
+
+		const index = this.waitingPlayers.findIndex(
+			player => player.id === client.id,
+		);
+
+		if (index === -1)
+			return;
+
+		this.waitingPlayers.splice(index, 1);
+
+		this.server.emit("tournament_waiting", {
+			players: this.waitingPlayers.map(
+				player => player.data.username,
+			),
+		});
+
+		console.log(
+			`${client.data.username} disconnected from tournament (${this.waitingPlayers.length}/4)`,
+		);
+	}
+
 	@WebSocketServer()
 	server: Server;
 
@@ -31,15 +56,15 @@ export class TournamentGateway
 		@ConnectedSocket() client: Socket,
 	)
 	{
-		console.log(
-    "JOIN TOURNAMENT EVENT",
-    client.data.username,
-    new Error().stack,
-);
-		if (this.waitingPlayers.find(player => player.data.userId === client.data.userId))
-			return;
 		if (this.tournamentStarting)
 			return;
+		const existingIndex = this.waitingPlayers.findIndex(
+			player => player.data.userId === client.data.userId,
+		);
+
+		if (existingIndex !== -1)
+			this.waitingPlayers.splice(existingIndex, 1);
+
 
 		this.waitingPlayers.push(client);
 
@@ -51,10 +76,21 @@ export class TournamentGateway
 			`${client.data.username} joined tournament (${this.waitingPlayers.length}/4)`
 		);
 		if (this.waitingPlayers.length < 4)
+		{
+			this.tournamentStarting = false;
+
+			this.server.emit("tournament_waiting", {
+				players: this.waitingPlayers.map(player => player.data.username),
+			});
+
 			return;
+		}
 
 		this.tournamentStarting = true;
 
+		this.waitingPlayers = this.waitingPlayers.filter(
+			player => player.connected,
+		);
 		const players = [...this.waitingPlayers];
 
 		const tournamentData =

@@ -9,7 +9,7 @@ import { TournamentGateway } from "./tournament.gateway";
 @Module({
   imports: [PrismaModule, GameModule],
   controllers: [TournamentController],
-  providers: [TournamentService, TournamentGateway, TournamentState],
+  providers: [TournamentService, TournamentState],
   exports: [TournamentService, TournamentState],
 })
 export class TournamentModule {}
