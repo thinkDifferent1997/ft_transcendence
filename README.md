@@ -96,7 +96,7 @@ Once the containers are running, access the application in your browser at: `htt
 
 # Project Management
 
-* **Work Organization:** We followed an Agile methodology with weekly sprints. Tasks were divided based on frontend, backend, game-engine, database gestion and real-time infrastructure.
+* **Work Organization:** 
 * **Tools Used:** 
   * **Notions:** Used write a roadmap and to track "To Do", "In Progress", and "Done" tasks.
   * **Figma:** Used for initial UI/UX wireframing.
@@ -159,13 +159,16 @@ Our database relies on a robust relational PostgreSQL model mapped via Prisma. H
 
 | Feature | Description | Contributor(s) |
 | :--- | :--- | :--- |
-| **User Authentication** | OAuth via 42 API and JWT session handling. | `elsikira, ncrivell` |
-| **2FA Security** | Google Authenticator integration via QR code. | `espinto-` |
-| **Real-Time Quiz Game** | Complete multiplayer quiz engine including matchmaking, timers, synchronization, scoring, AI mode, Tournament mode and bonus system using WebSockets. | `namalier` |
-| **Global Chat** | Real-time messaging with user avatars and timestamps. Clickable usernames to see user profiles | `elsikira` |
-| **User Profiles & Stats** | Dashboard displaying XP, levels, win/loss charts, and history. | `ncrivel, namalier` |
-| **Leaderboard** | Global ranking of players based on XP. | `ncrivel, espinto-` |
-| **Legal Pages** | Accessible Privacy Policy and Terms of Service. | `elsikira` |
+| **Authentication & OAuth** | Dual login (Standard & 42 API), GitHub OAuth, JWT session handling, and secure credential management. | `elsikira, jbaumfal, espinto-` |
+| **2FA Security** | Google Authenticator (TOTP) integration via QR code with custom frontend enrollment UI. | `espinto-, elsikira` |
+| **Real-Time Quiz Engine** | Multiplayer PvP, 1vAI with adaptive difficulty, and 4-player Tournament mode using WebSocket synchronization. | `namalier` |
+| **In-Game Mechanics** | TriviaDB integration, real-time timers, bonus/malus systems, and tie-breaking logic based on response time. | `namalier` |
+| **Global Chat & Social** | Real-time WebSocket messaging, persistent history, user avatars, and clickable usernames routing to public profiles. | `elsikira` |
+| **User Profiles & Live Stats** | Dashboard tracking XP, match history, win/loss ratios, and average response times with live WebSocket dashboard updates. | `ncrivell, namalier, elsikira` |
+| **Gamification & Leaderboard** | Achievement badge system, persistent XP leveling, and a global player ranking leaderboard. | `ncrivell, namalier` |
+| **Data Management (GDPR)** | Export user data (JSON, CSV, PDF) and validated bulk question imports for admins. | `ncrivell` |
+| **Monitoring & DevOps** | Prometheus/Grafana monitoring dashboard, automated Discord CI/CD PR notifications, and live database health checks. | `jbaumfal, espinto-, elsikira` |
+| **Legal Pages** | Fully accessible Privacy Policy and Terms of Service for data compliance. | `elsikira` |
 
 ---
 
