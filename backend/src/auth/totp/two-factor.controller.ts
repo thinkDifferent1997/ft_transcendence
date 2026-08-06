@@ -33,7 +33,7 @@ interface AuthedRequest {
   user: AuthenticatedRequestUser;
 }
 
-@Controller('api/auth/2fa')
+@Controller('auth/2fa')
 export class TwoFactorController {
   constructor(
     private readonly twoFactor: TwoFactorService,
