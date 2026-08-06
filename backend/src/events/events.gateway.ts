@@ -7,7 +7,7 @@ import { parse } from "cookie";
 import { TournamentService } from "../tournament/tournament.service";
 import { GameSession } from "../game/game.session";
 import { TournamentState } from "../tournament/tournament.state";
-import { TournamentGateway } from "../tournament/tournament.gateway";
+import { TournamentQueue } from "../tournament/tournament.queue";
 import { PrismaService } from '../prisma/prisma.service';
 import { GameResultsService } from "../game-results/game-results.service";
 import { GamificationService } from "../gamification/gamification.service";
@@ -47,7 +47,7 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 	private readonly jwtService: JwtService,
 	private readonly tournamentService: TournamentService,
 	private readonly tournamentState: TournamentState,
-	private readonly tournamentGateway: TournamentGateway,
+	private readonly tournamentQueue: TournamentQueue,
 	private readonly gameResultsService: GameResultsService,
 	private readonly gamificationService: GamificationService,
 	private readonly statsService: StatsService,
@@ -615,8 +615,13 @@ implements OnGatewayConnection, OnGatewayDisconnect{
             }
 			await this.clearActiveSession(client);
 		}
-		this.gameManager.removeWaitingPlayer(client);
-		this.tournamentGateway.removeWaitingPlayer(client);
+		if (this.tournamentQueue.removePlayer(client))
+		{
+			this.server.emit("tournament_waiting", {
+				players: this.tournamentQueue.getUsernames(),
+			});
+		}
+
 		await this.handlePlayerForfeit(client);
 	}
 

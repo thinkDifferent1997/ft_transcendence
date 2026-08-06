@@ -4,6 +4,7 @@ import { Server, Socket } from "socket.io";
 import { TournamentService } from "./tournament.service";
 import { GameManager } from "../game/game.manager";
 import { TournamentState } from "./tournament.state";
+import { TournamentQueue } from "./tournament.queue";
 
 @WebSocketGateway({
 	path: "/ws",
@@ -19,34 +20,8 @@ export class TournamentGateway
 		private readonly tournamentService: TournamentService,
 		private readonly gameManager: GameManager,
 		private readonly tournamentState: TournamentState,
+		private readonly tournamentQueue: TournamentQueue,
 	) {}
-	private waitingPlayers: Socket[] = [];
-	private tournamentStarting = false;
-
-	public removeWaitingPlayer(client: Socket)
-	{
-		if (this.tournamentStarting)
-			return;
-
-		const index = this.waitingPlayers.findIndex(
-			player => player.id === client.id,
-		);
-
-		if (index === -1)
-			return;
-
-		this.waitingPlayers.splice(index, 1);
-
-		this.server.emit("tournament_waiting", {
-			players: this.waitingPlayers.map(
-				player => player.data.username,
-			),
-		});
-
-		console.log(
-			`${client.data.username} disconnected from tournament (${this.waitingPlayers.length}/4)`,
-		);
-	}
 
 	@WebSocketServer()
 	server: Server;
@@ -56,45 +31,28 @@ export class TournamentGateway
 		@ConnectedSocket() client: Socket,
 	)
 	{
-		if (this.tournamentStarting)
+		if (this.tournamentQueue.isTournamentStarting())
 			return;
-		const existingIndex = this.waitingPlayers.findIndex(
-			player => player.data.userId === client.data.userId,
-		);
 
-		if (existingIndex !== -1)
-			this.waitingPlayers.splice(existingIndex, 1);
-
-
-		this.waitingPlayers.push(client);
+		this.tournamentQueue.addPlayer(client);
 
 		this.server.emit("tournament_waiting", {
-			players: this.waitingPlayers.map(player => player.data.username),
+			players: this.tournamentQueue.getUsernames(),
 		});
 
 		console.log(
-			`${client.data.username} joined tournament (${this.waitingPlayers.length}/4)`
+			`${client.data.username} joined tournament (${this.tournamentQueue.getPlayers().length}/4)`,
 		);
-		if (this.waitingPlayers.length < 4)
-		{
-			this.tournamentStarting = false;
 
-			this.server.emit("tournament_waiting", {
-				players: this.waitingPlayers.map(player => player.data.username),
-			});
+		const players = this.tournamentQueue.getPlayers();
 
+		if (players.length < 4)
 			return;
-		}
 
-		this.tournamentStarting = true;
-
-		this.waitingPlayers = this.waitingPlayers.filter(
-			player => player.connected,
-		);
-		const players = [...this.waitingPlayers];
+		this.tournamentQueue.setTournamentStarting(true);
 
 		const tournamentData =
-		await this.tournamentService.startFourPlayerTournament(players);
+			await this.tournamentService.startFourPlayerTournament(players);
 
 		this.tournamentState.registerTournament(
 			tournamentData.tournament.id,
@@ -129,7 +87,6 @@ export class TournamentGateway
 				username: players[3].data.username,
 			},
 		);
-		console.log("REGISTER SEMI ENTERED");
 
 		await this.gameManager.createTournamentMatch(
 			players[0],
@@ -145,14 +102,12 @@ export class TournamentGateway
 			tournamentData.tournament.id,
 		);
 
-		// Les joueurs rejoignent leur room Socket.IO
 		players[0].join(tournamentData.rooms.semiFinal1.id);
 		players[1].join(tournamentData.rooms.semiFinal1.id);
 
 		players[2].join(tournamentData.rooms.semiFinal2.id);
 		players[3].join(tournamentData.rooms.semiFinal2.id);
 
-		// On envoie exactement le même évènement que le matchmaking classique
 		this.server.to(tournamentData.rooms.semiFinal1.id).emit("match_found", {
 			roomId: tournamentData.rooms.semiFinal1.id,
 			tournamentId: tournamentData.tournament.id,
@@ -178,9 +133,9 @@ export class TournamentGateway
 				username: players[3].data.username,
 			},
 		});
-		this.waitingPlayers = [];
-		this.tournamentStarting = false;
 
+		this.tournamentQueue.clear();
+		this.tournamentQueue.setTournamentStarting(false);
 	}
 
 	@SubscribeMessage("leave_tournament")
@@ -188,24 +143,18 @@ export class TournamentGateway
 		@ConnectedSocket() client: Socket,
 	)
 	{
-		if (this.tournamentStarting)
+		if (this.tournamentQueue.isTournamentStarting())
 			return;
 
-		const index = this.waitingPlayers.findIndex(
-			player => player.data.userId === client.data.userId,
-		);
-
-		if (index === -1)
+		if (!this.tournamentQueue.removePlayer(client))
 			return;
-
-		this.waitingPlayers.splice(index, 1);
 
 		this.server.emit("tournament_waiting", {
-			players: this.waitingPlayers.map(player => player.data.username),
+			players: this.tournamentQueue.getUsernames(),
 		});
 
 		console.log(
-			`${client.data.username} left tournament (${this.waitingPlayers.length}/4)`,
+			`${client.data.username} left tournament (${this.tournamentQueue.getPlayers().length}/4)`,
 		);
 	}
 }
