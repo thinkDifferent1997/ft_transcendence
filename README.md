@@ -63,9 +63,15 @@ Once the containers are running, access the application in your browser at: `htt
 
 # Team Information
 
-* **espinto- - Tech Lead & Backend Developer**
-  * *Responsibilities:*
-* **namalier - Product Owner (PO) & Game Engine Developer**
+### espinto- (Tech Lead)
+* **Contributions:**
+  * Set up the project's initial backend scaffolding and architecture.
+  * Engineered the Two-Factor Authentication (2FA TOTP) integration with JWT sessions and built its enrollment UI.
+  * Fixed core frontend routing, session persistence (logout clearing), and state synchronization (username updates).
+  * Resolved infrastructure bugs, including Docker certificate read rights and profile data persistence after database wipeouts.
+* **Challenges:** Ensuring secure JWT session handling alongside TOTP 2FA, and maintaining stable CI/CD pipelines across differing Node versions and Docker environments.
+* **Overcome:** Successfully integrated `otplib` for strict 2FA validation and structured the GitHub workflows and Docker permissions to guarantee secure, reliable deployments.
+### namalier - Product Owner (PO) & Game Engine Developer**
   * *Responsibilities:*
     * Defined the overall gameplay design and project roadmap.
     * Designed and implemented the complete real-time quiz game engine.
@@ -79,11 +85,11 @@ Once the containers are running, access the application in your browser at: `htt
     * Integrated the Trivia API and question management.
     * Designed and maintained the event-driven communication protocol between frontend and backend.
     * Fixed multiplayer synchronization issues, disconnect handling, forfeits and edge cases.
-* **elsikira - Scrum Master (PM) & FullStack Dev**
+### elsikira - Scrum Master (PM) & FullStack Dev**
   * *Responsibilities:*
-* **ncrivell - DB Master & Backend Developer**
+### ncrivell - DB Master & Backend Developer**
   * *Responsibilities:* * 
-  **jbaumfal - DevOps Developer**
+### jbaumfal - DevOps Developer**
   * *Responsibilities:* 
 
 ---
