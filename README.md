@@ -119,20 +119,39 @@ Once the containers are running, access the application in your browser at: `htt
 
 # Database Schema
 
-Our database relies on a relational model consisting of several key entities:
+Our database relies on a robust relational PostgreSQL model mapped via Prisma. Here is an overview of the core entities and their relationships:
 
-* **Users Table:** 
-  * *Key fields:* 
-* **Matches Table:** 
-  * *Key fields:*   
-  * *Relationships:* 
-* **Messages Table (Chat):**
-  * *Key fields:*
-  * *Relationships:* 
-* **Badges / Achievements Table:**
-  * *Key fields:*
+* **User (`User`):**
+  * *Key fields:* `id` (String/UUID), `username` (String), `email` (String), `status` (Enum: OFFLINE, ONLINE, IN_GAME), `xp` (Int), `isTwoFactorEnabled` (Boolean).
+  * *Relationships:* One-to-many relationships with `GlobalMessage` (chat), `Friendship` (sent/received), `RoomParticipant` (game history), and `UserBadge`.
 
-*(Note: The full schema is detailed in our `schema.prisma` file).*
+* **Game Sessions (`Room` & `Tournament`):**
+  * *Key fields:* `id` (String/UUID), `mode` (Enum: SOLO, DUEL, TOURNAMENT), `status` (Enum: WAITING, IN_PROGRESS, FINISHED), `round` (Enum: QUARTER_FINAL, SEMI_FINAL, FINAL — tournament rooms only).
+  * *Relationships:* A `Tournament` contains multiple `Room` entities and links to its `champion` (RoomParticipant). A `Room` has many `RoomParticipant`s and `RoomQuestion`s (ordered), links to an optional `winner` participant (null = draw), and to a `nextRoom` (self-relation: the winner advances through the bracket).
+
+* **Answers (`Answer`):**
+  * *Key fields:* `isCorrect` (Boolean), `timeTakenMs` (Int — used for tie-breaking on equal scores).
+  * *Relationships:* Belongs to a `RoomParticipant` and a `Question`.
+
+* **Participants (`RoomParticipant`):**
+  * *Key fields:* `score` (Int), `isBot` (Boolean — AI opponents), `userId` (nullable for bots).
+  * *Relationships:* Links a `User` to a `Room`; unique per `(roomId, userId)`.
+
+* **Social (`GlobalMessage` & `Friendship`):**
+  * *Key fields (Message):* `id` (String/UUID), `content` (String), `createdAt` (DateTime).
+  * *Relationships (Message):* Belongs to an `author` (User).
+  * *Key fields (Friendship):* `status` (Enum: PENDING, ACCEPTED, DECLINED).
+  * *Relationships (Friendship):* Links a `sender` (User) to a `receiver` (User).
+
+* **Trivia (`Question`, `Category`, `AnswerChoice`):**
+  * *Key fields:* `text` (String), `isCorrect` (Boolean for answers).
+  * *Relationships:* A `Category` contains multiple `Question`s. A `Question` contains multiple `AnswerChoice`s and links to game rooms via `RoomQuestion`.
+
+* **Gamification (`Badge` & `UserBadge`):**
+  * *Key fields:* `code` (String), `name` (String), `description` (String).
+  * *Relationships:* A many-to-many relationship mapping a `User` to their earned `Badge`s through the `UserBadge` join table.
+
+*(Note: The full schema is detailed in our `backend/prisma/schema.prisma` file).*
 
 ---
 
@@ -141,7 +160,7 @@ Our database relies on a relational model consisting of several key entities:
 | Feature | Description | Contributor(s) |
 | :--- | :--- | :--- |
 | **User Authentication** | OAuth via 42 API and JWT session handling. | `elsikira, ncrivell` |
-| **2FA Security** | Google Authenticator integration via QR code. | `espinto-, <login2>` |
+| **2FA Security** | Google Authenticator integration via QR code. | `espinto-` |
 | **Real-Time Quiz Game** | Complete multiplayer quiz engine including matchmaking, timers, synchronization, scoring, AI mode, Tournament mode and bonus system using WebSockets. | `namalier` |
 | **Global Chat** | Real-time messaging with user avatars and timestamps. Clickable usernames to see user profiles | `elsikira` |
 | **User Profiles & Stats** | Dashboard displaying XP, levels, win/loss charts, and history. | `ncrivel, namalier` |
