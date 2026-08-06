@@ -6,7 +6,7 @@
 
 **Goal:** The goal of this project is to build a fully functional, real-time multiplayer web application from scratch, focusing on modern web development practices, security, and real-time data synchronization. 
 
-**Overview:** Culture Quiz is an interactive, real-time multiplayer trivia platform. Users can challenge each other in 1v1 quiz matches, track their statistics, level up, earn badges, and communicate through a live global chat. The platform emphasizes a seamless user experience, secure authentication, and robust real-time communication.
+**Overview:**  Overview: Culture Quiz is an interactive real-time trivia platform featuring competitive PvP matches, an adaptive AI opponent, a four-player tournament mode, persistent progression, achievements, live chat and comprehensive player statistics. The platform emphasizes a seamless user experience, secure authentication, and robust real-time communication.
 
 **Key Features:**
 * Real-time 1v1 multiplayer quiz matches; 1vAI, Tournament Mode.
@@ -54,6 +54,7 @@ Once the containers are running, access the application in your browser at: `htt
 * [Socket.io Documentation](https://socket.io/docs/v4/)
 * [Prisma ORM](https://www.prisma.io/docs)
 * [TailwindCSS](https://tailwindcss.com/docs)
+* [TriviaDB](https://opentdb.com/)
 
 **AI Usage:**
 * **Gemini / ChatGPT / Claude:** AI tools were used during development primarily for debugging complex React hook dependencies, scaffolding boilerplate code for TailwindCSS styling (e.g., the chat and profile UI), and generating the initial drafts for our legal pages (Privacy Policy and Terms of Service) to ensure appropriate verbiage. AI was not used to write the core game logic or backend architecture, but it help to imagine it as best and avoid errors.
@@ -64,8 +65,20 @@ Once the containers are running, access the application in your browser at: `htt
 
 * **espinto- - Tech Lead & Backend Developer**
   * *Responsibilities:*
-  **namalier - Product Owner (PO) & Game Engine Developer**
-  * *Responsibilities:* 
+* **namalier - Product Owner (PO) & Game Engine Developer**
+  * *Responsibilities:*
+    * Defined the overall gameplay design and project roadmap.
+    * Designed and implemented the complete real-time quiz game engine.
+    * Developed the complete 1v1 matchmaking system using WebSockets.
+    * Designed and implemented the AI game mode with adaptive behaviour based on question difficulty and player actions.
+    * Designed and implemented the complete Tournament Mode (4-player brackets, semi-finals, finals, automatic progression and champion selection).
+    * Implemented the complete game state synchronization between frontend and backend.
+    * Developed the timer system, answer synchronization and game flow.
+    * Designed and implemented the bonus system (3 Choices, Hide Answer and Double Points) and their synchronization.
+    * Implemented the complete scoring, streak and winner determination logic, including tie-breaking based on total answering time.
+    * Integrated the Trivia API and question management.
+    * Designed and maintained the event-driven communication protocol between frontend and backend.
+    * Fixed multiplayer synchronization issues, disconnect handling, forfeits and edge cases.
 * **elsikira - Scrum Master (PM) & FullStack Dev**
   * *Responsibilities:*
 * **ncrivell - DB Master & Backend Developer**
@@ -123,10 +136,10 @@ Our database relies on a relational model consisting of several key entities:
 | :--- | :--- | :--- |
 | **User Authentication** | OAuth via 42 API and JWT session handling. | `elsikira, ncrivell` |
 | **2FA Security** | Google Authenticator integration via QR code. | `espinto-, <login2>` |
-| **Real-Time Quiz Game** | 1v1 match logic, question distribution, and scoring via WebSockets. | `namalier` |
+| **Real-Time Quiz Game** | Complete multiplayer quiz engine including matchmaking, timers, synchronization, scoring, AI mode, Tournament mode and bonus system using WebSockets. | `namalier` |
 | **Global Chat** | Real-time messaging with user avatars and timestamps. Clickable usernames to see user profiles | `elsikira` |
-| **User Profiles & Stats** | Dashboard displaying XP, levels, win/loss charts, and history. | `<login1>` |
-| **Leaderboard** | Global ranking of players based on XP. | `<login3>, <login 2>` |
+| **User Profiles & Stats** | Dashboard displaying XP, levels, win/loss charts, and history. | `ncrivel, namalier` |
+| **Leaderboard** | Global ranking of players based on XP. | `ncrivel, espinto-` |
 | **Legal Pages** | Accessible Privacy Policy and Terms of Service. | `elsikira` |
 
 ---
@@ -173,8 +186,34 @@ Our database relies on a relational model consisting of several key entities:
 * **Overcome:**
 
 ### namalier
-* **Challenges:** 
-* **Overcome:** 
+
+* **Contributions:**
+  * Designed the overall game architecture.
+  * Implemented the complete real-time multiplayer game engine.
+  * Developed the matchmaking system for both PvP and AI matches.
+  * Implemented the AI opponent with adaptive answer timing and configurable difficulty.
+  * Designed and implemented the complete Tournament Mode including matchmaking, bracket generation, semi-finals, finals and automatic progression.
+  * Implemented the synchronized game timer and question flow.
+  * Developed the scoring system, answer validation and winner calculation.
+  * Designed and implemented the complete bonus system.
+  * Integrated trivia question retrieval and management.
+  * Implemented player statistics generation and match history recording.
+  * Handled disconnects, forfeits, reconnections and tournament recovery.
+  * Contributed to project planning and feature prioritization as Product Owner.
+
+* **Challenges:**
+  * Designing a deterministic real-time game engine that remains synchronized across multiple clients.
+  * Managing asynchronous WebSocket events without race conditions.
+  * Synchronizing timers, answers and game state between frontend and backend.
+  * Handling edge cases such as player disconnects, forfeits and tournament recovery.
+  * Building a maintainable architecture capable of supporting multiple game modes.
+
+* **Overcome:**
+  * Introduced a centralized backend-driven game state to guarantee synchronization between all clients.
+  * Carefully synchronized every game event through Socket.IO events and dedicated game states.
+  * Designed reusable game logic shared between PvP, AI and Tournament modes.
+  * Added robust disconnect and recovery handling to prevent deadlocks and inconsistent game states.
+  * Refactored the game architecture to improve modularity, maintainability and scalability.
 
 ---
 
