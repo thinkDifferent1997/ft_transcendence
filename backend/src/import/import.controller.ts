@@ -3,7 +3,7 @@ import { ImportService } from './import.service';
 import { ImportQuestionsBatchDto } from './dto/import-question.dto';
 import { FullAuthGuard } from '../auth/jwt/full-auth.guard';
 
-@Controller('api/import')
+@Controller('import')
 export class ImportController {
   constructor(private readonly importService: ImportService) {}
 

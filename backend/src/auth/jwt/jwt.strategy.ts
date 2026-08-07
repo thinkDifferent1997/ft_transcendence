@@ -23,6 +23,12 @@ export interface AuthenticatedRequestUser {
   userId: string;
   username: string;
   tfa: TfaState;
+  /**
+   * Whether the account has 2FA switched on. Distinct from `tfa`, which
+   * says whether *this token* has cleared it: an enrolled user holding a
+   * pending token is `isTwoFactorEnabled: true, tfa: 'pending'`.
+   */
+  isTwoFactorEnabled: boolean;
 }
 
 const cookieExtractor = (req: Request): string | null => {
@@ -61,6 +67,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       userId: user.id,
       username: user.username,
       tfa: payload.tfa,
+      isTwoFactorEnabled: user.isTwoFactorEnabled,
     };
   }
 }
