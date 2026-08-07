@@ -9,6 +9,10 @@ import { useParams } from "react-router-dom";
 interface ProfilePageProps {
   username: string;
   userId: string;
+  /** État 2FA du compte connecté, lu depuis /api/auth/me. */
+  isTwoFactorEnabled?: boolean;
+  /** Relit la session après activation/désactivation du 2FA. */
+  onTwoFactorChange?: () => void | Promise<void>;
   onBack?: () => void;
 }
 
@@ -58,7 +62,13 @@ const chartConfig: ChartConfig = {
 
 const winLossColors = ["#22c55e", "#ef4444", "#94a3b8"];
 
-export default function ProfilePage({ username, userId, onBack }: ProfilePageProps) {
+export default function ProfilePage({
+  username,
+  userId,
+  isTwoFactorEnabled = false,
+  onTwoFactorChange,
+  onBack,
+}: ProfilePageProps) {
   const [avatar, setAvatar] = useState("😊");
   const [stats, setStats] = useState<SummaryData | null>(null);
   const [statsLoading, setStatsLoading] = useState(true);
@@ -70,12 +80,20 @@ export default function ProfilePage({ username, userId, onBack }: ProfilePagePro
   const [matchHistory, setMatchHistory] = useState<MatchHistoryEntry[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
   
-  // États pour le 2FA
-  const [is2FAEnabled, setIs2FAEnabled] = useState(false);
-  const [show2FAModal, setShow2FAModal] = useState(false);
+  // États pour le 2FA. L'activation elle-même n'est pas un état local :
+  // elle vient du serveur (prop isTwoFactorEnabled), sinon un simple
+  // rechargement de page la « perdrait » et on reproposerait un
+  // enrôlement à quelqu'un qui en a déjà un.
+  const [twoFAModal, setTwoFAModal] = useState<null | "enable" | "disable">(null);
   const [qrCodeUrl, setQrCodeUrl] = useState("");
   const [verificationCode, setVerificationCode] = useState("");
   const [error2FA, setError2FA] = useState("");
+
+  const close2FAModal = () => {
+    setTwoFAModal(null);
+    setVerificationCode("");
+    setError2FA("");
+  };
 
  
   const fetchStats = async () => {
@@ -146,6 +164,8 @@ export default function ProfilePage({ username, userId, onBack }: ProfilePagePro
 
   // Demander le QR Code au backend
   const handleSetup2FA = async () => {
+    setError2FA("");
+    setQrCodeUrl("");
     try {
       const res = await fetch("/api/auth/2fa/setup", {
         method: "POST",
@@ -153,7 +173,11 @@ export default function ProfilePage({ username, userId, onBack }: ProfilePagePro
       });
 
       if (!res.ok) {
-        alert("Erreur réseau : Le backend a refusé la requête.");
+        const data = await res.json().catch(() => null);
+        alert(data?.message || "Erreur réseau : Le backend a refusé la requête.");
+        // Le serveur refuse un second enrôlement si le 2FA est déjà actif
+        // (409) : on resynchronise pour refléter son état réel.
+        await onTwoFactorChange?.();
         return;
       }
 
@@ -161,7 +185,7 @@ export default function ProfilePage({ username, userId, onBack }: ProfilePagePro
 
       if (data && data.qrCodeDataUrl) {
         setQrCodeUrl(data.qrCodeDataUrl);
-        setShow2FAModal(true);
+        setTwoFAModal("enable");
       } else {
         alert("Erreur : Le QR Code n'a pas été reçu.");
       }
@@ -183,9 +207,32 @@ export default function ProfilePage({ username, userId, onBack }: ProfilePagePro
       });
 
       if (res.ok) {
-        setIs2FAEnabled(true);
-        setShow2FAModal(false);
-        setVerificationCode("");
+        close2FAModal();
+        await onTwoFactorChange?.();
+      } else {
+        const data = await res.json();
+        setError2FA(data.message || "Code invalide.");
+      }
+    } catch (err) {
+      setError2FA("Erreur de connexion.");
+    }
+  };
+
+  // Désactiver le 2FA : le serveur exige un code valide, une session
+  // ouverte ne suffit pas à retirer le second facteur.
+  const handleDisable2FA = async () => {
+    setError2FA("");
+    try {
+      const res = await fetch("/api/auth/2fa/disable", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ token: verificationCode }),
+      });
+
+      if (res.ok) {
+        close2FAModal();
+        await onTwoFactorChange?.();
       } else {
         const data = await res.json();
         setError2FA(data.message || "Code invalide.");
@@ -215,33 +262,45 @@ export default function ProfilePage({ username, userId, onBack }: ProfilePagePro
     <div className="min-h-screen bg-gradient-to-br from-violet-100 via-pink-50 to-cyan-100 p-8 relative">
 
       {/* MODAL 2FA */}
-      {show2FAModal && (
+      {twoFAModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 relative animate-in zoom-in-95">
             <button
-              onClick={() => setShow2FAModal(false)}
+              onClick={close2FAModal}
               className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 bg-gray-100 rounded-full p-1 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
 
             <div className="text-center mb-6">
-              <div className="mx-auto w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-4 shadow-inner">
-                <QrCode className="w-8 h-8" />
+              <div
+                className={`mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4 shadow-inner ${
+                  twoFAModal === "enable"
+                    ? "bg-blue-100 text-blue-600"
+                    : "bg-red-100 text-red-600"
+                }`}
+              >
+                {twoFAModal === "enable" ? <QrCode className="w-8 h-8" /> : <Shield className="w-8 h-8" />}
               </div>
-              <h3 className="text-2xl font-bold text-gray-900">Activer le 2FA</h3>
+              <h3 className="text-2xl font-bold text-gray-900">
+                {twoFAModal === "enable" ? "Activer le 2FA" : "Désactiver le 2FA"}
+              </h3>
               <p className="text-gray-500 mt-2 text-sm">
-                Scannez ce QR Code avec Google Authenticator ou Authy.
+                {twoFAModal === "enable"
+                  ? "Scannez ce QR Code avec Google Authenticator ou Authy."
+                  : "Saisissez un code de votre application pour confirmer."}
               </p>
             </div>
 
-            <div className="flex justify-center mb-6 bg-gray-50 p-4 rounded-2xl border-2 border-dashed border-gray-200">
-              {qrCodeUrl ? (
-                <img src={qrCodeUrl} alt="QR Code 2FA" className="w-48 h-48 rounded-lg shadow-sm" />
-              ) : (
-                <div className="w-48 h-48 flex items-center justify-center text-gray-400 animate-pulse">Chargement...</div>
-              )}
-            </div>
+            {twoFAModal === "enable" && (
+              <div className="flex justify-center mb-6 bg-gray-50 p-4 rounded-2xl border-2 border-dashed border-gray-200">
+                {qrCodeUrl ? (
+                  <img src={qrCodeUrl} alt="QR Code 2FA" className="w-48 h-48 rounded-lg shadow-sm" />
+                ) : (
+                  <div className="w-48 h-48 flex items-center justify-center text-gray-400 animate-pulse">Chargement...</div>
+                )}
+              </div>
+            )}
 
             <div className="space-y-4">
               <div>
@@ -258,12 +317,21 @@ export default function ProfilePage({ username, userId, onBack }: ProfilePagePro
 
               {error2FA && <p className="text-red-500 text-sm text-center font-medium">{error2FA}</p>}
 
-              <button
-                onClick={handleEnable2FA}
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5"
-              >
-                Confirmer l'activation
-              </button>
+              {twoFAModal === "enable" ? (
+                <button
+                  onClick={handleEnable2FA}
+                  className="w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5"
+                >
+                  Confirmer l'activation
+                </button>
+              ) : (
+                <button
+                  onClick={handleDisable2FA}
+                  className="w-full py-3 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 text-white font-bold shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5"
+                >
+                  Confirmer la désactivation
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -319,7 +387,7 @@ export default function ProfilePage({ username, userId, onBack }: ProfilePagePro
                 </h1>
               </div>
 
-              {isMyProfile && !is2FAEnabled && (
+              {isMyProfile && !isTwoFactorEnabled && (
                 <button
                   onClick={handleSetup2FA}
                   className="inline-flex items-center gap-2 px-5 py-2.5 bg-gray-900 hover:bg-gray-800 text-white text-sm font-semibold rounded-xl transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5"
@@ -327,6 +395,25 @@ export default function ProfilePage({ username, userId, onBack }: ProfilePagePro
                   <Shield className="w-4 h-4 text-blue-400" />
                   Secure my account (2FA)
                 </button>
+              )}
+
+              {isMyProfile && isTwoFactorEnabled && (
+                <div className="inline-flex items-center gap-3">
+                  <span className="inline-flex items-center gap-2 px-4 py-2 bg-green-100 text-green-700 text-sm font-semibold rounded-xl">
+                    <Shield className="w-4 h-4" />
+                    2FA activé
+                  </span>
+                  <button
+                    onClick={() => {
+                      setError2FA("");
+                      setVerificationCode("");
+                      setTwoFAModal("disable");
+                    }}
+                    className="text-sm font-semibold text-gray-500 hover:text-red-600 underline underline-offset-2 transition-colors"
+                  >
+                    Désactiver
+                  </button>
+                </div>
               )}
 
               {/* Progression du niveau */}

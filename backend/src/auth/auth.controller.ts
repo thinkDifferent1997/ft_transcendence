@@ -76,9 +76,16 @@ export class AuthController {
   @UseGuards(OptionalJwtAuthGuard)
   getProfile(@Req() req: { user: AuthenticatedRequestUser | null }) {
     if (!req.user) {
-      return { authenticated: false };
+      return { authenticated: false, twoFactorPending: false };
     }
-    return { authenticated: true, ...req.user };
+    // Un token « pending » a franchi le premier facteur mais pas le
+    // second : ce n'est pas encore une session. Le signaler comme
+    // authentifié laisserait le front entrer dans l'app sans code —
+    // le 2FA serait contournable par un simple rechargement.
+    if (req.user.tfa !== 'authenticated') {
+      return { authenticated: false, twoFactorPending: true };
+    }
+    return { authenticated: true, twoFactorPending: false, ...req.user };
   }
 
   @Post('logout')
