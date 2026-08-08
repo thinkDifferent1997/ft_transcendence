@@ -6,15 +6,18 @@ export class ChatService {
 	constructor(private prisma: PrismaService) {}
 
 	async saveGlobalMessage(userId: string, content: string) {
-		const user = await this.prisma.user.findUnique({
-			where: { id: userId }
+        const trimmed = content.trim();
+        if (!trimmed || trimmed.length > 500)
+            throw new Error("Invalid message content");
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId }
 		});
 
 		if (!user) throw new Error("The user does not exist in the DataBase");
 
 		return this.prisma.globalMessage.create({
 			data: {
-				content,
+				content: trimmed,
 				authorId: user.id,
 			},
 			include: {
@@ -30,7 +33,7 @@ export class ChatService {
 	}
 
 	async getGlobalHistory() {
-		return this.prisma.globalMessage.findMany({
+		const messages = await this.prisma.globalMessage.findMany({
 			include: {
 				author: {
 					select: {
@@ -40,6 +43,9 @@ export class ChatService {
 					},
 				},
 			},
+            orderBy: { createdAt: 'desc' },
+            take: 100,
 		});
-	}
+        return messages.reverse();
+    }
 }
