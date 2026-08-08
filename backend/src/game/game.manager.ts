@@ -574,14 +574,6 @@ export class GameManager
 		this.games.delete(roomId);
 	}
 
-	removeWaitingPlayer(player: Socket): void
-	{
-		if (this.waitingPlayer?.id === player.id)
-		{
-			this.waitingPlayer = null;
-		}
-	}
-
 	registerPlayer(userId: string, socket: Socket): void
 	{
 		this.connectedPlayers.set(userId, socket);
