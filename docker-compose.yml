@@ -90,8 +90,8 @@ services:
     image: docker.io/prom/prometheus:v3.13.2
     container_name: prometheus
     volumes:
-      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - ./monitoring/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro,Z
+      - ./monitoring/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro,Z
       - prometheus_data:/prometheus
     command:
       - --config.file=/etc/prometheus/prometheus.yml
@@ -141,8 +141,8 @@ services:
       GF_SERVER_SERVE_FROM_SUB_PATH: "true"
     volumes:
       - grafana_data:/var/lib/grafana
-      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
-      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro,Z
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro,Z
     depends_on:
       - prometheus
     networks:
@@ -152,8 +152,8 @@ services:
     image: docker.io/prom/alertmanager:v0.32.0
     container_name: alertmanager
     volumes:
-      - ./monitoring/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
-      - ./monitoring/alertmanager/discord_webhook_url:/etc/alertmanager/discord_webhook_url:ro
+      - ./monitoring/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro,Z
+      - ./monitoring/alertmanager/discord_webhook_url:/etc/alertmanager/discord_webhook_url:ro,Z
     command:
       - --config.file=/etc/alertmanager/alertmanager.yml
     networks:
