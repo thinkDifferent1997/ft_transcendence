@@ -1,5 +1,20 @@
 import { Injectable } from '@nestjs/common';
 
+/**
+ * The subset of the-trivia-api.com/v2 payload we consume.
+ *
+ * `difficulty` is the API's own vocabulary: it returns "medium", never
+ * "normal". GameSession keeps both spellings because the local fallback
+ * questions below use "normal" — see the note there.
+ */
+interface TriviaApiQuestion {
+  question: { text: string };
+  correctAnswer: string;
+  incorrectAnswers: string[];
+  difficulty: 'easy' | 'medium' | 'hard';
+  category: string;
+}
+
 @Injectable()
 export class TriviaService {
   async getQuestions() {
@@ -11,12 +26,12 @@ export class TriviaService {
       if (!response.ok)
         throw new Error(`Trivia API returned ${response.status}`);
 
-      const data = await response.json();
+      const data: unknown = await response.json();
 
       if (!Array.isArray(data))
         throw new Error('Trivia API returned an unexpected payload');
 
-      return data.map((question) => ({
+      return (data as TriviaApiQuestion[]).map((question) => ({
         question: question.question.text,
         correct: question.correctAnswer,
         answers: [question.correctAnswer, ...question.incorrectAnswers].sort(

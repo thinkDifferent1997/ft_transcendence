@@ -7,6 +7,14 @@ import { Prisma, RoomMode, RoomStatus, TournamentRound } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import type { AppSocket } from '../types/socket';
 
+/** One question as posted to the seed endpoint; see TournamentController. */
+export interface SeedQuestion {
+  text: string;
+  choices: string[];
+  /** Index into `choices` of the correct answer. */
+  correct: number;
+}
+
 @Injectable()
 export class TournamentService {
   constructor(private readonly prisma: PrismaService) {}
@@ -91,7 +99,7 @@ export class TournamentService {
   }
 
   async assignQuestionsToRoomTx(
-    tx: any,
+    tx: Prisma.TransactionClient,
     roomId: string,
     questionCount: number = 10,
   ) {
@@ -353,7 +361,7 @@ export class TournamentService {
     return roomQuestions;
   }
 
-  async seedQuestions(questionsData: any[]) {
+  async seedQuestions(questionsData: SeedQuestion[]) {
     // Créer ou récupérer une catégorie par défaut
     let category = await this.prisma.category.findFirst({
       where: { name: 'General' },

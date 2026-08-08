@@ -42,7 +42,13 @@ export class GameSession {
     question: string;
     correct: string;
     answers: string[];
-    difficulty: 'easy' | 'normal' | 'hard';
+    /**
+     * Two vocabularies land here: the local fallback questions use "normal",
+     * the live trivia API uses "medium". EventsGateway's AI switch only has a
+     * case for "normal", so API questions fall through to its default. Kept as
+     * a union rather than unified, to describe what actually happens.
+     */
+    difficulty: 'easy' | 'normal' | 'medium' | 'hard';
     category: string;
   }[] = [];
 
