@@ -13,7 +13,7 @@
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { PUBLIC_URL } from '../config/public-url';
-const Strategy = require('passport-github2').Strategy;
+import { Strategy } from 'passport-github2';
 
 @Injectable()
 export class GithubStrategy extends PassportStrategy(Strategy, 'github') {
@@ -26,12 +26,7 @@ export class GithubStrategy extends PassportStrategy(Strategy, 'github') {
     });
   }
 
-  async validate(
-    accessToken: string,
-    refreshToken: string,
-    profile: any,
-    done: any,
-  ) {
+  validate(accessToken: string, refreshToken: string, profile: any, done: any) {
     const { username, emails, photos } = profile;
 
     // GitHub liefert keine E-Mail, wenn der Nutzer sie privat gestellt

@@ -40,6 +40,10 @@ interface Record {
  * In-memory implementation used until the persistent (Prisma) one exists.
  * State is lost on restart — intended for local development and tests.
  */
+/* eslint-disable @typescript-eslint/require-await --
+ * These methods are synchronous only because the backing store is a Map.
+ * The interface they implement returns Promises so the Prisma version can
+ * drop in unchanged, so `async` here is the contract, not an oversight. */
 export class InMemoryTwoFactorRepository implements TwoFactorRepository {
   private readonly store = new Map<UserId, Record>();
 

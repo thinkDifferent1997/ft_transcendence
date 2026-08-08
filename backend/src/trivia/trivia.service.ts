@@ -33,7 +33,7 @@ export class TriviaService {
       return this.getTestQuestions();
     }
   }
-  async getTestQuestions() {
+  getTestQuestions() {
     return [
       {
         question: '2 + 2 = ?',

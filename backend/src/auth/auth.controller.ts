@@ -99,7 +99,7 @@ export class AuthController {
 
   @Post('logout')
   @HttpCode(HttpStatus.OK)
-  async logout(@Res({ passthrough: true }) res: Response) {
+  logout(@Res({ passthrough: true }) res: Response) {
     this.tokens.clearCookie(res);
     return { message: 'Déconnexion réussie' };
   }

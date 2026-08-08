@@ -103,12 +103,6 @@ export class TournamentController {
   @Post('seed/questions')
   @HttpCode(201)
   async seedQuestions() {
-    const categories = [
-      { name: 'General Knowledge' },
-      { name: 'Science' },
-      { name: 'History' },
-    ];
-
     const questions = [
       {
         text: 'What is the capital of France?',

@@ -14,7 +14,7 @@ export class AppController {
     try {
       await this.prisma.user.count();
       return { status: 'ok', database: 'connected' };
-    } catch (error) {
+    } catch {
       return { status: 'error', database: 'disconnected' };
     }
   }

@@ -1,6 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { PUBLIC_URL } from '../config/public-url';
+/* eslint-disable-next-line @typescript-eslint/no-require-imports --
+ * @types/passport-42 keeps StrategyOptions module-private and omits `scope`,
+ * so a typed import fails to compile here under `declaration: true`. The
+ * untyped require keeps the constructor loose, which is what the mixin needs.
+ * passport-github2 below has complete types and does use a real import. */
 const Strategy = require('passport-42').Strategy;
 
 @Injectable()
@@ -14,12 +19,7 @@ export class FortyTwoStrategy extends PassportStrategy(Strategy, '42') {
     });
   }
 
-  async validate(
-    accessToken: string,
-    refreshToken: string,
-    profile: any,
-    done: any,
-  ) {
+  validate(accessToken: string, refreshToken: string, profile: any, done: any) {
     const { username, emails, _json } = profile;
     const user = {
       fortyTwoID: profile.id,
