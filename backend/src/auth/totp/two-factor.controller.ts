@@ -9,6 +9,7 @@
  * Routes (mounted under /api/auth/2fa):
  *   POST /setup   -> [full token]    start enrolment, returns QR + secret
  *   POST /enable  -> [full token]    confirm enrolment with a valid code
+ *   POST /disable -> [full token]    turn 2FA off, requires a valid code
  *   POST /login   -> [pending token] clear the 2FA challenge at login,
  *                                    upgrading the cookie to a full token
  */
@@ -33,7 +34,7 @@ interface AuthedRequest {
   user: AuthenticatedRequestUser;
 }
 
-@Controller('api/auth/2fa')
+@Controller('auth/2fa')
 export class TwoFactorController {
   constructor(
     private readonly twoFactor: TwoFactorService,
@@ -51,6 +52,13 @@ export class TwoFactorController {
   async enable(@Req() req: AuthedRequest, @Body() dto: TotpCodeDto) {
     await this.twoFactor.activate(req.user.userId, dto.token);
     return { enabled: true };
+  }
+
+  @Post('disable')
+  @UseGuards(FullAuthGuard)
+  async disable(@Req() req: AuthedRequest, @Body() dto: TotpCodeDto) {
+    await this.twoFactor.disable(req.user.userId, dto.token);
+    return { enabled: false };
   }
 
   @Post('login')

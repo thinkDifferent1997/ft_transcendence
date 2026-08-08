@@ -11,7 +11,16 @@ import QuizCallback from "./routes/QuizCallback";
 import useAuthSession from "./hooks/useAuthSession";
 
 export default function App() {
-  const { authChecked, isLoggedIn, username, userId, recheckSession, setIsLoggedIn } = useAuthSession();
+  const {
+    authChecked,
+    isLoggedIn,
+    twoFactorPending,
+    isTwoFactorEnabled,
+    username,
+    userId,
+    recheckSession,
+    setIsLoggedIn,
+  } = useAuthSession();
   const navigate = useNavigate();
 
   const handleLogin = async () => {
@@ -41,12 +50,29 @@ export default function App() {
       <Route path="/quiz" element={<QuizCallback authChecked={authChecked} />} />
       <Route path="/2fa" element={<LoginPage force2FA onLogin={handleLogin} />} />
 
-      <Route element={<RequireAuth authChecked={authChecked} isLoggedIn={isLoggedIn} onLogin={handleLogin} />}>
+      <Route
+        element={
+          <RequireAuth
+            authChecked={authChecked}
+            isLoggedIn={isLoggedIn}
+            twoFactorPending={twoFactorPending}
+            onLogin={handleLogin}
+          />
+        }
+      >
         <Route element={<Layout username={username} onLogout={handleLogout} />}>
           <Route path="/" element={<Home />} />
           <Route
             path="/profile"
-            element={<ProfilePage username={username} userId={userId} onBack={() => navigate("/")} />}
+            element={
+              <ProfilePage
+                username={username}
+                userId={userId}
+                isTwoFactorEnabled={isTwoFactorEnabled}
+                onTwoFactorChange={recheckSession}
+                onBack={() => navigate("/")}
+              />
+            }
           />
           <Route 
             path= "/profile/:targetUsername"
