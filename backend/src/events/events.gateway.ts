@@ -28,7 +28,8 @@ import {
   OnGatewayConnection,
   OnGatewayDisconnect,
 } from '@nestjs/websockets';
-import { Socket } from 'socket.io';
+// socket.io types Socket.data as `any`; AppSocket pins it to SocketData.
+import type { AppSocket as Socket } from '../types/socket';
 
 @WebSocketGateway({
   path: '/ws',

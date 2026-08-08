@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 
 export interface BracketPlayer {
-  id: number;
+  /** `User.id` — a uuid string, as the frontend bracket already declares it. */
+  id: string;
   username: string;
 }
 
@@ -15,8 +16,8 @@ export interface TournamentBracket {
   semiFinal1?: BracketMatch;
   semiFinal2?: BracketMatch;
   final?: BracketMatch;
-  semiFinal1Winner?: number;
-  semiFinal2Winner?: number;
+  semiFinal1Winner?: string;
+  semiFinal2Winner?: string;
 }
 
 interface TournamentStateData {
@@ -91,7 +92,7 @@ export class TournamentState {
   setSemiFinalWinner(
     tournamentId: string,
     roomId: string,
-    winnerUserId: number,
+    winnerUserId: string,
   ): void {
     const tournament = this.tournaments.get(tournamentId);
 

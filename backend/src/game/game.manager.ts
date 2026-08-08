@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { Socket } from 'socket.io';
+// socket.io types Socket.data as `any`; AppSocket pins it to SocketData.
+import type { AppSocket as Socket } from '../types/socket';
 import { GameSession } from './game.session';
 import { TriviaService } from '../trivia/trivia.service';
 

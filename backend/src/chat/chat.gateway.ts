@@ -5,7 +5,9 @@ import {
   WebSocketServer,
   ConnectedSocket,
 } from '@nestjs/websockets';
-import { Server, Socket } from 'socket.io';
+import { Server } from 'socket.io';
+// socket.io types Socket.data as `any`; AppSocket pins it to SocketData.
+import type { AppSocket as Socket } from '../types/socket';
 import { ChatService } from './chat.service';
 
 @WebSocketGateway({

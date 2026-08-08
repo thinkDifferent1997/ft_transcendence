@@ -5,12 +5,13 @@ import {
 } from '@nestjs/common';
 import { Prisma, RoomMode, RoomStatus, TournamentRound } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import type { AppSocket } from '../types/socket';
 
 @Injectable()
 export class TournamentService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async startFourPlayerTournament(players: any[]) {
+  async startFourPlayerTournament(players: AppSocket[]) {
     const tournament = await this.createFourPlayerTournament();
 
     await this.addParticipantToRoom(
