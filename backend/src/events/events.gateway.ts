@@ -548,7 +548,13 @@ implements OnGatewayConnection, OnGatewayDisconnect{
                     username: string;
                     tfa: string;
                 }>(cookies.access_token);
-                
+
+            // Un token « pending » n'a franchi que le premier facteur.
+            // Sans ce contrôle, le websocket (chat, matchmaking, parties,
+            // tournois) serait accessible avant d'avoir saisi le code 2FA.
+            if (payload.tfa !== 'authenticated')
+                throw new Error("2FA not completed");
+
             client.data.userId = payload.sub;
             client.data.username = payload.username;
 

@@ -1,7 +1,7 @@
 import { Controller, Get } from "@nestjs/common";
 import { TriviaService } from "./trivia.service";
 
-@Controller("api/trivia")
+@Controller("trivia")
 export class TriviaController
 {
     constructor(

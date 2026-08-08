@@ -1,7 +1,7 @@
 import { Controller, Post, Get, Body, Param, HttpCode } from '@nestjs/common';
 import { TournamentService } from './tournament.service';
 
-@Controller('api/tournaments')
+@Controller('tournaments')
 export class TournamentController {
   constructor(private readonly tournamentService: TournamentService) {}
 
