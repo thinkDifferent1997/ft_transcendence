@@ -15,6 +15,14 @@ import { PassportStrategy } from '@nestjs/passport';
 import { PUBLIC_URL } from '../config/public-url';
 import { Strategy } from 'passport-github2';
 
+/** Shape this strategy hands to Passport, surfaced as `req.user`. */
+export interface GithubOAuthUser {
+  githubID: string;
+  username: string;
+  email: string;
+  avatarUrl: string | null;
+}
+
 @Injectable()
 export class GithubStrategy extends PassportStrategy(Strategy, 'github') {
   constructor() {

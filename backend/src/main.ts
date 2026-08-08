@@ -1,11 +1,11 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 import cookieParser from 'cookie-parser';
 import * as fs from 'fs';
 
 async function bootstrap() {
-  let app;
+  let app: INestApplication;
 
   try {
     const httpsOptions = {
@@ -14,7 +14,8 @@ async function bootstrap() {
     };
     app = await NestFactory.create(AppModule, { httpsOptions });
   } catch (e) {
-    console.warn('⚠️ Mode HTTP simple de secours activé :', e.message);
+    const reason = e instanceof Error ? e.message : String(e);
+    console.warn('⚠️ Mode HTTP simple de secours activé :', reason);
     app = await NestFactory.create(AppModule);
   }
 

@@ -18,6 +18,7 @@ import {
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { finalize } from 'rxjs/operators';
+import type { Request, Response } from 'express';
 import { MetricsService } from './metrics.service';
 
 @Injectable()
@@ -27,18 +28,22 @@ export class MetricsInterceptor implements NestInterceptor {
   intercept(ctx: ExecutionContext, next: CallHandler): Observable<unknown> {
     if (ctx.getType() !== 'http') return next.handle();
 
-    const req = ctx.switchToHttp().getRequest();
+    const req = ctx.switchToHttp().getRequest<Request>();
     if (req.url === '/metrics') return next.handle();
 
     const stop = this.metrics.httpDuration.startTimer();
 
     return next.handle().pipe(
       finalize(() => {
-        // route pattern, not the raw url, to keep cardinality low
+        // route pattern, not the raw url, to keep cardinality low.
+        // express types `route` as `any`, so narrow it to what we read.
+        const route = (req.route as { path?: string } | undefined)?.path;
         stop({
           method: req.method,
-          route: req.route?.path ?? req.url,
-          status_code: String(ctx.switchToHttp().getResponse().statusCode),
+          route: route ?? req.url,
+          status_code: String(
+            ctx.switchToHttp().getResponse<Response>().statusCode,
+          ),
         });
       }),
     );

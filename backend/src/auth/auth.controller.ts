@@ -26,6 +26,8 @@ import { LoginDto } from './dto/login.dto';
 import { JwtTokenService } from './jwt/jwt-token.service';
 import { OptionalJwtAuthGuard } from './jwt/optional-jwt.guard';
 import type { AuthenticatedRequestUser } from './jwt/jwt.strategy';
+import type { FortyTwoOAuthUser } from './fortytwo.strategy';
+import type { GithubOAuthUser } from './github.strategy';
 import { PUBLIC_URL } from '../config/public-url';
 
 @Controller('auth')
@@ -65,7 +67,10 @@ export class AuthController {
   @Get('42/callback')
   @UseGuards(AuthGuard('42'))
   @UseFilters(OAuthFailureFilter)
-  async fortyTwoAuthCallback(@Req() req, @Res() res: Response) {
+  async fortyTwoAuthCallback(
+    @Req() req: { user: FortyTwoOAuthUser },
+    @Res() res: Response,
+  ) {
     const user = await this.authService.loginOrCreate42User(req.user);
 
     // Issue the JWT cookie (pending if 2FA is enabled, full otherwise)
@@ -116,7 +121,10 @@ export class AuthController {
   @Get('github/callback')
   @UseGuards(AuthGuard('github'))
   @UseFilters(OAuthFailureFilter)
-  async githubAuthCallback(@Req() req, @Res() res: Response) {
+  async githubAuthCallback(
+    @Req() req: { user: GithubOAuthUser },
+    @Res() res: Response,
+  ) {
     const user = await this.authService.loginOrCreateGithubUser(req.user);
     const { twoFactorRequired } = this.tokens.issueLoginCookie(res, user);
     return res.redirect(

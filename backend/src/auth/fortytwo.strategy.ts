@@ -8,6 +8,14 @@ import { PUBLIC_URL } from '../config/public-url';
  * passport-github2 below has complete types and does use a real import. */
 const Strategy = require('passport-42').Strategy;
 
+/** Shape this strategy hands to Passport, surfaced as `req.user`. */
+export interface FortyTwoOAuthUser {
+  fortyTwoID: string;
+  username: string;
+  email: string;
+  avatarUrl: string;
+}
+
 @Injectable()
 export class FortyTwoStrategy extends PassportStrategy(Strategy, '42') {
   constructor() {
