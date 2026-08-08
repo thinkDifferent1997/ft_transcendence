@@ -21,14 +21,15 @@ const [newMessage, setNewMessage] = useState("");
 const messagesEndRef = useRef<HTMLDivElement>(null);
 const { isInGame } = useGame();
 
+const MAX_MESSAGE_LENGTH = 500;
+const [chatError, setChatError] = useState<string | null>(null);
+
 const handleSendMessage = () => {
-    if (newMessage.trim() === "") return;
-    console.log("📤 Envoi :", newMessage);
-    socket.emit("send_message", {
-        authorId: username || "Anonyme",
-        content: newMessage
-    });
+    const content = newMessage.trim();
+    if (!content || content.length > MAX_MESSAGE_LENGTH) return;
+    socket.emit("send_message", { content });
     setNewMessage("");
+    setChatError(null);
 };
 
 const handleNavigate = (path: string) =>
@@ -73,11 +74,14 @@ const handleNavigate = (path: string) =>
     useEffect(() => {
         socket.connect();
         socket.on("receive_message", (msg) => {
-            console.log("📥 Message reçu :", msg);
-            setMessages((prev) => [...prev, msg]);
+            setMessages((prev) => [...prev, msg].slice(-200));
 	});
+    socket.on("message_error", (err) => {
+        setChatError(err?.message ?? "Message could not be sent");
+    });
 	return () => {
 		socket.off("receive_message");
+        socket.off("message_error");
     };
 }, []);
 
@@ -241,26 +245,37 @@ return (
             </div>
 
             {/* Input (Taper un message) */}
-            <div className="p-3 bg-white border-t border-gray-100 flex gap-2">
-              <input
-                type="text"
-                placeholder="Écrire un message..."
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleSendMessage();
-                }}
-                className="flex-1 bg-gray-100 rounded-full px-4 py-2 outline-none text-sm focus:ring-2 focus:ring-purple-300"
-              />
-              <button 
-                onClick={handleSendMessage}
-                className="bg-purple-500 text-white p-2 rounded-full hover:bg-purple-600 transition-colors flex-shrink-0"
-              >
-                <Send className="w-4 h-4" />
-              </button>
+            <div className="p-3 bg-white border-t border-gray-100">
+            { chatError && (
+                <p className="text-xs text-red-500 mb-2 px-2">{chatError}</p>
+            )}
+            <div className="flex gap-2 items-center">
+            <input
+            type="text"
+            placeholder="Écrire un message..."
+            value={newMessage}
+            maxLength={MAX_MESSAGE_LENGTH}
+            onChange={(e) => setNewMessage(e.target.value)}
+            onKeyDown={(e) => {
+                if (e.key === "Enter") handleSendMessage();
+            }}
+            className="flex-1 bg-gray-100 rounded-full px-4 py-2 outline-none text-sm focus:ring-2 focus:ring-purple-300"
+            />
+            { newMessage.length > MAX_MESSAGE_LENGTH - 100 && (
+                <span className="text-xs text-gray-400 flex-shrink-0">
+                { newMessage.length}/{MAX_MESSAGE_LENGTH}
+                </span>
+            )}
+            <button
+            onClick={handleSendMessage}
+            disabled={newMessage.trim() === ""}
+            className="bg-purple-500 text-white p-2 rounded-full hover:bg-purple-600 transition-colors flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+            <Send className="w-4 h-4" />
+            </button>
             </div>
-
-          </div>
+            </div>
+            </div>
         ) : (
           
           /* Bouton pour ouvrir le chat (quand il est fermé) */
