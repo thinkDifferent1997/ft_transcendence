@@ -638,7 +638,6 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 			await this.clearActiveSession(client);
 		}
         await this.broadcastOnlineCount();
-		this.gameManager.removeWaitingPlayer(client);
 		if (this.tournamentQueue.removePlayer(client))
 		{
 			this.server.emit("tournament_waiting", {
