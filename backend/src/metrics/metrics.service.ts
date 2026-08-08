@@ -10,30 +10,30 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-import { Injectable } from '@nestjs/common';	
+import { Injectable } from '@nestjs/common';
 import * as promClient from 'prom-client';
 
 @Injectable()
 export class MetricsService {
-	private readonly register = new promClient.Registry();
-	
-	readonly httpDuration = new promClient.Histogram({
-		name: 'http_request_duration_seconds',
-		help: 'HTTP request duration in seconds',
-		labelNames: ['method', 'route', 'status_code'],
-		buckets: [0.05, 0.1, 0.3, 1, 3],
-		registers: [this.register],
-	});
+  private readonly register = new promClient.Registry();
 
-	constructor() {
-		promClient.collectDefaultMetrics({ register: this.register });
-	}
+  readonly httpDuration = new promClient.Histogram({
+    name: 'http_request_duration_seconds',
+    help: 'HTTP request duration in seconds',
+    labelNames: ['method', 'route', 'status_code'],
+    buckets: [0.05, 0.1, 0.3, 1, 3],
+    registers: [this.register],
+  });
 
-	get contentType(): string {
-		return this.register.contentType;
-	}
+  constructor() {
+    promClient.collectDefaultMetrics({ register: this.register });
+  }
 
-	metrics(): Promise<string> {
-		return this.register.metrics();
-	}
+  get contentType(): string {
+    return this.register.contentType;
+  }
+
+  metrics(): Promise<string> {
+    return this.register.metrics();
+  }
 }

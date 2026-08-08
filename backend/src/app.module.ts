@@ -27,7 +27,7 @@ import { MetricsModule } from './metrics/metrics.module';
     TriviaModule,
     GameModule,
     GameResultsModule,
-    MetricsModule
+    MetricsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

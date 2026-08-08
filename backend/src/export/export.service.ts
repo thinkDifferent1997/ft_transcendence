@@ -60,7 +60,8 @@ export class ExportService {
       },
     });
 
-    const header = 'room_mode,room_status,question,is_correct,time_taken_ms,answered_at';
+    const header =
+      'room_mode,room_status,question,is_correct,time_taken_ms,answered_at';
     const rows: string[] = [header];
 
     for (const participation of participations) {
@@ -91,7 +92,11 @@ export class ExportService {
     doc.fontSize(20).text('Personal Data Export', { align: 'center' });
     doc.moveDown();
 
-    doc.fontSize(12).text(`Generated on : ${new Date(data.exportedAt).toLocaleString('fr-FR')}`);
+    doc
+      .fontSize(12)
+      .text(
+        `Generated on : ${new Date(data.exportedAt).toLocaleString('fr-FR')}`,
+      );
     doc.moveDown();
 
     doc.fontSize(16).text('Profile');
@@ -106,7 +111,9 @@ export class ExportService {
     doc.fontSize(16).text('Games played');
     doc.fontSize(12);
     for (const p of data.participations) {
-      doc.text(`- Mode ${p.room.mode}, status ${p.room.status}, score ${p.score}`);
+      doc.text(
+        `- Mode ${p.room.mode}, status ${p.room.status}, score ${p.score}`,
+      );
     }
     doc.moveDown();
 
@@ -116,7 +123,9 @@ export class ExportService {
       doc.text('No tournament won.');
     } else {
       for (const t of data.tournamentsWon) {
-        doc.text(`- Tournament won on ${new Date(t.createdAt).toLocaleDateString('fr-FR')}`);
+        doc.text(
+          `- Tournament won on ${new Date(t.createdAt).toLocaleDateString('fr-FR')}`,
+        );
       }
     }
 

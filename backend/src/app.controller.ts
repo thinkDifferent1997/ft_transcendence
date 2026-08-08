@@ -4,18 +4,18 @@ import { PrismaService } from './prisma/prisma.service';
 
 @Controller('health') //base root
 export class AppController {
-  constructor(private readonly appService: AppService,
-    private readonly prisma: PrismaService
+  constructor(
+    private readonly appService: AppService,
+    private readonly prisma: PrismaService,
   ) {}
 
-
   @Get() //dveient la racine /api/health
-  async getHealth(){
+  async getHealth() {
     try {
       await this.prisma.user.count();
-      return { status: 'ok', database: 'connected'};
-  } catch (error){
-    return { status: 'error', database: 'disconnected'};
+      return { status: 'ok', database: 'connected' };
+    } catch (error) {
+      return { status: 'error', database: 'disconnected' };
     }
   }
 }

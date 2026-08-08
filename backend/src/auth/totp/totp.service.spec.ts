@@ -27,7 +27,10 @@ describe('TotpService', () => {
   });
 
   it('builds an otpauth URI carrying the issuer and account', () => {
-    const uri = service.buildOtpAuthUri('alice@example.com', service.generateSecret());
+    const uri = service.buildOtpAuthUri(
+      'alice@example.com',
+      service.generateSecret(),
+    );
     expect(uri).toMatch(/^otpauth:\/\/totp\//);
     expect(uri).toContain('ft_transcendence');
     expect(uri).toContain('alice');

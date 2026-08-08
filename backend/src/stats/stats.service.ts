@@ -3,7 +3,6 @@ import { RoomMode, RoomStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { computeLevel } from '../gamification/level.util';
 
-
 interface CategoryStatEntry {
   categoryName: string;
   correct: number;
@@ -14,7 +13,11 @@ interface CategoryStatEntry {
 export class StatsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getGamesPlayed(userId: string, startDate?: Date, endDate?: Date): Promise<number> {
+  async getGamesPlayed(
+    userId: string,
+    startDate?: Date,
+    endDate?: Date,
+  ): Promise<number> {
     return this.prisma.roomParticipant.count({
       where: {
         userId,
@@ -51,7 +54,8 @@ export class StatsService {
     });
 
     const correct = results.find((r) => r.isCorrect === true)?._count._all ?? 0;
-    const incorrect = results.find((r) => r.isCorrect === false)?._count._all ?? 0;
+    const incorrect =
+      results.find((r) => r.isCorrect === false)?._count._all ?? 0;
     const total = correct + incorrect;
 
     return {
@@ -62,7 +66,11 @@ export class StatsService {
     };
   }
 
-  async getAverageResponseTime(userId: string, startDate?: Date, endDate?: Date): Promise<number> {
+  async getAverageResponseTime(
+    userId: string,
+    startDate?: Date,
+    endDate?: Date,
+  ): Promise<number> {
     const result = await this.prisma.answer.aggregate({
       where: {
         participant: { userId },
@@ -161,13 +169,13 @@ export class StatsService {
     return { played: participations.length, wins, losses, draws };
   }
 
-        async getTournamentsWon(userId: string): Promise<number> {
-      return this.prisma.tournament.count({
-        where: {
-          champion: { userId },
-        },
-      });
-    }
+  async getTournamentsWon(userId: string): Promise<number> {
+    return this.prisma.tournament.count({
+      where: {
+        champion: { userId },
+      },
+    });
+  }
 
   // Classement des joueurs par XP décroissant. Le volume de joueurs étant
   // faible, on réutilise getWinLossStats() par joueur plutôt que de
@@ -293,17 +301,25 @@ export class StatsService {
   }
 
   async getSummary(userId: string, startDate?: Date, endDate?: Date) {
-    const [gamesPlayed, answers, avgResponseTime, categories, winLoss, tournamentsWon, xp, badges] =
-      await Promise.all([
-        this.getGamesPlayed(userId, startDate, endDate),
-        this.getAnswerStats(userId, startDate, endDate),
-        this.getAverageResponseTime(userId, startDate, endDate),
-        this.getCategoryStats(userId, startDate, endDate),
-        this.getWinLossStats(userId, startDate, endDate),
-        this.getTournamentsWon(userId),
-        this.getXp(userId),
-        this.getBadges(userId),
-      ]);
+    const [
+      gamesPlayed,
+      answers,
+      avgResponseTime,
+      categories,
+      winLoss,
+      tournamentsWon,
+      xp,
+      badges,
+    ] = await Promise.all([
+      this.getGamesPlayed(userId, startDate, endDate),
+      this.getAnswerStats(userId, startDate, endDate),
+      this.getAverageResponseTime(userId, startDate, endDate),
+      this.getCategoryStats(userId, startDate, endDate),
+      this.getWinLossStats(userId, startDate, endDate),
+      this.getTournamentsWon(userId),
+      this.getXp(userId),
+      this.getBadges(userId),
+    ]);
 
     return {
       gamesPlayed,
@@ -317,7 +333,11 @@ export class StatsService {
       ...computeLevel(xp),
     };
   }
-  async getSummaryByUsername(username: string, startDate?: Date, endDate?: Date) {
+  async getSummaryByUsername(
+    username: string,
+    startDate?: Date,
+    endDate?: Date,
+  ) {
     const user = await this.prisma.user.findUnique({
       where: { username },
     });
@@ -328,5 +348,4 @@ export class StatsService {
 
     return this.getSummary(user.id, startDate, endDate);
   }
-
 }

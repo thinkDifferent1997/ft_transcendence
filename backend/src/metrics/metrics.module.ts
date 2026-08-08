@@ -17,11 +17,11 @@ import { MetricsService } from './metrics.service';
 import { MetricsInterceptor } from './metrics.interceptor';
 
 @Module({
-	controllers: [MetricsController],
-	providers: [
-		MetricsService,
-		{ provide: APP_INTERCEPTOR, useClass: MetricsInterceptor },
-	],
-	exports: [MetricsService],
+  controllers: [MetricsController],
+  providers: [
+    MetricsService,
+    { provide: APP_INTERCEPTOR, useClass: MetricsInterceptor },
+  ],
+  exports: [MetricsService],
 })
 export class MetricsModule {}

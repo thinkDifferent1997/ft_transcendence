@@ -1,7 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma, RoomMode, RoomStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { MatchStatsInput, QuestionHistoryInput } from './dto/match-stats.interface';
+import {
+  MatchStatsInput,
+  QuestionHistoryInput,
+} from './dto/match-stats.interface';
 
 const DEFAULT_TIME_TAKEN_MS = 0;
 
@@ -56,7 +59,11 @@ export class GameResultsService {
         stats.questions,
       );
 
-      return { roomId: room.id, participant1Id: participant1.id, participant2Id: participant2.id };
+      return {
+        roomId: room.id,
+        participant1Id: participant1.id,
+        participant2Id: participant2.id,
+      };
     });
   }
 

@@ -1,16 +1,12 @@
-import { Controller, Get } from "@nestjs/common";
-import { TriviaService } from "./trivia.service";
+import { Controller, Get } from '@nestjs/common';
+import { TriviaService } from './trivia.service';
 
-@Controller("trivia")
-export class TriviaController
-{
-    constructor(
-        private readonly triviaService: TriviaService,
-    ) {}
+@Controller('trivia')
+export class TriviaController {
+  constructor(private readonly triviaService: TriviaService) {}
 
-	@Get("questions")
-	getQuestions()
-	{
-		return this.triviaService.getQuestions();
-	}
+  @Get('questions')
+  getQuestions() {
+    return this.triviaService.getQuestions();
+  }
 }

@@ -5,5 +5,4 @@ import type { MatchStatsInput } from './dto/match-stats.interface';
 @Controller('game-results')
 export class GameResultsController {
   constructor(private readonly gameResultsService: GameResultsService) {}
-
 }

@@ -12,11 +12,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { Request } from 'express';
 import { PrismaService } from '../../prisma/prisma.service';
-import {
-  ACCESS_TOKEN_COOKIE,
-  JwtPayload,
-  TfaState,
-} from './jwt-token.service';
+import { ACCESS_TOKEN_COOKIE, JwtPayload, TfaState } from './jwt-token.service';
 
 /** Shape attached to `req.user` for authenticated requests. */
 export interface AuthenticatedRequestUser {

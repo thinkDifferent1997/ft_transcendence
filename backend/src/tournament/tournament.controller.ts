@@ -17,7 +17,7 @@ export class TournamentController {
   /**
    * Create a new 8-player tournament with semi-final and final rooms
    */
-/*  @Post('eight-players')
+  /*  @Post('eight-players')
   @HttpCode(201)
   async createEightPlayerTournament() {
     return this.tournamentService.createEightPlayerTournament();
@@ -56,9 +56,13 @@ export class TournamentController {
   @HttpCode(201)
   async addMultipleParticipants(
     @Param('roomId') roomId: string,
-    @Body('participants') participants: Array<{ userId?: string; isBot?: boolean }>,
+    @Body('participants')
+    participants: Array<{ userId?: string; isBot?: boolean }>,
   ) {
-    return this.tournamentService.addMultipleParticipantsToRoom(roomId, participants);
+    return this.tournamentService.addMultipleParticipantsToRoom(
+      roomId,
+      participants,
+    );
   }
 
   /**
@@ -106,9 +110,17 @@ export class TournamentController {
     ];
 
     const questions = [
-      { text: 'What is the capital of France?', choices: ['Paris', 'London', 'Berlin', 'Madrid'], correct: 0 },
+      {
+        text: 'What is the capital of France?',
+        choices: ['Paris', 'London', 'Berlin', 'Madrid'],
+        correct: 0,
+      },
       { text: 'What is 2+2?', choices: ['3', '4', '5', '6'], correct: 1 },
-      { text: 'What is the largest planet?', choices: ['Earth', 'Mars', 'Jupiter', 'Saturn'], correct: 2 },
+      {
+        text: 'What is the largest planet?',
+        choices: ['Earth', 'Mars', 'Jupiter', 'Saturn'],
+        correct: 2,
+      },
       // plus de questions...
     ];
 

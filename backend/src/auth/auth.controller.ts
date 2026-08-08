@@ -5,7 +5,18 @@
  * Définit les routes (POST /auth/register, POST /auth/login, ...),
  * reçoit les requêtes, délègue à AuthService et renvoie la réponse.
  */
-import { Controller, Post, Body, Get, UseGuards, Req, Res, HttpCode, HttpStatus, UseFilters } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  UseGuards,
+  Req,
+  Res,
+  HttpCode,
+  HttpStatus,
+  UseFilters,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { OAuthFailureFilter } from './oauth-failed.filter';
 import type { Response } from 'express';
@@ -31,7 +42,10 @@ export class AuthController {
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
+  async login(
+    @Body() dto: LoginDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     const user = await this.authService.login(dto);
     // Sets a pending-token cookie when the user has 2FA enabled (the
     // client must then complete POST /api/auth/2fa/login), otherwise a
@@ -40,13 +54,11 @@ export class AuthController {
     return { twoFactorRequired };
   }
 
-
   /********************** OAUTH 42 API *******************************/
 
   @Get('42')
   @UseGuards(AuthGuard('42'))
   async fortTwoAuth() {
-  
     //empty because NestJS never goes inside, the Guard is taking control at this stage to redirect to the 42 Intranet
   }
 
@@ -54,7 +66,6 @@ export class AuthController {
   @UseGuards(AuthGuard('42'))
   @UseFilters(OAuthFailureFilter)
   async fortyTwoAuthCallback(@Req() req, @Res() res: Response) {
-
     const user = await this.authService.loginOrCreate42User(req.user);
 
     // Issue the JWT cookie (pending if 2FA is enabled, full otherwise)
@@ -62,9 +73,7 @@ export class AuthController {
     const { twoFactorRequired } = this.tokens.issueLoginCookie(res, user);
 
     return res.redirect(
-      twoFactorRequired
-        ? `${PUBLIC_URL}/2fa`
-        : `${PUBLIC_URL}/quiz`,
+      twoFactorRequired ? `${PUBLIC_URL}/2fa` : `${PUBLIC_URL}/quiz`,
     );
   }
 
@@ -91,13 +100,11 @@ export class AuthController {
   @Post('logout')
   @HttpCode(HttpStatus.OK)
   async logout(@Res({ passthrough: true }) res: Response) {
-       this.tokens.clearCookie(res);
-       return { message: 'Déconnexion réussie' };
+    this.tokens.clearCookie(res);
+    return { message: 'Déconnexion réussie' };
   }
 
   /********************************** *******************************/
-
-
 
   // OAuth GitHub
   @Get('github')
@@ -112,6 +119,8 @@ export class AuthController {
   async githubAuthCallback(@Req() req, @Res() res: Response) {
     const user = await this.authService.loginOrCreateGithubUser(req.user);
     const { twoFactorRequired } = this.tokens.issueLoginCookie(res, user);
-    return res.redirect(twoFactorRequired ? `${PUBLIC_URL}/2fa` : `${PUBLIC_URL}/quiz`);
+    return res.redirect(
+      twoFactorRequired ? `${PUBLIC_URL}/2fa` : `${PUBLIC_URL}/quiz`,
+    );
   }
 }

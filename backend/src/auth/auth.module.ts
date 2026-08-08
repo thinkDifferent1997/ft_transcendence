@@ -17,18 +17,13 @@ import { TwoFactorModule } from './totp/two-factor.module';
 import { JwtAuthModule } from './jwt/jwt-auth.module';
 
 @Module({
-	imports: [
-		PassportModule.register({ defaultStrategy: '42'}),
-		PrismaModule,
-		TwoFactorModule,
-		JwtAuthModule,
-	],
-  controllers: [AuthController],
-  providers: [ 
-	  AuthService,
-	  HashingService,
-	  FortyTwoStrategy,
-	  GithubStrategy
+  imports: [
+    PassportModule.register({ defaultStrategy: '42' }),
+    PrismaModule,
+    TwoFactorModule,
+    JwtAuthModule,
   ],
+  controllers: [AuthController],
+  providers: [AuthService, HashingService, FortyTwoStrategy, GithubStrategy],
 })
 export class AuthModule {}

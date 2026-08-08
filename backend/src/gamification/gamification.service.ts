@@ -120,7 +120,9 @@ export class GamificationService implements OnModuleInit {
     });
 
     if (badges.length === 0) {
-      this.logger.warn(`No matching badges found for codes: ${codes.join(', ')}`);
+      this.logger.warn(
+        `No matching badges found for codes: ${codes.join(', ')}`,
+      );
       return;
     }
 

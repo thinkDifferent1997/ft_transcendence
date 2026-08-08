@@ -10,33 +10,33 @@ import { PrismaService } from '../prisma/prisma.service';
 export class TournamentService {
   constructor(private readonly prisma: PrismaService) {}
 
-	async startFourPlayerTournament(players: any[]) {
-		const tournament = await this.createFourPlayerTournament();
+  async startFourPlayerTournament(players: any[]) {
+    const tournament = await this.createFourPlayerTournament();
 
-		await this.addParticipantToRoom(
-			tournament.rooms.semiFinal1.id,
-			players[0].data.userId,
-		);
+    await this.addParticipantToRoom(
+      tournament.rooms.semiFinal1.id,
+      players[0].data.userId,
+    );
 
-		await this.addParticipantToRoom(
-			tournament.rooms.semiFinal1.id,
-			players[1].data.userId,
-		);
+    await this.addParticipantToRoom(
+      tournament.rooms.semiFinal1.id,
+      players[1].data.userId,
+    );
 
-		await this.addParticipantToRoom(
-			tournament.rooms.semiFinal2.id,
-			players[2].data.userId,
-		);
+    await this.addParticipantToRoom(
+      tournament.rooms.semiFinal2.id,
+      players[2].data.userId,
+    );
 
-		await this.addParticipantToRoom(
-			tournament.rooms.semiFinal2.id,
-			players[3].data.userId,
-		);
+    await this.addParticipantToRoom(
+      tournament.rooms.semiFinal2.id,
+      players[3].data.userId,
+    );
 
-		return tournament;
-	}
+    return tournament;
+  }
 
-   async createFourPlayerTournament() {
+  async createFourPlayerTournament() {
     return this.prisma.$transaction(async (tx) => {
       const tournament = await tx.tournament.create({
         data: {
@@ -89,22 +89,26 @@ export class TournamentService {
     });
   }
 
-  async assignQuestionsToRoomTx(tx: any, roomId: string, questionCount: number = 10) {
+  async assignQuestionsToRoomTx(
+    tx: any,
+    roomId: string,
+    questionCount: number = 10,
+  ) {
     const questions = await tx.question.findMany({
       take: questionCount,
     });
 
-  return Promise.all(
-    questions.map((question, index) =>
-      tx.roomQuestion.create({
-        data: {
-          roomId,
-          questionId: question.id,
-          order: index + 1,
-        },
-      }),
-    ),
-  );
+    return Promise.all(
+      questions.map((question, index) =>
+        tx.roomQuestion.create({
+          data: {
+            roomId,
+            questionId: question.id,
+            order: index + 1,
+          },
+        }),
+      ),
+    );
   }
 
   async reportRoomWinner(
@@ -192,7 +196,9 @@ export class TournamentService {
 
       const alreadyJoined = nextRoom.participants.some((participant) => {
         if (winner.userId === null) {
-          return participant.userId === null && participant.isBot === winner.isBot;
+          return (
+            participant.userId === null && participant.isBot === winner.isBot
+          );
         }
 
         return participant.userId === winner.userId;
@@ -213,24 +219,22 @@ export class TournamentService {
         where: { roomId: nextRoom.id },
       });
 
-	  const readyToStart = nextRoomParticipantCount >= 2;
+      const readyToStart = nextRoomParticipantCount >= 2;
 
-		if (readyToStart)
-		{
-			await tx.room.update({
-				where: { id: nextRoom.id },
-				data: {
-					status: RoomStatus.IN_PROGRESS,
-				},
-			});
-		}
+      if (readyToStart) {
+        await tx.room.update({
+          where: { id: nextRoom.id },
+          data: {
+            status: RoomStatus.IN_PROGRESS,
+          },
+        });
+      }
 
-		return {
-			tournamentFinished: false,
-			nextRoomId: nextRoom.id,
-			readyToStart,
-		};
-
+      return {
+        tournamentFinished: false,
+        nextRoomId: nextRoom.id,
+        readyToStart,
+      };
     });
   }
 
@@ -250,23 +254,23 @@ export class TournamentService {
   }
 
   private async addMultipleParticipantsToRoomTx(
-		tx: Prisma.TransactionClient,
-		roomId: string,
-		participants: Array<{ userId?: string; isBot?: boolean }>,
-	) {
-		await Promise.all(
-			participants.map((p) =>
-				tx.roomParticipant.create({
-					data: {
-						roomId,
-						userId: p.userId ?? null,
-						isBot: p.isBot ?? false,
-						score: 0,
-					},
-				}),
-			),
-		);
-	}
+    tx: Prisma.TransactionClient,
+    roomId: string,
+    participants: Array<{ userId?: string; isBot?: boolean }>,
+  ) {
+    await Promise.all(
+      participants.map((p) =>
+        tx.roomParticipant.create({
+          data: {
+            roomId,
+            userId: p.userId ?? null,
+            isBot: p.isBot ?? false,
+            score: 0,
+          },
+        }),
+      ),
+    );
+  }
 
   async addMultipleParticipantsToRoom(
     roomId: string,
@@ -381,99 +385,89 @@ export class TournamentService {
   }
 
   async reportWinnerFromUser(
-	roomId: string,
-	userId: string,
-	scores?: { userId: string; score: number }[],
-)
-	{
-		const participant = await this.prisma.roomParticipant.findFirst({
-			where: {
-				roomId,
-				userId,
-			},
-		});
+    roomId: string,
+    userId: string,
+    scores?: { userId: string; score: number }[],
+  ) {
+    const participant = await this.prisma.roomParticipant.findFirst({
+      where: {
+        roomId,
+        userId,
+      },
+    });
 
-		if (!participant)
-			throw new NotFoundException("Participant not found.");
+    if (!participant) throw new NotFoundException('Participant not found.');
 
-		return this.reportRoomWinner(roomId, participant.id, scores);
-	}
+    return this.reportRoomWinner(roomId, participant.id, scores);
+  }
 
   // Retire un joueur du tournoi en cours.
   // On cible uniquement sa room ACTIVE (pas déjà FINISHED) pour éviter de
   // piocher par erreur un participant d'une demi-finale déjà jouée, ce qui
   // provoquait une fausse qualification et bloquait la finale.
-  async leaveTournament(userId: string)
-  {
-	  return this.prisma.$transaction(async (tx) =>
-	  {
-		  const participant = await tx.roomParticipant.findFirst({
-			  where: {
-				  userId,
-				  room: { status: { not: RoomStatus.FINISHED } },
-			  },
-			  include: {
-				  room: true,
-			  },
-			  orderBy: {
-				  room: { createdAt: 'desc' },
-			  },
-		  });
+  async leaveTournament(userId: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const participant = await tx.roomParticipant.findFirst({
+        where: {
+          userId,
+          room: { status: { not: RoomStatus.FINISHED } },
+        },
+        include: {
+          room: true,
+        },
+        orderBy: {
+          room: { createdAt: 'desc' },
+        },
+      });
 
-		  if (!participant)
-			  return null;
+      if (!participant) return null;
 
-		  const room = await tx.room.findUnique({
-			  where: {
-				  id: participant.roomId,
-			  },
-			  include: {
-				  participants: true,
-			  },
-		  });
+      const room = await tx.room.findUnique({
+        where: {
+          id: participant.roomId,
+        },
+        include: {
+          participants: true,
+        },
+      });
 
-		  if (!room)
-			  return null;
+      if (!room) return null;
 
-		  // On retire le joueur du tournoi
-		  await tx.roomParticipant.delete({
-			  where: {
-				  id: participant.id,
-			  },
-		  });
+      // On retire le joueur du tournoi
+      await tx.roomParticipant.delete({
+        where: {
+          id: participant.id,
+        },
+      });
 
-		  // On regarde s'il reste quelqu'un dans cette room
-		  const remainingParticipants = room.participants.filter(
-			  p => p.id !== participant.id,
-		  );
+      // On regarde s'il reste quelqu'un dans cette room
+      const remainingParticipants = room.participants.filter(
+        (p) => p.id !== participant.id,
+      );
 
-		  // Personne en face -> rien à qualifier
-		  if (remainingParticipants.length === 0)
-		  {
-			  return {
-				  forfeit: true,
-				  qualifiedUserId: null,
-				  round: room.round,
-				  tournamentId: room.tournamentId,
-				  roomId: room.id,
-			  };
-		  }
+      // Personne en face -> rien à qualifier
+      if (remainingParticipants.length === 0) {
+        return {
+          forfeit: true,
+          qualifiedUserId: null,
+          round: room.round,
+          tournamentId: room.tournamentId,
+          roomId: room.id,
+        };
+      }
 
-		  const winner = remainingParticipants[0];
+      const winner = remainingParticipants[0];
 
-		  const result = await this.reportRoomWinner(
-			  room.id,
-			  winner.id,
-		  );
+      const result = await this.reportRoomWinner(room.id, winner.id);
 
-		  return {
-			  forfeit: true,
-			  qualifiedUserId: winner.userId,
-			  round: room.round,
-			  tournamentId: room.tournamentId,
-			  roomId: room.id,
-			  ...result,
-		  };
-	  });
+      return {
+        forfeit: true,
+        qualifiedUserId: winner.userId,
+        round: room.round,
+        tournamentId: room.tournamentId,
+        roomId: room.id,
+        ...result,
+      };
+    });
   }
 }

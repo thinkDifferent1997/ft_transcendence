@@ -35,7 +35,9 @@ export class ImportQuestionDto {
 
 export class ImportQuestionsBatchDto {
   @IsArray()
-  @ArrayMinSize(1, { message: 'Le fichier doit contenir au moins une question.' })
+  @ArrayMinSize(1, {
+    message: 'Le fichier doit contenir au moins une question.',
+  })
   @ValidateNested({ each: true })
   @Type(() => ImportQuestionDto)
   questions!: ImportQuestionDto[];

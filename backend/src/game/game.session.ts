@@ -1,98 +1,96 @@
-import { Socket } from "socket.io";
+import { Socket } from 'socket.io';
 
 export interface QuestionHistory {
-    question: string;
-    category: string;
+  question: string;
+  category: string;
 
-    correctAnswer: string;
+  correctAnswer: string;
 
-    player1Answer: string | null;
-    player2Answer: string | null;
+  player1Answer: string | null;
+  player2Answer: string | null;
 
-    player1Correct: boolean;
-    player2Correct: boolean;
+  player1Correct: boolean;
+  player2Correct: boolean;
 }
 
 export interface AIPlayer {
-	timeout?: NodeJS.Timeout;
-	answerAt?: number;
-	accuracy? : number;
+  timeout?: NodeJS.Timeout;
+  answerAt?: number;
+  accuracy?: number;
 }
 
-export class GameSession
-{
-    constructor(
-        public readonly roomId: string,
-        public readonly player1: Socket,
-        public readonly player2: Socket,
-		public readonly tournamentId?: string,
-    ) {}
+export class GameSession {
+  constructor(
+    public readonly roomId: string,
+    public readonly player1: Socket,
+    public readonly player2: Socket,
+    public readonly tournamentId?: string,
+  ) {}
 
-	gameStarted: boolean = false;
+  gameStarted: boolean = false;
 
-	// Empêche l'enregistrement du résultat en base plus d'une fois pour la
-	// même partie (fin normale suivie d'un forfait/déconnexion en course).
-	resultRecorded: boolean = false;
+  // Empêche l'enregistrement du résultat en base plus d'une fois pour la
+  // même partie (fin normale suivie d'un forfait/déconnexion en course).
+  resultRecorded: boolean = false;
 
-	player1Id!: string;
-	player2Id!: string;
-	ai?: AIPlayer;
+  player1Id!: string;
+  player2Id!: string;
+  ai?: AIPlayer;
 
-    questions: {
-		question: string;
-		correct: string;
-		answers: string[];
-		difficulty: "easy" | "normal" | "hard",
-		category : string,
-	}[] = [];
+  questions: {
+    question: string;
+    correct: string;
+    answers: string[];
+    difficulty: 'easy' | 'normal' | 'hard';
+    category: string;
+  }[] = [];
 
-    currentQuestion = 0;
+  currentQuestion = 0;
 
-	//Scoreboard
+  //Scoreboard
 
-    player1Score = 0;
-    player2Score = 0;
+  player1Score = 0;
+  player2Score = 0;
 
-	player1Time = 0;
-	player2Time = 0;
-	
-	//Match synchronization
+  player1Time = 0;
+  player2Time = 0;
 
-	player1Answered = false;
-    player2Answered = false;
+  //Match synchronization
 
-	player1QuestionsLoaded = false;
-	player2QuestionsLoaded = false;
+  player1Answered = false;
+  player2Answered = false;
 
-	player1Ready = false;
-	player2Ready = false;
+  player1QuestionsLoaded = false;
+  player2QuestionsLoaded = false;
 
-	//Bonus
+  player1Ready = false;
+  player2Ready = false;
 
-	player1Streak = 0;
-	player2Streak = 0;
+  //Bonus
 
-	player1ThreeChoice = false;
-	player2ThreeChoice = false;
+  player1Streak = 0;
+  player2Streak = 0;
 
-	player1HideAnswer = false;
-	player2HideAnswer = false;
+  player1ThreeChoice = false;
+  player2ThreeChoice = false;
 
-	player1DoublePoint = false;
-	player2DoublePoint = false;
+  player1HideAnswer = false;
+  player2HideAnswer = false;
 
-	questionHistory: QuestionHistory[] = [];
+  player1DoublePoint = false;
+  player2DoublePoint = false;
 
+  questionHistory: QuestionHistory[] = [];
 }
 
 export interface MatchStats {
-    winner: string;
+  winner: string;
 
-    player1Id: string;
-    player2Id: string;
+  player1Id: string;
+  player2Id: string;
 
-    player1Score: number;
-    player2Score: number;
+  player1Score: number;
+  player2Score: number;
 
-    questions: QuestionHistory[];
+  questions: QuestionHistory[];
 }

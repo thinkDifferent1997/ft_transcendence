@@ -15,10 +15,7 @@ import {
 import { TotpService } from './totp.service';
 import { QrCodeService } from './qrcode.service';
 import { TWO_FACTOR_REPOSITORY } from './two-factor.repository';
-import type {
-  TwoFactorRepository,
-  UserId,
-} from './two-factor.repository';
+import type { TwoFactorRepository, UserId } from './two-factor.repository';
 
 export interface TotpSetup {
   /** Raw secret, for manual entry when a QR cannot be scanned. */

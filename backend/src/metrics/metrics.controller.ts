@@ -16,11 +16,11 @@ import { MetricsService } from './metrics.service';
 
 @Controller('metrics')
 export class MetricsController {
-	constructor(private readonly metrics: MetricsService) {}
+  constructor(private readonly metrics: MetricsService) {}
 
-	@Get()
-	async scrape(@Res() res: Response): Promise<void> {
-		res.type(this.metrics.contentType);
-		res.send(await this.metrics.metrics());
-	}
+  @Get()
+  async scrape(@Res() res: Response): Promise<void> {
+    res.type(this.metrics.contentType);
+    res.send(await this.metrics.metrics());
+  }
 }
