@@ -566,6 +566,7 @@ implements OnGatewayConnection, OnGatewayDisconnect{
                 data: { status: 'ONLINE' }
             });
 			await this.enforceSingleSession(client);
+            await this.broadcastOnlineCount();
         }catch (error) {
             console.error("Socket Auth Error:", error.message);
             client.disconnect();
@@ -602,6 +603,21 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 		}
 	}
 
+
+    private async broadcastOnlineCount()
+    {
+        try
+        {
+            const count = await this.prisma.user.count({
+                where: { status: 'ONLINE' },
+            });
+            this.server.emit('online_count', { count });
+        } catch (error)
+        {
+            console.error("Failed to broadcast online count:", error);
+        }
+    }
+
 	async handleDisconnect(client: Socket)
 	{
 		console.log(`${client.id} disconnected.`);
@@ -619,6 +635,7 @@ implements OnGatewayConnection, OnGatewayDisconnect{
             }
 			await this.clearActiveSession(client);
 		}
+        await this.broadcastOnlineCount();
 		this.gameManager.removeWaitingPlayer(client);
 		await this.handlePlayerForfeit(client);
 	}

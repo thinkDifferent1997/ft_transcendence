@@ -23,6 +23,7 @@ const { isInGame } = useGame();
 
 const MAX_MESSAGE_LENGTH = 500;
 const [chatError, setChatError] = useState<string | null>(null);
+const [onlineCount, setOnlineCount] = useState(0);
 
 const handleSendMessage = () => {
     const content = newMessage.trim();
@@ -79,9 +80,13 @@ const handleNavigate = (path: string) =>
     socket.on("message_error", (err) => {
         setChatError(err?.message ?? "Message could not be sent");
     });
+    socket.on("online_count", (data) => {
+        setOnlineCount(data?.count ?? 0);
+    });
 	return () => {
 		socket.off("receive_message");
         socket.off("message_error");
+        socket.off("online_count");
     };
 }, []);
 
@@ -173,7 +178,7 @@ return (
                 <MessageCircle className="w-5 h-5 text-white" />
                 <span className="text-white font-bold">Chat Global</span>
                 <span className="bg-white/30 text-white px-2 py-0.5 rounded-full text-sm">
-                  245 online
+                {onlineCount} online
                 </span>
               </div>
               <div className="flex gap-2">

@@ -4,6 +4,7 @@ import {
     MessageBody,
     WebSocketServer,
     ConnectedSocket,
+    OnGatewayConnection,
     OnGatewayDisconnect,
     WsException,
 } from '@nestjs/websockets';
