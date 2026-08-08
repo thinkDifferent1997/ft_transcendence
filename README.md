@@ -174,20 +174,75 @@ Our database relies on a robust relational PostgreSQL model mapped via Prisma. H
 
 # Modules
 
-* **Module 1: Use a Framework as Backend (Major = 2pts)**
-  * *Justification:* 
-  * *Implementation:* 
-  * *Contributors:* `<login2>`
-* **Module 2: Two-Factor Authentication (Minor = 1pt)**
-  * *Justification:* Added to enhance platform security.
-  * *Implementation:* Integrated `otplib` and `qrcode` to generate TOTP secrets.
-  * *Contributors:* `<login2>`
-* **Module 3: Advanced User Stats (Minor = 1pt)**
-  * *Justification:* Enhances user engagement by gamifying the experience.
-  * *Implementation:* 
-  * *Contributors:* `<login1>`
+# Modules
 
-**Total Points Claimed: X pts**
+Based on the project requirements, our team has implemented the following Major and Minor modules, totaling **16 points**:
+
+### Major Modules (2 pts each)
+
+* **Major: Implement a complete web-based game where users can play against each other.**
+  * *Justification:* Core requirement for the platform's PvP aspect.
+  * *Implementation:* Designed a real-time multiplayer trivia quiz engine with strict rules, synchronized timers, and clear win/loss conditions based on score and response time.
+  * *Contributors:* `namalier`
+
+* **Major: Remote players (Real-time network play).**
+  * *Justification:* Ensures the game is playable across different machines over the internet.
+  * *Implementation:* Utilized `Socket.io` WebSockets to handle matchmaking, real-time event synchronization, and implemented robust logic to handle player disconnections, forfeits, and reconnections.
+  * *Contributors:* `namalier, ncrivell`
+
+* **Major: Introduce an AI Opponent for games.**
+  * *Justification:* Allows users to play and practice when other human players are offline.
+  * *Implementation:* Built a "1vAI" mode where an AI opponent plays against the user. The AI features adaptive timing behavior and non-perfect play to simulate human-like difficulty.
+  * *Contributors:* `namalier`
+
+* **Major: Monitoring system with Prometheus and Grafana.**
+  * *Justification:* Critical for DevOps reliability, allowing us to monitor server health and bottlenecks in real-time.
+  * *Implementation:* Configured Prometheus as a Docker service to collect metrics via PostgreSQL and Nginx exporters. Created a custom Grafana dashboard with an automated alerting system for system status.
+  * *Contributors:* `jbaumfal`
+
+### Minor Modules (1 pt each)
+
+* **Minor: Implement remote authentication with OAuth 2.0.**
+  * *Justification:* Provides secure, passwordless onboarding for developers and users.
+  * *Implementation:* Integrated both the **42 API** and **GitHub API** for OAuth login, linked directly to the PostgreSQL user database via JWT sessions.
+  * *Contributors:* `elsikira, jbaumfal`
+
+* **Minor: Implement a complete 2FA (Two-Factor Authentication) system.**
+  * *Justification:* Adds a critical layer of security to user accounts.
+  * *Implementation:* Used `otplib` and `qrcode` to generate Time-based One-Time Passwords (TOTP). Users scan the QR code via Google Authenticator to securely log in.
+  * *Contributors:* `espinto-, elsikira`
+
+* **Minor: Game statistics and match history.**
+  * *Justification:* Tracks player progression and performance over time.
+  * *Implementation:* Created a live dashboard fetching data from Prisma to display games played, wins/losses, average response times, and a detailed 1v1 match history.
+  * *Contributors:* `ncrivell, namalier`
+
+* **Minor: A gamification system to reward users.**
+  * *Justification:* Enhances user retention and provides goals.
+  * *Implementation:* Developed a fully persistent progression system featuring XP tracking, User Levels, Achievement Badges stored in the DB, and a global Leaderboard.
+  * *Contributors:* `ncrivell`
+
+* **Minor: Implement a tournament system.**
+  * *Justification:* Enables competitive multiplayer events beyond simple 1v1 duels.
+  * *Implementation:* Built a 4-player tournament bracket system with automatic matchmaking, semi-finals, finals, and automatic progression for the champions.
+  * *Contributors:* `namalier, ncrivell`
+
+* **Minor: Game customization options (Power-ups / Abilities).**
+  * *Justification:* Adds dynamic depth and strategy to the core trivia gameplay.
+  * *Implementation:* Engineered an interactive bonus/malus system during matches, including abilities like "3 Choices", "Hide Answer", and "Double Points".
+  * *Contributors:* `namalier`
+
+* **Minor: Data export and import functionality.**
+  * *Justification:* Ensures users have ownership of their data (GDPR compliance) and admins can easily manage game content.
+  * *Implementation:* Allows users to export their profile and match data as JSON, CSV, or PDF via JWT validation. Added a bulk validated question import feature for the database.
+  * *Contributors:* `ncrivell`
+
+* **Minor: Advanced chat features.**
+  * *Justification:* Enhances the basic global chat to be more interactive and persistent.
+  * *Implementation:* Added persistent chat history saved via Prisma, real-time avatars, and the ability to click on any user's name in the chat to instantly route to their public profile.
+  * *Contributors:* `elsikira`
+
+**Total Points Claimed: 16 pts (8 Major + 8 Minor)**
 
 ---
 
