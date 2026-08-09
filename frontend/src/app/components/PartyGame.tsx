@@ -17,11 +17,55 @@ import TournamentWaitingFinal from "../pages/TournamentWaitingFinal";
 
 export default function QuizPage()
 {
+	console.log("PARTY GAME RENDER");
 	const { mode } = useParams<{ mode: string }>();
+	const location = useLocation();
+	const navigate = useNavigate();
+	const { setIsInGame } = useGame();
 	const [revealedAnswer, setRevealedAnswer] = useState<string | null>(null);
 	const [correctAnswer, setCorrectAnswer] = useState<string | null>(null);
-	const { setIsInGame } = useGame();
-	const location = useLocation();
+	const [questions, setQuestions] = useState<Question[]>([]);
+	const [gameStarted, setGameStarted] = useState(false);
+	const [waitingForFinal, setWaitingForFinal] = useState(false);
+	const [tournamentBracket, setTournamentBracket] = useState<any>(null);
+	const [opponentReady, setOpponentReady] = useState(false);
+	const player: PlayerState = {
+			score: 0,
+			answered: false,
+			totalTimeUsed: 0,
+			streak: 0,
+			hideAnswer: false,
+			threeChoice: false,
+			doublePoint: false,
+		};
+	const [game, setGame] = useState<GameState>(
+		{
+			currentQuestion: questions[0],
+			questionIndex: 0,
+			time_left: 20,
+			localPlayer: { ...player},
+			enemyPlayer: { ...player},
+			gameOver: false,
+			isPlayer1: false,
+			mode: "party",
+			answeredQuestions: [],
+		});
+	const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+	const [revealed, setRevealed] = useState(false);
+	const joinSentRef = useRef(false);
+	const roomIdRef = useRef("");
+	const isPlayer1Ref = useRef(false);
+	const bracketTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+	useEffect(() =>
+	{
+		if (mode === "tournament" && !location.state)
+		{
+			console.log("Tournament page loaded without match state, returning to lobby");
+			navigate("/", { replace: true });
+		}
+	}, [mode, location.state, navigate]);
+
 	useEffect(() =>
 	{
 		if (mode === "tournament" && location.state)
@@ -40,52 +84,23 @@ export default function QuizPage()
 		};
 	}, []);
 
-	const player: PlayerState = {
-			score: 0,
-			answered: false,
-			totalTimeUsed: 0,
-			streak: 0,
-			hideAnswer: false,
-			threeChoice: false,
-			doublePoint: false,
-		};
 
-	const [questions, setQuestions] = useState<Question[]>([]);
-	const [gameStarted, setGameStarted] = useState(false);
-	const [waitingForFinal, setWaitingForFinal] = useState(false);
-	const [tournamentBracket, setTournamentBracket] = useState<any>(null);
-	const [opponentReady, setOpponentReady] = useState(false);
-	const [game, setGame] = useState<GameState>(
-		{
-			currentQuestion: questions[0],
-			questionIndex: 0,
-			time_left: 20,
-			localPlayer: { ...player},
-			enemyPlayer: { ...player},
-			gameOver: false,
-			isPlayer1: false,
-			mode: "party",
-			answeredQuestions: [],
-		});
-		const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
-		const [revealed, setRevealed] = useState(false);
 
+	useEffect(() =>
+{
+    console.log("PARTY GAME MOUNT");
+
+    return () =>
+    {
+        console.log("PARTY GAME UNMOUNT");
+    };
+}, []);
+	
 	useEffect(() =>
 	{
 		if (game.gameOver)
 			setIsInGame(false);
 	}, [game.gameOver]);
-
-	// Keep stable values inside Socket.IO callbacks with useRef.
-
-	const roomIdRef = useRef("");
-	const isPlayer1Ref = useRef(false);
-	const navigate = useNavigate();
-
-	// Timer d'affichage du bracket avant la finale : doit être annulé si la
-	// partie se termine (forfait de l'adversaire) pendant ces 5 secondes,
-	// sinon il "ressuscite" un match déjà clos côté serveur.
-	const bracketTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	function initializeMatch(data: any)
 	{
@@ -121,13 +136,27 @@ export default function QuizPage()
 
 		roomIdRef.current = data.roomId;
 	}
-	function	handle_answer(answer: string)
+	function handle_answer(answer: string)
+{
+	if (game.gameOver || game.localPlayer.answered)
+		return;
+
+	setSelectedAnswer(answer);
+	setRevealed(true);
+
+	console.log(
+		"BEFORE",
+		game.answeredQuestions.length,
+	);
+
+	setGame(previousGame =>
 	{
-		if (game.gameOver || game.localPlayer.answered)
-        	return;
-		setSelectedAnswer(answer);
-		setRevealed(true);
-		setGame(previousGame => ({
+		console.log(
+			"PREVIOUS",
+			previousGame.answeredQuestions.length,
+		);
+
+		return {
 			...previousGame,
 			answeredQuestions: [
 				...previousGame.answeredQuestions,
@@ -137,13 +166,15 @@ export default function QuizPage()
 					correct: false,
 				},
 			],
-		}));
-		socket.emit("answer", {
-			roomId: game.roomId,
-			answer,
-			timeLeft: game.time_left,
-		});
-	}
+		};
+	});
+
+	socket.emit("answer", {
+		roomId: game.roomId,
+		answer,
+		timeLeft: game.time_left,
+	});
+}
 
 	// Socket events
 	// Register every Socket.IO listener once when the component mounts.
@@ -159,7 +190,7 @@ export default function QuizPage()
 
 		const joinGame = () =>
 		{
-			console.log("mode : ", mode);
+			console.log("JOIN GAME\nmode : ", mode);
 			switch (mode)
 			{
 				case "party":
@@ -171,8 +202,11 @@ export default function QuizPage()
 					break;
 
 				case "ai":
-					console.count("join_ai emit");
-					console.trace();
+					console.log("join_ai emit");
+					if (joinSentRef.current)
+						return;
+
+					joinSentRef.current = true;
 					socket.emit("join_ai");
 					break;
 
@@ -428,21 +462,30 @@ export default function QuizPage()
 				? data.player2Score
 				: data.player1Score;
 
-			setGame(previousGame => ({
-				...previousGame,
-				gameOver: true,
-				winner: data.winner,
+			console.log("answeredQuestions =", game.answeredQuestions.length);
+setGame(previousGame =>
+{
+	console.log(
+		"GAME OVER PREVIOUS",
+		previousGame.answeredQuestions.length,
+	);
 
-				localPlayer: {
-					...previousGame.localPlayer,
-					score: playerScore,
-				},
+	return {
+		...previousGame,
+		gameOver: true,
+		winner: data.winner,
 
-				enemyPlayer: {
-					...previousGame.enemyPlayer,
-					score: enemyScore,
-				},
-			}));
+		localPlayer: {
+			...previousGame.localPlayer,
+			score: playerScore,
+		},
+
+		enemyPlayer: {
+			...previousGame.enemyPlayer,
+			score: enemyScore,
+		},
+	};
+});
 		});
 
 		return () =>
@@ -465,6 +508,7 @@ export default function QuizPage()
 			socket.off("game_over");
 			socket.off("connect", joinGame);
 			socket.off("tournament_bracket");
+			joinSentRef.current = false;
 		//	socket.disconnect();
 		};
 	}, [mode]);
@@ -506,16 +550,28 @@ export default function QuizPage()
 	// Automatically submit an empty answer when the timer expires.
 
 	useEffect(() =>
-			{
-				if (game.time_left <= 0)
+{
+	if (game.time_left <= 0 && !game.localPlayer.answered)
+	{
+		setGame(previousGame => ({
+			...previousGame,
+			answeredQuestions: [
+				...previousGame.answeredQuestions,
 				{
-					socket.emit("answer", {
-						roomId: game.roomId,
-						answer: null,
-					    timeLeft: 0,
-					});
-				}
-			}, [game.time_left]);
+					question: previousGame.currentQuestion,
+					playerAnswer: null,
+					correct: false,
+				},
+			],
+		}));
+
+		socket.emit("answer", {
+			roomId: game.roomId,
+			answer: null,
+			timeLeft: 0,
+		});
+	}
+}, [game.time_left]);
 
 	if (tournamentBracket)
 	{
