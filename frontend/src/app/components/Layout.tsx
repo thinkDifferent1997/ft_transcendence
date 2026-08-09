@@ -60,7 +60,7 @@ const handleNavigate = (path: string) =>
         })
         .catch((err) => console.error("Erreur profil:", err));
 
-        fetch("/api/chat/history")
+        fetch("/api/chat/history", { credentials: "include" })
         .then((res) => res.json())
         .then((data) => {
             if (Array.isArray(data)) setMessages(data);
