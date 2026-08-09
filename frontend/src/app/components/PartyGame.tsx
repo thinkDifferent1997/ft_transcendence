@@ -24,6 +24,26 @@ export default function QuizPage()
 	const { setIsInGame } = useGame();
 	const [revealedAnswer, setRevealedAnswer] = useState<string | null>(null);
 	const [correctAnswer, setCorrectAnswer] = useState<string | null>(null);
+	const { setIsInGame } = useGame();
+	const joinSentRef = useRef(false);
+	useEffect(() =>
+	{
+		if (mode === "tournament" && location.state)
+		{
+			initializeMatch(location.state);
+		}
+	}, []);
+
+	useEffect(() =>
+	{
+		setIsInGame(true);
+
+		return () =>
+		{
+			setIsInGame(false);
+		};
+	}, []);
+
 	const [questions, setQuestions] = useState<Question[]>([]);
 	const [gameStarted, setGameStarted] = useState(false);
 	const [waitingForFinal, setWaitingForFinal] = useState(false);
@@ -57,6 +77,16 @@ export default function QuizPage()
 	const isPlayer1Ref = useRef(false);
 	const bracketTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+	useEffect(() =>
+{
+    console.log("PARTY GAME MOUNT");
+
+    return () =>
+    {
+        console.log("PARTY GAME UNMOUNT");
+    };
+}, []);
+	
 	useEffect(() =>
 	{
 		if (mode === "tournament" && !location.state)
