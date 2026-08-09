@@ -25,7 +25,6 @@ export default function QuizPage()
 	const [revealedAnswer, setRevealedAnswer] = useState<string | null>(null);
 	const [correctAnswer, setCorrectAnswer] = useState<string | null>(null);
 	const { setIsInGame } = useGame();
-	const location = useLocation();
 	const joinSentRef = useRef(false);
 	useEffect(() =>
 	{
