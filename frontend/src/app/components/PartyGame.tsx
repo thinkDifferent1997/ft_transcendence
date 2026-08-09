@@ -19,6 +19,9 @@ export default function QuizPage()
 {
 	console.log("PARTY GAME RENDER");
 	const { mode } = useParams<{ mode: string }>();
+	const location = useLocation();
+	const navigate = useNavigate();
+	const { setIsInGame } = useGame();
 	const [revealedAnswer, setRevealedAnswer] = useState<string | null>(null);
 	const [correctAnswer, setCorrectAnswer] = useState<string | null>(null);
 	const { setIsInGame } = useGame();
@@ -42,6 +45,11 @@ export default function QuizPage()
 		};
 	}, []);
 
+	const [questions, setQuestions] = useState<Question[]>([]);
+	const [gameStarted, setGameStarted] = useState(false);
+	const [waitingForFinal, setWaitingForFinal] = useState(false);
+	const [tournamentBracket, setTournamentBracket] = useState<any>(null);
+	const [opponentReady, setOpponentReady] = useState(false);
 	const player: PlayerState = {
 			score: 0,
 			answered: false,
@@ -51,12 +59,6 @@ export default function QuizPage()
 			threeChoice: false,
 			doublePoint: false,
 		};
-
-	const [questions, setQuestions] = useState<Question[]>([]);
-	const [gameStarted, setGameStarted] = useState(false);
-	const [waitingForFinal, setWaitingForFinal] = useState(false);
-	const [tournamentBracket, setTournamentBracket] = useState<any>(null);
-	const [opponentReady, setOpponentReady] = useState(false);
 	const [game, setGame] = useState<GameState>(
 		{
 			currentQuestion: questions[0],
@@ -69,8 +71,51 @@ export default function QuizPage()
 			mode: "party",
 			answeredQuestions: [],
 		});
-		const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
-		const [revealed, setRevealed] = useState(false);
+	const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+	const [revealed, setRevealed] = useState(false);
+	const joinSentRef = useRef(false);
+	const roomIdRef = useRef("");
+	const isPlayer1Ref = useRef(false);
+	const bracketTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+	useEffect(() =>
+{
+    console.log("PARTY GAME MOUNT");
+
+    return () =>
+    {
+        console.log("PARTY GAME UNMOUNT");
+    };
+}, []);
+	
+	useEffect(() =>
+	{
+		if (mode === "tournament" && !location.state)
+		{
+			console.log("Tournament page loaded without match state, returning to lobby");
+			navigate("/", { replace: true });
+		}
+	}, [mode, location.state, navigate]);
+
+	useEffect(() =>
+	{
+		if (mode === "tournament" && location.state)
+		{
+			initializeMatch(location.state);
+		}
+	}, []);
+
+	useEffect(() =>
+	{
+		setIsInGame(true);
+
+		return () =>
+		{
+			setIsInGame(false);
+		};
+	}, []);
+
+
 
 	useEffect(() =>
 {
@@ -87,17 +132,6 @@ export default function QuizPage()
 		if (game.gameOver)
 			setIsInGame(false);
 	}, [game.gameOver]);
-
-	// Keep stable values inside Socket.IO callbacks with useRef.
-
-	const roomIdRef = useRef("");
-	const isPlayer1Ref = useRef(false);
-	const navigate = useNavigate();
-
-	// Timer d'affichage du bracket avant la finale : doit être annulé si la
-	// partie se termine (forfait de l'adversaire) pendant ces 5 secondes,
-	// sinon il "ressuscite" un match déjà clos côté serveur.
-	const bracketTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	function initializeMatch(data: any)
 	{
