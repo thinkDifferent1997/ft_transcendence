@@ -134,7 +134,7 @@ const MODE_CONFIG = {
         </button>
 			<div className="flex items-center gap-4">
 				<div className="text-white/70 text-sm">
-					{game.questionIndex} / 8
+					{game.questionIndex + 1} / 8
 				</div>
 				<GameSettings
 					theme={theme}

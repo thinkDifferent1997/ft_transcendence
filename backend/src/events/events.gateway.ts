@@ -848,29 +848,24 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 		if (!game)
 			return;
 
+		const payload = {
+	questions: game.questions.map(question => ({
+		...question,
+		answers: this.gameManager.buildDisplayedAnswers(
+			question,
+			false,
+			false,
+		),
+	})),
+};
 		console.log("EMIT : P1 GAME STARTED");
-		game.player1.emit("game_started", {
-			questions: game.questions.map(question => ({
-				...question,
-				answers: this.gameManager.buildDisplayedAnswers(
-					question,
-					false,
-					false,
-				),
-			})),
-		});
+game.player1.emit("game_started", payload);
 
-		console.log("EMIT : P2 GAME STARTED");
-		game.player2.emit("game_started", {
-			questions: game.questions.map(question => ({
-				...question,
-				answers: this.gameManager.buildDisplayedAnswers(
-					question,
-					false,
-					false,
-				),
-			})),
-		});
+if (!game.ai)
+{
+	console.log("EMIT : P2 GAME STARTED");
+	game.player2.emit("game_started", payload);
+}
 	}
 
 	// Wait until both clients have received every question before starting the timers.
@@ -938,11 +933,13 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 	)
 	{
 		const game = await this.gameManager.createAIMatch(client);
-console.log("[AI] handleJoinAI", client.id);
-console.trace();
-		client.join(game.roomId);
 
-		console.log("[AI] Emitting match_found");
+		client.join(game.roomId);
+		console.log(
+    "join_ai",
+    client.id,
+    client.rooms,
+);
 		client.emit("match_found", {
 			roomId: game.roomId,
 

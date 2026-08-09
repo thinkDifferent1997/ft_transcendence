@@ -20,6 +20,11 @@ export default function ResultsScreen({
     onReplay,
 }: Props) {
 
+	console.log(
+	"RESULT SCREEN",
+	game.answeredQuestions.length,
+	game.answeredQuestions,
+);
 	const victory =
 		game.isPlayer1
 			? game.winner === 1
