@@ -1,14 +1,5 @@
-import {
-  Controller,
-  Get,
-  Param,
-  Query,
-  Post,
-  Req,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Param, Query, Req, UseGuards } from '@nestjs/common';
 import { StatsService } from './stats.service';
-import { StatsGateway } from './stats.gateway';
 import { FullAuthGuard } from '../auth/jwt/full-auth.guard';
 import type { AuthenticatedRequestUser } from '../auth/jwt/jwt.strategy';
 
@@ -17,14 +8,11 @@ interface AuthedRequest {
 }
 
 @Controller('stats')
+@UseGuards(FullAuthGuard)
 export class StatsController {
-  constructor(
-    private readonly statsService: StatsService,
-    private readonly statsGateway: StatsGateway,
-  ) {}
+  constructor(private readonly statsService: StatsService) {}
 
   @Get('me/summary')
-  @UseGuards(FullAuthGuard)
   async getMySummary(
     @Req() req: AuthedRequest,
     @Query('startDate') startDate?: string,
@@ -156,12 +144,5 @@ export class StatsController {
       startDate ? new Date(startDate) : undefined,
       endDate ? new Date(endDate) : undefined,
     );
-  }
-
-  @Post(':userId/notify-test')
-  async notifyTest(@Param('userId') userId: string) {
-    const summary = await this.statsService.getSummary(userId);
-    this.statsGateway.notifyStatsUpdate(userId, summary);
-    return { notified: true };
   }
 }
