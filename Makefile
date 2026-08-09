@@ -147,8 +147,16 @@ clean: ## Stop everything and remove named volumes (wipes the DB!)
 
 fclean: clean ## Full clean: also remove certs and prune Docker images
 	rm -rf $(CERT_DIR)
-	rm -rf backend/node_modules frontend/node_modules
-	rm -rf backend/dist
+	rm -rf frontend/node_modules
+	@# backend/dist is a container artefact. The dev image runs as USER node
+	@# (uid 1000), so it lands owned by the host user and plain rm works.
+	@# Trees left by images built before that switch are root-owned and only
+	@# a container that *is* root can unlink them -- hence the fallback, which
+	@# also spares us re-pulling node:20-alpine after every prune -af below.
+	@# Leading '-': a missing daemon must not skip the prune below.
+	-rm -rf backend/dist backend/node_modules 2>/dev/null || \
+		docker run --rm -v $(CURDIR)/backend:/host:z node:20-alpine \
+			rm -rf /host/dist /host/node_modules
 	docker system prune -af
 
 .PHONY: help env certs up down re dev dev-down migrate migrate-dev studio logs \
