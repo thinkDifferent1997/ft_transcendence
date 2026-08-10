@@ -55,6 +55,8 @@ export default function LeaderboardPage({ userId, onBack }: LeaderboardPageProps
   }, [userId]);
 
   const isMe = (entry: LeaderboardEntry) => entry.userId === userId;
+  const isImageUrl = (avatar: string | null): boolean =>
+  !!avatar && /^(https?:\/\/|\/)/.test(avatar);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-violet-100 via-pink-50 to-cyan-100 pt-24 pb-12 px-4">
@@ -117,10 +119,19 @@ export default function LeaderboardPage({ userId, onBack }: LeaderboardPageProps
                     )}
                   </div>
 
-                  <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-xl ring-2 ring-white/50 shadow flex-shrink-0">
-                    {entry.avatar || "😊"}
-                  </div>
-
+<div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-xl ring-2 ring-white/50 shadow flex-shrink-0 overflow-hidden">
+  {isImageUrl(entry.avatar) ? (
+    <img
+      src={entry.avatar!}
+      alt={entry.username}
+      className="w-full h-full object-cover"
+      referrerPolicy="no-referrer"
+      onError={(e) => { e.currentTarget.style.display = "none"; }}
+    />
+  ) : (
+    entry.avatar || "😊"
+  )}
+</div>
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-gray-800 m-0 truncate">
                       {entry.username}
