@@ -1,5 +1,5 @@
 import { Sparkles, MessageCircle, Send, X, Minus, LogOut, Trophy } from "lucide-react";
-import { Outlet, useNavigate } from "react-router-dom";
+import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { socket } from "../../socket/socket";
 import { useGame } from "../context/GameContext";
@@ -11,6 +11,7 @@ interface LayoutProps {
 
 export default function Layout({ username, onLogout }: LayoutProps) {
 const navigate = useNavigate();
+const location = useLocation();
 
 const [userAvatar, setUserAvatar] = useState<string | null>(null);
 
@@ -20,6 +21,10 @@ const [messages, setMessages] = useState<any[]>([]);
 const [newMessage, setNewMessage] = useState("");
 const messagesEndRef = useRef<HTMLDivElement>(null);
 const { isInGame } = useGame();
+const hideChat = 
+    isInGame ||
+    location.pathname.startsWith("/game/") ||
+    location.pathname.startsWith("/tournament");
 
 const MAX_MESSAGE_LENGTH = 500;
 const [chatError, setChatError] = useState<string | null>(null);
@@ -93,6 +98,10 @@ const handleNavigate = (path: string) =>
 	useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages, isChatOpen]);
+    
+    useEffect(() => {
+        if (hideChat) setIsChatOpen(false);
+    }, [hideChat]);
 
 
 return (
@@ -168,6 +177,7 @@ return (
       </div>
 
       {/* --- 3. WIDGET CHAT --- */}
+      {!hideChat && (
       <div className="fixed bottom-6 right-6 z-50">
         {isChatOpen ? (
           <div className="bg-white rounded-2xl shadow-2xl w-96 h-[32rem] flex flex-col overflow-hidden border-2 border-purple-200">
@@ -293,6 +303,7 @@ return (
 
         )}
       </div>
+      )}
     </div>
   );
 }

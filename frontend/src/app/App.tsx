@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
+import { socket, statsSocket } from "../socket/socket";
 import LoginPage from "./components/LoginPage";
 import ProfilePage from "./components/ProfilePage";
 import LeaderboardPage from "./pages/Leaderboard";
@@ -40,8 +41,10 @@ export default function App() {
     } catch (err) {
       console.error("Erreur lors de la déconnexion backend :", err);
     } finally {
-      setIsLoggedIn(false);
-      navigate("/");
+        socket.disconnect();
+        statsSocket.disconnect();
+        setIsLoggedIn(false);
+        navigate("/");
     }
   };
 
