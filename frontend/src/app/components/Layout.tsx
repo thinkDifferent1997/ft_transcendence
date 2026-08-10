@@ -124,7 +124,7 @@ return (
               className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/60 hover:bg-white text-gray-700 hover:text-amber-600 border border-gray-200 transition-all shadow-sm hover:shadow-md"
             >
               <Trophy className="w-4 h-4" />
-              <span className="hidden sm:inline font-medium">Classement</span>
+              <span className="hidden sm:inline font-medium">Ranking</span>
             </button>
 
             {/* Bouton Profil (avec avatar dynamique) */}
