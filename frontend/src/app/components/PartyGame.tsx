@@ -21,7 +21,6 @@ export default function QuizPage()
 	const { mode } = useParams<{ mode: string }>();
 	const location = useLocation();
 	const navigate = useNavigate();
-	const { setIsInGame } = useGame();
 	const [revealedAnswer, setRevealedAnswer] = useState<string | null>(null);
 	const [correctAnswer, setCorrectAnswer] = useState<string | null>(null);
 	const { setIsInGame } = useGame();
@@ -72,7 +71,6 @@ export default function QuizPage()
 		});
 	const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
 	const [revealed, setRevealed] = useState(false);
-	const joinSentRef = useRef(false);
 	const roomIdRef = useRef("");
 	const isPlayer1Ref = useRef(false);
 	const bracketTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
