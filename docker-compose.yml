@@ -42,7 +42,9 @@ services:
       postgres:
         condition: service_healthy
     volumes:
-      - ./nginx/certs:/etc/nginx/certs:ro
+      # ',z' = relabel for SELinux (Fedora/RHEL run it enforcing). Shared
+      # lowercase 'z', not 'Z': backend and nginx both mount this directory.
+      - ./nginx/certs:/etc/nginx/certs:ro,z
     networks:
       - transcend_net
     restart: unless-stopped
@@ -76,7 +78,9 @@ services:
     ports:
      - "${HTTPS_PORT:-443}:443"
     volumes:
-      - ./nginx/certs:/etc/nginx/certs:ro
+      # ',z' = relabel for SELinux (Fedora/RHEL run it enforcing). Shared
+      # lowercase 'z', not 'Z': backend and nginx both mount this directory.
+      - ./nginx/certs:/etc/nginx/certs:ro,z
     depends_on:
       - frontend
       - backend
