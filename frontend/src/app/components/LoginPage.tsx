@@ -93,7 +93,7 @@ export default function LoginPage({ onLogin, force2FA = false }: LoginPageProps)
           
           {/* Banner d'erreur dynamique */}
           {errorMsg && (
-            <div className={`mb-6 p-4 rounded-xl border flex items-center gap-3 animate-in fade-in ${errorMsg.includes("succès") ? "bg-green-50 border-green-200 text-green-600" : "bg-red-50 border-red-200 text-red-600"}`}>
+            <div className={`mb-6 p-4 rounded-xl border flex items-center gap-3 animate-in fade-in ${errorMsg.includes("created") ? "bg-green-50 border-green-200 text-green-600" : "bg-red-50 border-red-200 text-red-600"}`}>
               <AlertCircle className="w-5 h-5 flex-shrink-0" />
               <span className="text-sm">{errorMsg}</span>
             </div>
