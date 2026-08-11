@@ -52,7 +52,6 @@ export default function LoginPage({ onLogin, force2FA = false }: LoginPageProps)
           return;
         }
 
-       // console.log("Connecté avec succès !", data);
         if (onLogin) onLogin();
       } else {
         setErrorMsg(data.message || "Erreur lors de la connexion");
