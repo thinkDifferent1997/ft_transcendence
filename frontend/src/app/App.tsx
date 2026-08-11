@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
+import { socket, statsSocket } from "../socket/socket";
 import LoginPage from "./components/LoginPage";
 import ProfilePage from "./components/ProfilePage";
 import LeaderboardPage from "./pages/Leaderboard";
@@ -9,7 +10,6 @@ import GameRoute from "./routes/GameRoute";
 import RequireAuth from "./routes/RequireAuth";
 import QuizCallback from "./routes/QuizCallback";
 import useAuthSession from "./hooks/useAuthSession";
-import { socket } from "../socket/socket";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 
