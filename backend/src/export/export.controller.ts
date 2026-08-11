@@ -8,7 +8,7 @@ interface AuthedRequest {
   user: AuthenticatedRequestUser;
 }
 
-@Controller('api/export')
+@Controller('export')
 export class ExportController {
   constructor(private readonly exportService: ExportService) {}
 

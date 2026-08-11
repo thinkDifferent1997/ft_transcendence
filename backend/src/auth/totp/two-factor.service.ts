@@ -7,6 +7,7 @@
  * (enrol, confirm, check at login) is expressed.
  */
 import {
+  ConflictException,
   Inject,
   Injectable,
   UnauthorizedException,
@@ -41,8 +42,20 @@ export class TwoFactorService {
    * Begin enrolment: generate a secret, store it as pending, and return
    * everything the user needs to register it in their app. 2FA is not
    * active until `activate` confirms the user can produce a valid code.
+   *
+   * Refuses to run while 2FA is already active: the secret is stored
+   * immediately, so a second enrolment would replace the one the user's
+   * authenticator app holds — locking them out of their own account even
+   * if they never confirm (or simply close) the new QR code. Re-enrolling
+   * a new device therefore goes through `disable` first.
    */
   async setup(userId: UserId, account: string): Promise<TotpSetup> {
+    if (await this.repo.isEnabled(userId)) {
+      throw new ConflictException(
+        '2FA is already enabled. Disable it first to enrol a new device.',
+      );
+    }
+
     const secret = this.totp.generateSecret();
     await this.repo.upsertSecret(userId, secret);
 
@@ -79,5 +92,18 @@ export class TwoFactorService {
     const secret = await this.repo.getSecret(userId);
     if (!secret) return false;
     return this.totp.verify(token, secret);
+  }
+
+  /**
+   * Turn 2FA off and forget the secret. Proof of the current factor is
+   * required: a valid session alone must not be enough to strip the
+   * second factor, otherwise a hijacked session could disable it and
+   * re-enrol at will.
+   */
+  async disable(userId: UserId, token: string): Promise<void> {
+    if (!(await this.verifyLogin(userId, token))) {
+      throw new UnauthorizedException('Invalid 2FA code.');
+    }
+    await this.repo.disable(userId);
   }
 }

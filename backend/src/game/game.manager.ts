@@ -10,6 +10,7 @@ export class GameManager
     private waitingPlayer: Socket | null = null;
 
     private games = new Map<string, GameSession>();
+	private pendingAIGames = new Map<string, Promise<GameSession>>();
 	private connectedPlayers = new Map<string, Socket>();
 
 // -----------------------------------------------------------------------------
@@ -23,6 +24,10 @@ export class GameManager
 		// cours) ne doit pas redevenir disponible pour le matchmaking :
 		// sinon il "vole" la place de son adversaire actuel au profit
 		// d'un nouveau joueur, qui se retrouve bloqué indéfiniment.
+		console.log("JOIN_QUEUE", {
+	player: player.data.username,
+	waiting: this.waitingPlayer?.data.username,
+});
 		if (this.findGameByPlayer(player))
 		{
 			console.log(`${player.id} is already in a game.`);
@@ -65,6 +70,10 @@ export class GameManager
 
             this.games.set(roomId, game);
 
+console.log("MATCH CREATED", {
+	p1: opponent.data.username,
+	p2: player.data.username,
+});			
             return game;
         }
         catch (error)
@@ -104,10 +113,34 @@ export class GameManager
 		player: Socket,
 	): Promise<GameSession>
 	{
-		// Comme pour createMatch : un montage en double (React StrictMode,
-		// double-clic...) ne doit pas créer une deuxième partie IA pour le
-		// même joueur — on renvoie la partie déjà existante plutôt que
-		// d'en fabriquer une orpheline en plus.
+		const existing = this.findGameByPlayer(player);
+
+		if (existing)
+			return existing;
+
+		const pending = this.pendingAIGames.get(player.id);
+
+		if (pending)
+			return await pending;
+
+		const creation = this.createAIMatchInternal(player);
+
+		this.pendingAIGames.set(player.id, creation);
+
+		try
+		{
+			return await creation;
+		}
+		finally
+		{
+			this.pendingAIGames.delete(player.id);
+		}
+	}
+
+	private async createAIMatchInternal(
+		player: Socket,
+	): Promise<GameSession>
+	{
 		const existingGame = this.findGameByPlayer(player);
 		if (existingGame)
 			return existingGame;
@@ -122,12 +155,13 @@ export class GameManager
 
 		game.player1Id = player.data.userId;
 		game.player2Id = "AI";
-
 		game.ai = {};
 
 		game.questions = await this.triviaService.getQuestions();
-
 		this.games.set(roomId, game);
+
+		console.log("Questions loaded:", game.questions.length);
+
 		console.log("[AI] Match created", roomId);
 
 		return game;
@@ -572,14 +606,6 @@ export class GameManager
         	clearTimeout(game.ai.timeout);
 
 		this.games.delete(roomId);
-	}
-
-	removeWaitingPlayer(player: Socket): void
-	{
-		if (this.waitingPlayer?.id === player.id)
-		{
-			this.waitingPlayer = null;
-		}
 	}
 
 	registerPlayer(userId: string, socket: Socket): void

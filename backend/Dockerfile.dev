@@ -25,7 +25,13 @@ RUN npm ci
 COPY prisma ./prisma
 RUN npx prisma generate
 
-RUN chown -R node:node /etc/nginx/certs 2>/dev/null || true
+# Run as non-root, like the prod image does (see Dockerfile). Everything above
+# ran as root, so hand /app over first: the runtime command does `npm install`
+# into the bind mount and Nest writes dist/ there, and both must work as node.
+# This also keeps those artefacts owned by uid 1000 on the host instead of
+# root, so `make fclean` can remove them.
+RUN chown -R node:node /app
+USER node
 
 EXPOSE 3000
 

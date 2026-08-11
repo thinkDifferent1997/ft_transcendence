@@ -7,6 +7,7 @@ import { parse } from "cookie";
 import { TournamentService } from "../tournament/tournament.service";
 import { GameSession } from "../game/game.session";
 import { TournamentState } from "../tournament/tournament.state";
+import { TournamentQueue } from "../tournament/tournament.queue";
 import { PrismaService } from '../prisma/prisma.service';
 import { GameResultsService } from "../game-results/game-results.service";
 import { GamificationService } from "../gamification/gamification.service";
@@ -46,6 +47,7 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 	private readonly jwtService: JwtService,
 	private readonly tournamentService: TournamentService,
 	private readonly tournamentState: TournamentState,
+	private readonly tournamentQueue: TournamentQueue,
 	private readonly gameResultsService: GameResultsService,
 	private readonly gamificationService: GamificationService,
 	private readonly statsService: StatsService,
@@ -546,7 +548,13 @@ implements OnGatewayConnection, OnGatewayDisconnect{
                     username: string;
                     tfa: string;
                 }>(cookies.access_token);
-                
+
+            // Un token « pending » n'a franchi que le premier facteur.
+            // Sans ce contrôle, le websocket (chat, matchmaking, parties,
+            // tournois) serait accessible avant d'avoir saisi le code 2FA.
+            if (payload.tfa !== 'authenticated')
+                throw new Error("2FA not completed");
+
             client.data.userId = payload.sub;
             client.data.username = payload.username;
 
@@ -560,6 +568,7 @@ implements OnGatewayConnection, OnGatewayDisconnect{
                 data: { status: 'ONLINE' }
             });
 			await this.enforceSingleSession(client);
+            await this.broadcastOnlineCount();
         }catch (error) {
             console.error("Socket Auth Error:", error.message);
             client.disconnect();
@@ -596,6 +605,21 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 		}
 	}
 
+
+    private async broadcastOnlineCount()
+    {
+        try
+        {
+            const count = await this.prisma.user.count({
+                where: { status: 'ONLINE' },
+            });
+            this.server.emit('online_count', { count });
+        } catch (error)
+        {
+            console.error("Failed to broadcast online count:", error);
+        }
+    }
+
 	async handleDisconnect(client: Socket)
 	{
 		console.log(`${client.id} disconnected.`);
@@ -613,7 +637,13 @@ implements OnGatewayConnection, OnGatewayDisconnect{
             }
 			await this.clearActiveSession(client);
 		}
-		this.gameManager.removeWaitingPlayer(client);
+        await this.broadcastOnlineCount();
+		if (this.tournamentQueue.removePlayer(client))
+		{
+			this.server.emit("tournament_waiting", {
+				players: this.tournamentQueue.getUsernames(),
+			});
+		}
 		await this.handlePlayerForfeit(client);
 	}
 
@@ -818,29 +848,24 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 		if (!game)
 			return;
 
+		const payload = {
+	questions: game.questions.map(question => ({
+		...question,
+		answers: this.gameManager.buildDisplayedAnswers(
+			question,
+			false,
+			false,
+		),
+	})),
+};
 		console.log("EMIT : P1 GAME STARTED");
-		game.player1.emit("game_started", {
-			questions: game.questions.map(question => ({
-				...question,
-				answers: this.gameManager.buildDisplayedAnswers(
-					question,
-					false,
-					false,
-				),
-			})),
-		});
+game.player1.emit("game_started", payload);
 
-		console.log("EMIT : P2 GAME STARTED");
-		game.player2.emit("game_started", {
-			questions: game.questions.map(question => ({
-				...question,
-				answers: this.gameManager.buildDisplayedAnswers(
-					question,
-					false,
-					false,
-				),
-			})),
-		});
+if (!game.ai)
+{
+	console.log("EMIT : P2 GAME STARTED");
+	game.player2.emit("game_started", payload);
+}
 	}
 
 	// Wait until both clients have received every question before starting the timers.
@@ -908,11 +933,13 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 	)
 	{
 		const game = await this.gameManager.createAIMatch(client);
-console.log("[AI] handleJoinAI", client.id);
-console.trace();
-		client.join(game.roomId);
 
-		console.log("[AI] Emitting match_found");
+		client.join(game.roomId);
+		console.log(
+    "join_ai",
+    client.id,
+    client.rooms,
+);
 		client.emit("match_found", {
 			roomId: game.roomId,
 
