@@ -91,6 +91,7 @@ export default function QuizPage()
 
 	function initializeMatch(data: any)
 	{
+		setGameStarted(false);
 		setWaitingForFinal(false);
 		const isPlayer1 = socket.id === data.player1.id;
 
@@ -216,6 +217,7 @@ export default function QuizPage()
 					setWaitingForFinal(false);
 					setOpponentReady(false);
 					setTournamentBracket(null);
+					setGameStarted(true);
 				}, 5000);
 			}
 			else
@@ -238,6 +240,9 @@ export default function QuizPage()
 
 		socket.on("start_game", () =>
 		{
+			if (bracketTimeoutRef.current)
+				return;
+
 			setGameStarted(true);
 		});
 
