@@ -67,12 +67,12 @@ export default function LeaderboardPage({ userId, onBack }: LeaderboardPageProps
             className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
-            Retour
+            Back
           </button>
 
           {myRank !== null && (
             <div className="px-4 py-2 rounded-full bg-white/80 border border-gray-200 shadow-sm text-sm font-medium text-gray-700">
-              Ton rang : <span className="font-black text-indigo-600">#{myRank}</span>
+              Your rank: <span className="font-black text-indigo-600">#{myRank}</span>
             </div>
           )}
         </div>
@@ -135,10 +135,10 @@ export default function LeaderboardPage({ userId, onBack }: LeaderboardPageProps
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-gray-800 m-0 truncate">
                       {entry.username}
-                      {isMe(entry) && <span className="text-indigo-500 font-medium"> (toi)</span>}
+                      {isMe(entry) && <span className="text-indigo-500 font-medium"> (you)</span>}
                     </p>
                     <p className="text-xs text-gray-500 m-0 flex items-center gap-1">
-                      <Award className="w-3 h-3" /> Niveau {entry.level} · {entry.gamesPlayed} partie(s) · {entry.wins} victoire(s)
+                      <Award className="w-3 h-3" /> Level {entry.level} · {entry.gamesPlayed} games · {entry.wins} wins
                     </p>
                   </div>
 

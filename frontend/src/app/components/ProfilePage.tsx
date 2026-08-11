@@ -528,7 +528,7 @@ export default function ProfilePage({
           <div className="bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl p-6 border border-white/50">
             <h3 className="mb-6 flex items-center gap-2 text-xl font-bold text-gray-800">
               <TrendingUp className="w-6 h-6 text-purple-600" />
-              Statistiques globales
+              Global Stats
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="text-center p-6 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 text-white shadow-lg">
@@ -577,7 +577,7 @@ export default function ProfilePage({
               </div>
             ))}
             {(stats?.categories ?? []).length === 0 && (
-              <p className="text-gray-400 col-span-2 text-center py-6">Aucune donnée pour l'instant — joue une partie !</p>
+              <p className="text-gray-400 col-span-2 text-center py-6">No data for now, run a game !</p>
             )}
           </div>
         </div>
@@ -586,7 +586,7 @@ export default function ProfilePage({
         <div className="bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl p-6 border border-white/50 mb-8">
           <h3 className="mb-6 flex items-center gap-2 text-xl font-bold text-gray-800">
             <Award className="w-6 h-6 text-pink-600" />
-            Badges
+            Achievements
           </h3>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
             {(stats?.badges ?? []).map((badge) => (
@@ -671,7 +671,7 @@ export default function ProfilePage({
         <div className="bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl p-6 border border-white/50 mt-8">
           <h3 className="mb-6 flex items-center gap-2 text-xl font-bold text-gray-800">
             <History className="w-6 h-6 text-blue-600" />
-            Historique des parties
+            Game History
           </h3>
 
           {historyLoading ? (
