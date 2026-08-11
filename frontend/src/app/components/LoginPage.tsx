@@ -1,5 +1,6 @@
 import { Sparkles, Mail, Lock, User, AlertCircle, Key, Github } from "lucide-react";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 
 interface LoginPageProps {
   onLogin?: () => void;
@@ -63,7 +64,7 @@ export default function LoginPage({ onLogin, force2FA = false }: LoginPageProps)
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-violet-100 via-pink-50 to-cyan-100 flex items-center justify-center p-6">
+	  <div className="min-h-screen bg-gradient-to-br from-violet-100 via-pink-50 to-cyan-100 flex flex-col items-center justify-center p-6">
       {/* Background decorative elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-20 left-20 w-72 h-72 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob"></div>
@@ -230,6 +231,25 @@ export default function LoginPage({ onLogin, force2FA = false }: LoginPageProps)
           )}
         </div>
       </div>
+	  <footer className="mt-6 text-center shrink-0">
+			<div className="flex justify-center gap-3 text-xs text-gray-400">
+				<Link
+					to="/privacy-policy"
+					className="hover:text-gray-600 hover:underline"
+				>
+					Privacy Policy
+				</Link>
+
+				<span>•</span>
+
+				<Link
+					to="/terms-of-service"
+					className="hover:text-gray-600 hover:underline"
+				>
+					Terms of Service
+				</Link>
+			</div>
+		</footer>
     </div>
   );
 }

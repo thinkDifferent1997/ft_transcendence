@@ -1,5 +1,5 @@
 import { Sparkles, MessageCircle, Send, X, Minus, LogOut, Trophy } from "lucide-react";
-import { Outlet, useNavigate } from "react-router-dom";
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { socket } from "../../socket/socket";
 import { useGame } from "../context/GameContext";
@@ -10,7 +10,11 @@ interface LayoutProps {
 }
 
 export default function Layout({ username, onLogout }: LayoutProps) {
-const navigate = useNavigate();
+	const navigate = useNavigate();
+	const location = useLocation();
+	const hideFooter =
+	location.pathname.startsWith("/game/") ||
+	location.pathname === "/tournament";
 
 const [userAvatar, setUserAvatar] = useState<string | null>(null);
 
@@ -163,9 +167,30 @@ return (
       </nav>
 
       {/* --- 2. CONTENU PRINCIPAL DE LA PAGE --- */}
-      <div className="pt-20">
-        <Outlet />
-      </div>
+	  <div className="pt-20">
+		  <Outlet />
+			{!hideFooter && (
+				<footer className="py-4 text-center">
+					<div className="flex justify-center gap-4 text-xs text-gray-500">
+						<Link
+							to="/privacy-policy"
+							className="hover:text-gray-700 hover:underline"
+						>
+							Privacy Policy
+						</Link>
+
+						<span>•</span>
+
+						<Link
+							to="/terms-of-service"
+							className="hover:text-gray-700 hover:underline"
+						>
+							Terms of Service
+						</Link>
+					</div>
+				</footer>
+			)}
+	  </div>
 
       {/* --- 3. WIDGET CHAT --- */}
       <div className="fixed bottom-6 right-6 z-50">
