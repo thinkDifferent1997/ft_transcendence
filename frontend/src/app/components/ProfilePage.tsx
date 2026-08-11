@@ -290,7 +290,7 @@ export default function ProfilePage({
                 {twoFAModal === "enable" ? <QrCode className="w-8 h-8" /> : <Shield className="w-8 h-8" />}
               </div>
               <h3 className="text-2xl font-bold text-gray-900">
-                {twoFAModal === "enable" ? "Activer le 2FA" : "Désactiver le 2FA"}
+                {twoFAModal === "enable" ? "Activate the 2FA" : "Deactivate the 2FA"}
               </h3>
               <p className="text-gray-500 mt-2 text-sm">
                 {twoFAModal === "enable"
@@ -425,7 +425,7 @@ export default function ProfilePage({
               {/* Progression du niveau */}
               <div className="mt-4 max-w-xs mx-auto md:mx-0">
                 <div className="flex items-center justify-between text-xs font-medium text-gray-500 mb-1">
-                  <span>Niveau {stats?.level ?? 1}</span>
+                  <span>Level {stats?.level ?? 1}</span>
                   <span>{stats?.currentLevelXp ?? 0} / 100 XP</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2.5 shadow-inner">
@@ -496,7 +496,7 @@ export default function ProfilePage({
             onClick={fetchStats}
             className="px-5 py-2 rounded-xl bg-gray-900 hover:bg-gray-800 text-white font-semibold transition-all"
           >
-            Filtrer
+            Filter
           </button>
           {(startDate || endDate) && (
             <button
