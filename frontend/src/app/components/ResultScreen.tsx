@@ -20,18 +20,11 @@ export default function ResultsScreen({
     onReplay,
 }: Props) {
 
-	console.log(
-	"RESULT SCREEN",
-	game.answeredQuestions.length,
-	game.answeredQuestions,
-);
+	console.log("WINNER : ", game.winner);
 	const victory =
 		game.isPlayer1
 			? game.winner === 1
 			: game.winner === 2;
-
-	const draw =
-		game.winner === 0;
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-violet-900 via-purple-900 to-indigo-900 flex items-center justify-center px-6 py-10">

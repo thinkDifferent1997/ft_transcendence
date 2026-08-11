@@ -65,15 +65,10 @@ export class GameManager
             game.player1Id = opponent.data.userId;
             game.player2Id = player.data.userId;
 
-//			game.questions = await this.triviaService.getTestQuestions();
+			//game.questions = await this.triviaService.getTestQuestions();
 			game.questions = await this.triviaService.getQuestions();
 
             this.games.set(roomId, game);
-
-console.log("MATCH CREATED", {
-	p1: opponent.data.username,
-	p2: player.data.username,
-});			
             return game;
         }
         catch (error)
@@ -157,7 +152,7 @@ console.log("MATCH CREATED", {
 		game.player2Id = "AI";
 		game.ai = {};
 
-		game.questions = await this.triviaService.getQuestions();
+		game.questions = await this.triviaService.getTestQuestions();
 		this.games.set(roomId, game);
 
 		console.log("Questions loaded:", game.questions.length);
@@ -331,7 +326,7 @@ console.log("MATCH CREATED", {
 					else if (game.player2Time < game.player1Time)
 						winner = 2;
 					else
-						winner = 0;
+						winner = Math.random() < 0.5 ? 1 : 2;
 				}
 
 				const matchStats = {
