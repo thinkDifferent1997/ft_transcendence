@@ -120,6 +120,7 @@ AI assistants (Claude, ChatGPT, Gemini) were used as development support tools. 
 * **Debugging assistance:** diagnosing infrastructure issues such as  Docker/Podman environment differences, Prisma migration conflicts, and complex React hook dependencies.
 * **Boilerplate & styling:** scaffolding TailwindCSS layout code for UI components (e.g., chat and profile pages) and generating the initial drafts of the legal pages (Privacy Policy, Terms of Service).
 * **Code review:** a read-only AI-assisted audit of the repository was run late in the project to identify bugs and gaps against the subject requirements before evaluation.
+* **UI generation (Figma Make):** Initial UI layouts were designed in Figma and exported via Figma Make; the generated TypeScript/React components were then reviewed, refactored, and integrated by the team. This applies to the following pages: <PAGE LIST — e.g. LoginPage, ProfilePage, ...>.
 
 The core game logic, the real-time game engine, the backend architecture, and the database schema were designed and written by the team. Every team member is able to explain and modify the code in their area of responsibility.
 ---
@@ -153,7 +154,7 @@ The core game logic, the real-time game engine, the backend architecture, and th
 
 * **Tools Used:** 
   * **Notion:** As described above
-  * **Figma:** Used for initial UI/UX wireframing.
+  * **Figma:** Used for the initial UI/UX wireframing of the website — page layouts, component structure, and the naming conventions later reused across the frontend codebase.
 * **Communication Channels:** 
   * **Discord:** Primary channel for daily stand-ups, voice calls, and quick debugging sessions.
 
