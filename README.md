@@ -23,7 +23,7 @@
 ## Prerequisites
 * **Docker** (or **Podman** with the docker-compose compatibility layer) & **Docker Compose v2**
 * **GNU Make**
-* **OpenSSL** (used to generate the self-signed TLS certificates — invoked automatically by `make`)
+* **OpenSSL** (used to generate the self-signed TLS certificates - invoked automatically by `make`)
 * A registered **42 API** and/or **GitHub OAuth** application (for remote authentication)
 
 
@@ -38,14 +38,14 @@
    make env
 ```
    This creates two files (only if they don't exist yet):
-   * `.env` — copied from `.env.example`. Open it and fill in:
+   * `.env` - copied from `.env.example`. Open it and fill in:
      * `FORTYTWO_CLIENT_ID` / `FORTYTWO_CLIENT_SECRET` (42 OAuth)
      * `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` (GitHub OAuth)
      * `POSTGRES_USER` / `POSTGRES_PASSWORD` (database credentials)
-     * `JWT_SECRET` (session signing — set a strong random value)
+     * `JWT_SECRET` (session signing - set a strong random value)
      * `GRAFANA_ADMIN_USER` / `GRAFANA_ADMIN_PASSWORD` (monitoring dashboard login)
-     * `HTTPS_PORT=8443` — **required on rootless Podman** (e.g. 42 school machines), where binding the privileged port 443 is not allowed. On Docker Desktop you can leave it unset (defaults to 443).
-   * `monitoring/alertmanager/discord_webhook_url` — copied from its `.example`. Paste your Discord webhook URL into it to receive monitoring alerts (the file is gitignored).
+     * `HTTPS_PORT=8443` - **required on rootless Podman** (e.g. 42 school machines), where binding the privileged port 443 is not allowed. On Docker Desktop you can leave it unset (defaults to 443).
+   * `monitoring/alertmanager/discord_webhook_url` - copied from its `.example`. Paste your Discord webhook URL into it to receive monitoring alerts (the file is gitignored).
 
    TLS certificates are generated automatically on first start; no manual step is needed.
 
@@ -54,7 +54,7 @@ Build and start the full stack in the background with a single command:
 ```bash
 make up
 ```
-Then open the application at **https://localhost** (or **https://localhost:8443** if you set `HTTPS_PORT=8443`). The certificate is self-signed, so your browser will show a warning — this is expected.
+Then open the application at **https://localhost** (or **https://localhost:8443** if you set `HTTPS_PORT=8443`). The certificate is self-signed, so your browser will show a warning - this is expected.
 
 The Grafana monitoring dashboard is available at **https://localhost/grafana/** using the credentials from your `.env`.
 
@@ -64,7 +64,7 @@ Stop the stack with `make down` (keeps the database), or `make re` to restart fr
 ```bash
 make dev
 ```
-Runs the stack in the foreground with hot reload: the source code is bind-mounted into the containers, the frontend runs the Vite dev server, and the backend runs NestJS in watch mode. Database migrations are applied automatically on startup. Prometheus (`127.0.0.1:9090`) and Alertmanager (`127.0.0.1:9093`) are additionally exposed on localhost for debugging — in production mode they stay internal to the Docker network. Stop with `Ctrl+C` and `make dev-down`.
+Runs the stack in the foreground with hot reload: the source code is bind-mounted into the containers, the frontend runs the Vite dev server, and the backend runs NestJS in watch mode. Database migrations are applied automatically on startup. Prometheus (`127.0.0.1:9090`) and Alertmanager (`127.0.0.1:9093`) are additionally exposed on localhost for debugging - in production mode they stay internal to the Docker network. Stop with `Ctrl+C` and `make dev-down`.
 
 ## Useful commands
 | Command | Description |
@@ -91,27 +91,31 @@ Runs the stack in the foreground with hot reload: the source code is bind-mounte
 * [Prisma ORM Documentation](https://www.prisma.io/docs)
 * [Socket.io Documentation](https://socket.io/docs/v4/)
 * [TailwindCSS Documentation](https://tailwindcss.com/docs)
-* [The Trivia API](https://the-trivia-api.com/) — question source for the quiz engine
+* [The Trivia API](https://the-trivia-api.com/) - question source for the quiz engine
 
 **Infrastructure:**
 * [Docker Compose Documentation](https://docs.docker.com/compose/)
-* [nginx Documentation](https://nginx.org/en/docs/) — reverse proxy and SSL termination
+* [nginx Documentation](https://nginx.org/en/docs/) - reverse proxy and SSL termination
 
 **Authentication (42 / GitHub OAuth, 2FA):**
-* [GitHub Docs — Creating an OAuth App](https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/creating-an-oauth-app)
-* [42 API Documentation](https://api.intra.42.fr/apidoc) — OAuth application registration
+* [GitHub Docs - Creating an OAuth App](https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/creating-an-oauth-app)
+* [42 API Documentation](https://api.intra.42.fr/apidoc) - OAuth application registration
 * [Passport.js Documentation](https://www.passportjs.org/docs/) with the [passport-42](https://www.npmjs.com/package/passport-42) and [passport-github2](https://www.npmjs.com/package/passport-github2) strategies
-* [otplib](https://www.npmjs.com/package/otplib) — TOTP generation for 2FA
+* [otplib](https://www.npmjs.com/package/otplib) - TOTP generation for 2FA
 
 **Monitoring (Prometheus / Grafana / Alertmanager):**
-* [Prometheus — Getting Started & Configuration](https://prometheus.io/docs/prometheus/latest/getting_started/)
+* [Prometheus - Getting Started & Configuration](https://prometheus.io/docs/prometheus/latest/getting_started/)
 * [PromQL Basics](https://prometheus.io/docs/prometheus/latest/querying/basics/)
-* [prom-client](https://github.com/siimon/prom-client) — Node.js Prometheus client used in the backend
-* [Grafana Provisioning](https://grafana.com/docs/grafana/latest/administration/provisioning/) — datasources and dashboards as code
-* [Run Grafana behind a reverse proxy](https://grafana.com/tutorials/run-grafana-behind-a-proxy/) — subpath setup under nginx
-* [Alertmanager Configuration](https://prometheus.io/docs/alerting/latest/configuration/) — Discord webhook routing
+* [prom-client](https://github.com/siimon/prom-client) - Node.js Prometheus client used in the backend
+* [Grafana Provisioning](https://grafana.com/docs/grafana/latest/administration/provisioning/) - datasources and dashboards as code
+* [Run Grafana behind a reverse proxy](https://grafana.com/tutorials/run-grafana-behind-a-proxy/) - subpath setup under nginx
+* [Alertmanager Configuration](https://prometheus.io/docs/alerting/latest/configuration/) - Discord webhook routing
 * [postgres-exporter](https://github.com/prometheus-community/postgres_exporter) & [nginx-prometheus-exporter](https://github.com/nginx/nginx-prometheus-exporter)
-* Tutorial: [Monitoring a Node.js/TypeScript app with prom-client (webdevtutor.net)](https://www.webdevtutor.net/) — starting point for the backend metrics service, adapted for NestJS
+* Tutorial: [Monitoring a Node.js/TypeScript app with prom-client (webdevtutor.net)](https://www.webdevtutor.net/) - starting point for the backend metrics service, adapted for NestJS
+
+## Credits
+
+* **Music:** "Forest River Spirits" by Tausdei (Evgeny) — [OpenGameArt.org](https://opengameart.org/content/forest-river-spirits). Used in this project with attribution to the original creator.
 
 ## AI Usage
 
@@ -120,26 +124,26 @@ AI assistants (Claude, ChatGPT, Gemini) were used as development support tools. 
 * **Debugging assistance:** diagnosing infrastructure issues such as  Docker/Podman environment differences, Prisma migration conflicts, and complex React hook dependencies.
 * **Boilerplate & styling:** scaffolding TailwindCSS layout code for UI components (e.g., chat and profile pages) and generating the initial drafts of the legal pages (Privacy Policy, Terms of Service).
 * **Code review:** a read-only AI-assisted audit of the repository was run late in the project to identify bugs and gaps against the subject requirements before evaluation.
-* **UI generation (Figma Make):** Initial UI layouts were designed in Figma and exported via Figma Make; the generated TypeScript/React components were then reviewed, refactored, and integrated by the team. This applies to the following pages: <PAGE LIST — e.g. LoginPage, ProfilePage, ...>.
+* **UI generation (Figma Make):** Initial UI layouts were designed in Figma and exported via Figma Make; the generated TypeScript/React components were then reviewed, refactored, and integrated by the team. This applies to the following pages: <PAGE LIST - e.g. LoginPage, ProfilePage, ...>.
 
 The core game logic, the real-time game engine, the backend architecture, and the database schema were designed and written by the team. Every team member is able to explain and modify the code in their area of responsibility.
 ---
 
 # Team Information
 
-### namalier — Product Owner (PO) & Game Engine Developer
+### namalier - Product Owner (PO) & Game Engine Developer
 * **Responsibilities:** Product vision, gameplay design, and feature prioritization. Owner of the real-time game engine: matchmaking, game state synchronization, AI opponent, tournament mode, scoring, and the bonus system.
 
-### elsikira — Scrum Master (PM) & Fullstack Developer
+### elsikira - Scrum Master (PM) & Fullstack Developer
 * **Responsibilities:** Team coordination, sprint planning, and blocker management. Owner of the infrastructure entry point (nginx reverse proxy, Docker Compose configurations) and of frontend integration work: authentication flow on the client side, global chat, and the legal pages.
 
-### espinto- — Technical Lead & Auth Developer
+### espinto- - Technical Lead & Auth Developer
 * **Responsibilities:** Technical architecture decisions and code quality. Initial backend scaffolding, the 2FA (TOTP) system with the JWT session model, CI workflows, and cross-cutting frontend fixes (routing, session persistence).
 
-### ncrivell — Database Lead & Backend Developer
+### ncrivell - Database Lead & Backend Developer
 * **Responsibilities:** Owner of the Prisma schema and all database migrations. Backend feature development: user registration, tournament persistence, statistics API, gamification (XP, badges, leaderboard), and GDPR data export/import.
 
-### jbaumfal — DevOps Developer & Project Management Support
+### jbaumfal - DevOps Developer & Project Management Support
 * **Responsibilities:** Design, implementation, and documentation of the monitoring stack (Prometheus, Grafana, Alertmanager, exporters); backend metrics instrumentation; GitHub OAuth integration; setup and maintenance of the team's Notion project management system (task, bug, and module databases).
 
 ---
@@ -154,7 +158,7 @@ The core game logic, the real-time game engine, the backend architecture, and th
 
 * **Tools Used:** 
   * **Notion:** As described above
-  * **Figma:** Used for the initial UI/UX wireframing of the website — page layouts, component structure, and the naming conventions later reused across the frontend codebase.
+  * **Figma:** Used for the initial UI/UX wireframing of the website - page layouts, component structure, and the naming conventions later reused across the frontend codebase.
 * **Communication Channels:** 
   * **Discord:** Primary channel for daily stand-ups, voice calls, and quick debugging sessions.
 
@@ -169,11 +173,11 @@ The core game logic, the real-time game engine, the backend architecture, and th
 * **Database System:** PostgreSQL.
   * *Justification:* Chosen for its strong relational integrity, reliability, and excellent compatibility with Prisma ORM. Our data (users, matches, stats, chat) is highly relational, making a SQL database the optimal choice over NoSQL.
 * **Other Significant Technologies:**
-  * **Prisma** — type-safe ORM handling all database access and schema migrations.
-  * **nginx** — reverse proxy in front of the whole stack, handling SSL termination (self-signed certificates), routing of `/api/`, `/ws/`, and `/grafana/`, and keeping internal services (backend `/metrics`, Prometheus, Alertmanager) unreachable from outside.
-  * **Docker Compose** — full container orchestration with a production configuration and a development override (hot reload, bind mounts), driven by a Makefile. Compatible with rootless Podman on 42 school machines.
-  * **Prometheus, Grafana & Alertmanager** — metrics collection, dashboards, and automated alerting (see the Monitoring module).
-  * **Passport.js & JWT (httpOnly cookies)** — authentication strategies (42, GitHub) and stateless session handling.
+  * **Prisma** - type-safe ORM handling all database access and schema migrations.
+  * **nginx** - reverse proxy in front of the whole stack, handling SSL termination (self-signed certificates), routing of `/api/`, `/ws/`, and `/grafana/`, and keeping internal services (backend `/metrics`, Prometheus, Alertmanager) unreachable from outside.
+  * **Docker Compose** - full container orchestration with a production configuration and a development override (hot reload, bind mounts), driven by a Makefile. Compatible with rootless Podman on 42 school machines.
+  * **Prometheus, Grafana & Alertmanager** - metrics collection, dashboards, and automated alerting (see the Monitoring module).
+  * **Passport.js & JWT (httpOnly cookies)** - authentication strategies (42, GitHub) and stateless session handling.
 ---
 
 # Database Schema
@@ -185,15 +189,15 @@ Our database relies on a robust relational PostgreSQL model mapped via Prisma. H
   * *Relationships:* One-to-many relationships with `GlobalMessage` (chat), `Friendship` (sent/received), `RoomParticipant` (game history), and `UserBadge`.
 
 * **Game Sessions (`Room` & `Tournament`):**
- * *Key fields:* `id` (String/UUID), `mode` (Enum: SOLO, DUEL, TOURNAMENT), `status` (Enum: WAITING, IN_PROGRESS, FINISHED), `round` (Enum: SEMI_FINAL, FINAL — tournament rooms only).
+ * *Key fields:* `id` (String/UUID), `mode` (Enum: SOLO, DUEL, TOURNAMENT), `status` (Enum: WAITING, IN_PROGRESS, FINISHED), `round` (Enum: SEMI_FINAL, FINAL - tournament rooms only).
   * *Relationships:* A `Tournament` contains multiple `Room` entities and links to its `champion` (RoomParticipant). A `Room` has many `RoomParticipant`s and `RoomQuestion`s (ordered), links to an optional `winner` participant (null = draw), and to a `nextRoom` (self-relation: the winner advances through the bracket).
 
 * **Answers (`Answer`):**
-  * *Key fields:* `isCorrect` (Boolean), `timeTakenMs` (Int — used for tie-breaking on equal scores).
+  * *Key fields:* `isCorrect` (Boolean), `timeTakenMs` (Int - used for tie-breaking on equal scores).
   * *Relationships:* Belongs to a `RoomParticipant` and a `Question`.
 
 * **Participants (`RoomParticipant`):**
-  * *Key fields:* `score` (Int), `isBot` (Boolean — AI opponents), `userId` (nullable for bots).
+  * *Key fields:* `score` (Int), `isBot` (Boolean - AI opponents), `userId` (nullable for bots).
   * *Relationships:* Links a `User` to a `Room`; unique per `(roomId, userId)`.
 
 * **Social (`GlobalMessage` & `Friendship`):**
@@ -250,7 +254,7 @@ Our team has implemented the following modules. The subject requires a minimum o
   * *Contributors:* `namalier, ncrivell, elsikira`
 
 * **Major: Implement a complete web-based game where users can play against each other.**
-  * *Justification:* The core of the platform — a live PvP experience with clear rules and win/loss conditions.
+  * *Justification:* The core of the platform - a live PvP experience with clear rules and win/loss conditions.
   * *Implementation:* Real-time multiplayer trivia engine: 8 synchronized questions per match, server-side timers, score tracking, and a tie-breaker based on total response time.
   * *Contributors:* `namalier`
 
@@ -326,12 +330,13 @@ Our team has implemented the following modules. The subject requires a minimum o
   * Engineered the Two-Factor Authentication (2FA TOTP) integration with JWT sessions and built its enrollment UI.
   * Fixed core frontend routing, session persistence (logout clearing), and state synchronization (username updates).
   * Resolved infrastructure bugs, including Docker certificate read rights and profile data persistence after database wipeouts.
+  * Docker Compose dev-override setup enabling hot reload through the proxy
 * **Challenges:** Ensuring secure JWT session handling alongside TOTP 2FA, and maintaining stable CI/CD pipelines across differing Node versions and Docker environments.
 * **Overcome:** Successfully integrated `otplib` for strict 2FA validation and structured the GitHub workflows and Docker permissions to guarantee secure, reliable deployments.
 
 ### elsikira
 * **Contributions:**
-  * Built and maintained the infrastructure entry point: nginx reverse proxy configurations (production and development) with SSL termination and routing for `/api/`, `/ws/`, and `/grafana/`, and the Docker Compose dev-override setup enabling hot reload through the proxy.
+  * Built and maintained the infrastructure entry point: nginx reverse proxy configurations (production and development) with SSL termination and routing for `/api/`, `/ws/`.
   * Implemented the frontend side of the authentication flow (login page, OAuth redirects, session handling) and CORS/proxy configuration between frontend and backend.
   * Developed the global real-time chat with persistent history, avatars, and profile links, and wrote the Privacy Policy and Terms of Service pages.
   * Coordinated the team as Scrum Master: Discord syncs, deadline tracking, and unblocking teammates.
@@ -351,7 +356,7 @@ Our team has implemented the following modules. The subject requires a minimum o
   * Developed the tournament persistence layer (brackets, rounds, champion tracking) together with namalier.
 * **Challenges:**
   * Evolving a shared database schema while multiple features were developed in parallel branches, which caused migration drift when schema changes landed without their corresponding migration files.
-  * Modeling game data that has to serve very different consumers — live gameplay, historical statistics, and tournaments — without duplication.
+  * Modeling game data that has to serve very different consumers - live gameplay, historical statistics, and tournaments - without duplication.
 * **Overcome:**
   * Established migrations as the single source of truth, always generated and applied inside the backend container, and reconciled drifted branches by regenerating migrations against the merged schema.
   * Designed the Room/RoomParticipant/Answer model so that 1v1 matches, AI games, and tournament rounds all persist through the same structures.
@@ -359,7 +364,8 @@ Our team has implemented the following modules. The subject requires a minimum o
 
 ### jbaumfal
 * **Contributions:**
-  * **DevOps — Monitoring module (Major):** Implemented the full observability stack. Instrumented the NestJS backend with `prom-client` (HTTP request duration histogram via a global interceptor, live WebSocket connection gauge, games-started counter) exposed on an internal `/metrics` endpoint deliberately excluded from the public `api/` prefix so nginx never proxies it externally. Configured Prometheus to scrape the backend, `postgres-exporter`, and `nginx-exporter` (stub_status), wrote the alerting rules (backend down, database down, high 5xx rate, high latency), and connected Alertmanager to the team Discord via webhook. Provisioned Grafana as code (datasource + custom dashboard JSON) behind nginx under `/grafana/`, so the entire monitoring setup survives a full volume wipe and rebuilds identically from the repository.
+  * **DevOps - Monitoring module (Major):** Implemented the full observability stack. Instrumented the NestJS backend with `prom-client` (HTTP request duration histogram via a global interceptor, live WebSocket connection gauge, games-started counter) exposed on an internal `/metrics` endpoint deliberately excluded from the public `api/` prefix so nginx never proxies it externally. Configured Prometheus to scrape the backend, `postgres-exporter`, and `nginx-exporter` (stub_status), wrote the alerting rules (backend down, database down, high 5xx rate, high latency), and connected Alertmanager to the team Discord via webhook. Provisioned Grafana as code (datasource + custom dashboard JSON) behind nginx under `/grafana/`, so the entire monitoring setup survives a full volume wipe and rebuilds identically from the repository.
+  * Wrote the nginx configuration for the Grafana subpath (`/grafana/` location blocks in both the production and development configs, including the WebSocket upgrade route for Grafana Live).
   * **GitHub OAuth:** Implemented the GitHub OAuth 2.0 login flow (Passport strategy) integrated into the existing 42 OAuth architecture, including a three-stage identity resolution (provider ID match → email-based account linking → new account creation).
   * **Project Management:** Built the team's Notion workspace with three databases (task management, bug tracking, module/points tracking) that structured the team's daily coordination.
 * **Challenges:**
