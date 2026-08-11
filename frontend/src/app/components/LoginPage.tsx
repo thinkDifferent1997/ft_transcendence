@@ -128,7 +128,7 @@ export default function LoginPage({ onLogin, force2FA = false }: LoginPageProps)
                         type="text"
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
-                        placeholder="Votre pseudo"
+                        placeholder="Your username"
                         className="w-full pl-12 pr-4 py-3 rounded-xl bg-gray-50 border-2 border-gray-100 focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-200 transition-all"
                         required
                       />
@@ -180,7 +180,7 @@ export default function LoginPage({ onLogin, force2FA = false }: LoginPageProps)
               type="submit"
               className="w-full py-4 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white font-bold shadow-lg hover:shadow-xl hover:from-indigo-600 hover:via-purple-600 hover:to-pink-600 transition-all transform hover:-translate-y-0.5 mt-2"
             >
-              {is2FARequired ? "Verify the code" : (isSignUp ? "Create account" : "Login in")}
+              {is2FARequired ? "Verify the code" : (isSignUp ? "Create account" : "Log in")}
             </button>
           </form>
 
@@ -221,9 +221,9 @@ export default function LoginPage({ onLogin, force2FA = false }: LoginPageProps)
                   className="text-gray-500 hover:text-gray-700 font-medium text-sm transition-colors"
                 >
                   {isSignUp ? (
-                    <>Already have an account ? <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent font-bold underline">Se connecter</span></>
+                    <>Already have an account ? <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent font-bold underline">Log in</span></>
                   ) : (
-                    <>No account yet ? <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent font-bold underline">S'inscrire</span></>
+                    <>No account yet ? <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent font-bold underline">Sign in</span></>
                   )}
                 </button>
               </div>

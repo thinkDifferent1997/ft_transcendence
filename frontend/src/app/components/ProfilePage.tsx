@@ -287,8 +287,8 @@ export default function ProfilePage({
               </h3>
               <p className="text-gray-500 mt-2 text-sm">
                 {twoFAModal === "enable"
-                  ? "Scannez ce QR Code avec Google Authenticator ou Authy."
-                  : "Saisissez un code de votre application pour confirmer."}
+                  ? "Scan the QR Code with Google Authenticator"
+                  : "Write the code from your app to confirm"}
               </p>
             </div>
 
@@ -297,14 +297,14 @@ export default function ProfilePage({
                 {qrCodeUrl ? (
                   <img src={qrCodeUrl} alt="QR Code 2FA" className="w-48 h-48 rounded-lg shadow-sm" />
                 ) : (
-                  <div className="w-48 h-48 flex items-center justify-center text-gray-400 animate-pulse">Chargement...</div>
+                  <div className="w-48 h-48 flex items-center justify-center text-gray-400 animate-pulse">Loading...</div>
                 )}
               </div>
             )}
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Code de vérification</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Verification code</label>
                 <input
                   type="text"
                   value={verificationCode}
@@ -322,14 +322,14 @@ export default function ProfilePage({
                   onClick={handleEnable2FA}
                   className="w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5"
                 >
-                  Confirmer l'activation
+                  Confirm activation
                 </button>
               ) : (
                 <button
                   onClick={handleDisable2FA}
                   className="w-full py-3 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 text-white font-bold shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5"
                 >
-                  Confirmer la désactivation
+                  Confirm deactivation
                 </button>
               )}
             </div>
@@ -675,10 +675,10 @@ export default function ProfilePage({
           </h3>
 
           {historyLoading ? (
-            <p className="text-gray-400 text-center py-6">Chargement...</p>
+            <p className="text-gray-400 text-center py-6">Loading...</p>
           ) : matchHistory.length === 0 ? (
             <p className="text-gray-400 text-center py-6">
-              Aucune partie 1v1 pour l'instant — lance-toi !
+              No 1v1 game yet, launch a game! !
             </p>
           ) : (
             <div className="space-y-2">
