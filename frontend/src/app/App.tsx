@@ -9,6 +9,9 @@ import GameRoute from "./routes/GameRoute";
 import RequireAuth from "./routes/RequireAuth";
 import QuizCallback from "./routes/QuizCallback";
 import useAuthSession from "./hooks/useAuthSession";
+import { socket } from "../socket/socket";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
 
 export default function App() {
   const {
@@ -41,6 +44,7 @@ export default function App() {
       console.error("Erreur lors de la déconnexion backend :", err);
     } finally {
       setIsLoggedIn(false);
+	  socket.disconnect();
       navigate("/");
     }
   };
@@ -49,6 +53,8 @@ export default function App() {
     <Routes>
       <Route path="/quiz" element={<QuizCallback authChecked={authChecked} />} />
       <Route path="/2fa" element={<LoginPage force2FA onLogin={handleLogin} />} />
+	  <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+	  <Route path="/terms-of-service" element={<TermsOfService />} />
 
       <Route
         element={
