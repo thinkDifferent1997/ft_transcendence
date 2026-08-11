@@ -29,6 +29,7 @@ export interface AuthenticatedRequestUser {
    * pending token is `isTwoFactorEnabled: true, tfa: 'pending'`.
    */
   isTwoFactorEnabled: boolean;
+  avatar: string | null;
 }
 
 const cookieExtractor = (req: Request): string | null => {
@@ -68,6 +69,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       username: user.username,
       tfa: payload.tfa,
       isTwoFactorEnabled: user.isTwoFactorEnabled,
+	  avatar: user.avatar,
     };
   }
 }

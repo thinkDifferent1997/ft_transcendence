@@ -5,6 +5,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } f
 import { socket } from "../../socket/socket";
 import { statsSocket } from "../../socket/socket";
 import { useParams } from "react-router-dom";
+import Avatar from "./Avatar";
 
 interface ProfilePageProps {
   username: string;
@@ -133,7 +134,13 @@ export default function ProfilePage({
   useEffect(() => {
     fetchStats();
     fetchMatchHistory();
-    }, [displayUsername]);
+	if (isMyProfile) {
+		fetch(`/api/auth/me`, { credentials: "include" })
+		.then((res) => (res.ok ? res.json() : null))
+		.then((data) => { if (data?.avatar) setAvatar(data.avatar); })
+		.catch(() => {});
+	}
+  }, [displayUsername]);
 
   // Temps réel : écoute les mises à jour de stats poussées par le serveur
   useEffect(() => {
@@ -283,12 +290,12 @@ export default function ProfilePage({
                 {twoFAModal === "enable" ? <QrCode className="w-8 h-8" /> : <Shield className="w-8 h-8" />}
               </div>
               <h3 className="text-2xl font-bold text-gray-900">
-                {twoFAModal === "enable" ? "Activer le 2FA" : "Désactiver le 2FA"}
+                {twoFAModal === "enable" ? "Activate the 2FA" : "Deactivate the 2FA"}
               </h3>
               <p className="text-gray-500 mt-2 text-sm">
                 {twoFAModal === "enable"
-                  ? "Scannez ce QR Code avec Google Authenticator ou Authy."
-                  : "Saisissez un code de votre application pour confirmer."}
+                  ? "Scan the QR Code with Google Authenticator"
+                  : "Write the code from your app to confirm"}
               </p>
             </div>
 
@@ -297,14 +304,14 @@ export default function ProfilePage({
                 {qrCodeUrl ? (
                   <img src={qrCodeUrl} alt="QR Code 2FA" className="w-48 h-48 rounded-lg shadow-sm" />
                 ) : (
-                  <div className="w-48 h-48 flex items-center justify-center text-gray-400 animate-pulse">Chargement...</div>
+                  <div className="w-48 h-48 flex items-center justify-center text-gray-400 animate-pulse">Loading...</div>
                 )}
               </div>
             )}
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Code de vérification</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Verification code</label>
                 <input
                   type="text"
                   value={verificationCode}
@@ -322,14 +329,14 @@ export default function ProfilePage({
                   onClick={handleEnable2FA}
                   className="w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5"
                 >
-                  Confirmer l'activation
+                  Confirm activation
                 </button>
               ) : (
                 <button
                   onClick={handleDisable2FA}
                   className="w-full py-3 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 text-white font-bold shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5"
                 >
-                  Confirmer la désactivation
+                  Confirm deactivation
                 </button>
               )}
             </div>
@@ -354,9 +361,8 @@ export default function ProfilePage({
         <div className="bg-white/80 backdrop-blur-lg rounded-3xl shadow-2xl p-8 mb-8 border border-white/50">
           <div className="flex flex-col md:flex-row items-center gap-8">
             <div className="relative group">
-              <div className="w-32 h-32 rounded-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-1 shadow-2xl">
-                <div className="w-full h-full rounded-full bg-white flex items-center justify-center text-6xl">
-                  {avatar}
+				<div className="w-32 h-32 rounded-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-1 shadow-2xl">
+				  <Avatar src={avatar} alt={displayUsername} className="w-full h-full text-6xl" />
                 </div>
               </div>
               {isMyProfile && (
@@ -419,7 +425,7 @@ export default function ProfilePage({
               {/* Progression du niveau */}
               <div className="mt-4 max-w-xs mx-auto md:mx-0">
                 <div className="flex items-center justify-between text-xs font-medium text-gray-500 mb-1">
-                  <span>Niveau {stats?.level ?? 1}</span>
+                  <span>Level {stats?.level ?? 1}</span>
                   <span>{stats?.currentLevelXp ?? 0} / 100 XP</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2.5 shadow-inner">
@@ -490,7 +496,7 @@ export default function ProfilePage({
             onClick={fetchStats}
             className="px-5 py-2 rounded-xl bg-gray-900 hover:bg-gray-800 text-white font-semibold transition-all"
           >
-            Filtrer
+            Filter
           </button>
           {(startDate || endDate) && (
             <button
@@ -528,7 +534,7 @@ export default function ProfilePage({
           <div className="bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl p-6 border border-white/50">
             <h3 className="mb-6 flex items-center gap-2 text-xl font-bold text-gray-800">
               <TrendingUp className="w-6 h-6 text-purple-600" />
-              Statistiques globales
+              Global Stats
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="text-center p-6 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 text-white shadow-lg">
@@ -577,7 +583,7 @@ export default function ProfilePage({
               </div>
             ))}
             {(stats?.categories ?? []).length === 0 && (
-              <p className="text-gray-400 col-span-2 text-center py-6">Aucune donnée pour l'instant — joue une partie !</p>
+              <p className="text-gray-400 col-span-2 text-center py-6">No data for now, run a game !</p>
             )}
           </div>
         </div>
@@ -586,7 +592,7 @@ export default function ProfilePage({
         <div className="bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl p-6 border border-white/50 mb-8">
           <h3 className="mb-6 flex items-center gap-2 text-xl font-bold text-gray-800">
             <Award className="w-6 h-6 text-pink-600" />
-            Badges
+            Achievements
           </h3>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
             {(stats?.badges ?? []).map((badge) => (
@@ -671,14 +677,14 @@ export default function ProfilePage({
         <div className="bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl p-6 border border-white/50 mt-8">
           <h3 className="mb-6 flex items-center gap-2 text-xl font-bold text-gray-800">
             <History className="w-6 h-6 text-blue-600" />
-            Historique des parties
+            Game History
           </h3>
 
           {historyLoading ? (
-            <p className="text-gray-400 text-center py-6">Chargement...</p>
+            <p className="text-gray-400 text-center py-6">Loading...</p>
           ) : matchHistory.length === 0 ? (
             <p className="text-gray-400 text-center py-6">
-              Aucune partie 1v1 pour l'instant — lance-toi !
+              No 1v1 game yet, launch a game! !
             </p>
           ) : (
             <div className="space-y-2">
@@ -740,10 +746,10 @@ export default function ProfilePage({
                       }`}
                     >
                       {match.result === "win"
-                        ? "Victoire"
+                        ? "Victory"
                         : match.result === "loss"
-                        ? "Défaite"
-                        : "Égalité"}
+                        ? "Defeat"
+                        : "Draw"}
                     </p>
                   </div>
                 </div>
@@ -752,6 +758,5 @@ export default function ProfilePage({
           )}
         </div>
       </div>
-    </div>
   );
 }
