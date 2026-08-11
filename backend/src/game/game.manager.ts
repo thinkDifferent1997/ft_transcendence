@@ -152,7 +152,7 @@ export class GameManager
 		game.player2Id = "AI";
 		game.ai = {};
 
-		game.questions = await this.triviaService.getTestQuestions();
+		game.questions = await this.triviaService.getQuestions();
 		this.games.set(roomId, game);
 
 		console.log("Questions loaded:", game.questions.length);
