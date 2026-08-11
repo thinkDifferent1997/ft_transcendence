@@ -15,6 +15,8 @@ FROM nginx:1.27-alpine
 # Drop the stock default.conf and ship ours instead
 RUN rm /etc/nginx/conf.d/default.conf
 COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY podman-resolver.sh /docker-entrypoint.d/podman-resolver.sh
+RUN chmod +x /docker-entrypoint.d/podman-resolver.sh
 
 # Validate the config at build time — fails the build on syntax errors
 #RUN nginx -t
