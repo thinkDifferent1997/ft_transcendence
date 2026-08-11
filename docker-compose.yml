@@ -34,6 +34,13 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: backend
+    # entrypoint.sh execs node, so node is PID 1 -- and the kernel skips the
+    # *default* action of a signal for PID 1. With no process.on('SIGTERM')
+    # anywhere in src/, node simply ignores it, so every 'down' waits out the
+    # full 10s grace period and gets SIGKILLed (the WARN podman prints at 42).
+    # 'init' puts a real init process at PID 1 instead; node lands at PID 2,
+    # where the default action applies again and SIGTERM exits it at once.
+    init: true
     env_file:
       - .env
     environment:

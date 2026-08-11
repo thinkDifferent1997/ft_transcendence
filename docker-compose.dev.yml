@@ -25,6 +25,11 @@ services:
       context: ./frontend
       dockerfile: Dockerfile.dev
     container_name: ft_frontend_dev
+    # Same PID 1 problem as the backend, one step worse: PID 1 here is the
+    # 'sh -c' below, which ignores SIGTERM *and* would not forward it to vite
+    # anyway. The prod frontend is nginx, which installs its own handlers, so
+    # it needs nothing; dev backend inherits init from docker-compose.yml.
+    init: true
     command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
     volumes:
       - ./frontend:/app:Z

@@ -11,6 +11,25 @@ CERT_DIR	  := nginx/certs
 CERT_KEY	  := $(CERT_DIR)/selfsigned.key
 CERT_CRT	  := $(CERT_DIR)/selfsigned.crt
 
+# 'docker compose down' removes containers by project label and stays quiet
+# about the ones already gone. At 42, 'docker compose' is podman emulating the
+# Docker CLI and delegating to podman-compose, which instead walks the
+# container_name: list and shells out to 'podman stop'/'podman rm' per name --
+# so every container a previous pass already removed prints an error. 'clean'
+# has to run 'down' twice (docker-compose.dev.yml renames backend/frontend to
+# ft_backend_dev/ft_frontend_dev, so the prod pass is the only one that can
+# reach the prod names), which makes that chatter unavoidable. Filter exactly
+# those lines plus podman's two banners; anything else still reaches the
+# terminal. Matches nothing under real Docker -- it never emits these.
+CLEAN_NOISE   := Error: no container with (name or ID|ID or name) .+ found|Emulate Docker CLI using podman|Executing external compose provider
+
+# rm -rf that can unlink what the host user cannot. Under rootless podman a
+# container's uid maps to a host *subuid*, so files npm wrote through the dev
+# bind mounts are not ours to remove; inside the container we are root in that
+# userns and do own them (this is 'podman unshare rm -rf' by another route).
+# $(1) = host directory to mount, $(2) = paths to delete under /host.
+RM_IN_CONTAINER = docker run --rm -v $(1):/host:z node:20-alpine rm -rf $(2)
+
 # Default goal when running `make` with no args
 .DEFAULT_GOAL := help
 
@@ -142,21 +161,28 @@ ps: ## List running containers
 # ============================================================
 
 clean: ## Stop everything and remove named volumes (wipes the DB!)
-	$(COMPOSE) $(COMPOSE_DEV) down -v 2>/dev/null || true
-	$(COMPOSE) $(COMPOSE_PROD) down -v
+	@# Best-effort by design: fclean must reach its rm/prune even if an engine
+	@# is missing or a stack was never up, so both passes swallow their status.
+	@# See CLEAN_NOISE above for what gets filtered and why.
+	@echo "Stopping the dev stack and removing its volumes..."
+	@$(COMPOSE) $(COMPOSE_DEV) down -v 2>&1 | grep -vE '$(CLEAN_NOISE)' || true
+	@echo "Stopping the prod stack and removing its volumes..."
+	@$(COMPOSE) $(COMPOSE_PROD) down -v 2>&1 | grep -vE '$(CLEAN_NOISE)' || true
 
 fclean: clean ## Full clean: also remove certs and prune Docker images
 	rm -rf $(CERT_DIR)
-	rm -rf frontend/node_modules
-	@# backend/dist is a container artefact. The dev image runs as USER node
-	@# (uid 1000), so it lands owned by the host user and plain rm works.
-	@# Trees left by images built before that switch are root-owned and only
-	@# a container that *is* root can unlink them -- hence the fallback, which
-	@# also spares us re-pulling node:20-alpine after every prune -af below.
-	@# Leading '-': a missing daemon must not skip the prune below.
+	@# node_modules and backend/dist are container artefacts. When the dev image
+	@# runs as USER node (uid 1000) under Docker they land owned by the host user
+	@# and plain rm works. Two cases where it does not: trees left by images built
+	@# before that switch are root-owned, and under rootless podman the container
+	@# uid maps to a host subuid we cannot unlink either. Both need a container
+	@# that *is* root in the relevant userns -- hence the fallback, which also
+	@# spares us re-pulling node:20-alpine after every prune -af below.
+	@# Leading '-': a missing engine must not skip the prune below.
+	-rm -rf frontend/node_modules 2>/dev/null || \
+		$(call RM_IN_CONTAINER,$(CURDIR)/frontend,/host/node_modules)
 	-rm -rf backend/dist backend/node_modules 2>/dev/null || \
-		docker run --rm -v $(CURDIR)/backend:/host:z node:20-alpine \
-			rm -rf /host/dist /host/node_modules
+		$(call RM_IN_CONTAINER,$(CURDIR)/backend,/host/dist /host/node_modules)
 	docker system prune -af
 
 .PHONY: help env certs up down re dev dev-down migrate migrate-dev studio logs \
