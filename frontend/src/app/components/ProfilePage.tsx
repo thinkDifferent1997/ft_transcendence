@@ -5,6 +5,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } f
 import { socket } from "../../socket/socket";
 import { statsSocket } from "../../socket/socket";
 import { useParams } from "react-router-dom";
+import Avatar from "./Avatar";
 
 interface ProfilePageProps {
   username: string;
@@ -133,7 +134,13 @@ export default function ProfilePage({
   useEffect(() => {
     fetchStats();
     fetchMatchHistory();
-    }, [displayUsername]);
+	if (isMyProfile) {
+		fetch(`/api/auth/me`, { credentials: "include" })
+		.then((res) => (res.ok ? res.json() : null))
+		.then((data) => { if (data?.avatar) setAvatar(data.avatar); })
+		.catch(() => {});
+	}
+  }, [displayUsername]);
 
   // Temps réel : écoute les mises à jour de stats poussées par le serveur
   useEffect(() => {
@@ -354,9 +361,8 @@ export default function ProfilePage({
         <div className="bg-white/80 backdrop-blur-lg rounded-3xl shadow-2xl p-8 mb-8 border border-white/50">
           <div className="flex flex-col md:flex-row items-center gap-8">
             <div className="relative group">
-              <div className="w-32 h-32 rounded-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-1 shadow-2xl">
-                <div className="w-full h-full rounded-full bg-white flex items-center justify-center text-6xl">
-                  {avatar}
+				<div className="w-32 h-32 rounded-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-1 shadow-2xl">
+				  <Avatar src={avatar} alt={displayUsername} className="w-full h-full text-6xl" />
                 </div>
               </div>
               {isMyProfile && (
@@ -740,10 +746,10 @@ export default function ProfilePage({
                       }`}
                     >
                       {match.result === "win"
-                        ? "Victoire"
+                        ? "Victory"
                         : match.result === "loss"
-                        ? "Défaite"
-                        : "Égalité"}
+                        ? "Defeat"
+                        : "Draw"}
                     </p>
                   </div>
                 </div>
@@ -752,6 +758,5 @@ export default function ProfilePage({
           )}
         </div>
       </div>
-    </div>
   );
 }
