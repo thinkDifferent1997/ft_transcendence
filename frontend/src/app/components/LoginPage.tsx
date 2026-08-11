@@ -1,5 +1,6 @@
 import { Sparkles, Mail, Lock, User, AlertCircle, Key, Github } from "lucide-react";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 
 interface LoginPageProps {
   onLogin?: () => void;
@@ -43,7 +44,7 @@ export default function LoginPage({ onLogin, force2FA = false }: LoginPageProps)
       if (response.ok) {
         if (isSignUp) {
           setIsSignUp(false);
-          setErrorMsg("Compte créé avec succès ! Connectez-vous.");
+          setErrorMsg("Account created! Please log in.");
           return;
         }
 
@@ -52,19 +53,18 @@ export default function LoginPage({ onLogin, force2FA = false }: LoginPageProps)
           return;
         }
 
-        console.log("Connecté avec succès !", data);
         if (onLogin) onLogin();
       } else {
-        setErrorMsg(data.message || "Erreur lors de la connexion");
+        setErrorMsg(data.message || "Error while connecting");
       }
     } catch (error) {
       console.error("Network Error:", error);
-      setErrorMsg("Impossible de contacter le serveur NestJS.");
+      setErrorMsg("Impossible to reach NestJS server.");
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-violet-100 via-pink-50 to-cyan-100 flex items-center justify-center p-6">
+	  <div className="min-h-screen bg-gradient-to-br from-violet-100 via-pink-50 to-cyan-100 flex flex-col items-center justify-center p-6">
       {/* Background decorative elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-20 left-20 w-72 h-72 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob"></div>
@@ -83,8 +83,8 @@ export default function LoginPage({ onLogin, force2FA = false }: LoginPageProps)
           </h1>
           <p className="text-gray-600">
             {is2FARequired 
-              ? "Vérification en deux étapes" 
-              : (isSignUp ? "Créez votre compte pour commencer" : "Bienvenue ! Connectez-vous pour continuer")}
+              ? "Two steps verification" 
+              : (isSignUp ? "Create your account to start" : "Welcome ! Log in to continue")}
           </p>
         </div>
 
@@ -93,7 +93,7 @@ export default function LoginPage({ onLogin, force2FA = false }: LoginPageProps)
           
           {/* Banner d'erreur dynamique */}
           {errorMsg && (
-            <div className={`mb-6 p-4 rounded-xl border flex items-center gap-3 animate-in fade-in ${errorMsg.includes("succès") ? "bg-green-50 border-green-200 text-green-600" : "bg-red-50 border-red-200 text-red-600"}`}>
+            <div className={`mb-6 p-4 rounded-xl border flex items-center gap-3 animate-in fade-in ${errorMsg.includes("created") ? "bg-green-50 border-green-200 text-green-600" : "bg-red-50 border-red-200 text-red-600"}`}>
               <AlertCircle className="w-5 h-5 flex-shrink-0" />
               <span className="text-sm">{errorMsg}</span>
             </div>
@@ -103,7 +103,7 @@ export default function LoginPage({ onLogin, force2FA = false }: LoginPageProps)
             
             {is2FARequired ? (
               <div>
-                <label className="block mb-2 text-gray-700 font-medium text-sm">Code d'authentification (OTP)</label>
+                <label className="block mb-2 text-gray-700 font-medium text-sm">Auth Code(OTP)</label>
                 <div className="relative">
                   <Key className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
@@ -121,14 +121,14 @@ export default function LoginPage({ onLogin, force2FA = false }: LoginPageProps)
               <>
                 {isSignUp && (
                   <div>
-                    <label className="block mb-2 text-gray-700 font-medium text-sm">Nom d'utilisateur</label>
+                    <label className="block mb-2 text-gray-700 font-medium text-sm">Username</label>
                     <div className="relative">
                       <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                       <input
                         type="text"
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
-                        placeholder="Votre pseudo"
+                        placeholder="Your username"
                         className="w-full pl-12 pr-4 py-3 rounded-xl bg-gray-50 border-2 border-gray-100 focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-200 transition-all"
                         required
                       />
@@ -144,7 +144,7 @@ export default function LoginPage({ onLogin, force2FA = false }: LoginPageProps)
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="votre@email.com"
+                      placeholder="your@email.com"
                       className="w-full pl-12 pr-4 py-3 rounded-xl bg-gray-50 border-2 border-gray-100 focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-200 transition-all"
                       required
                     />
@@ -152,7 +152,7 @@ export default function LoginPage({ onLogin, force2FA = false }: LoginPageProps)
                 </div>
 
                 <div>
-                  <label className="block mb-2 text-gray-700 font-medium text-sm">Mot de passe</label>
+                  <label className="block mb-2 text-gray-700 font-medium text-sm">Password</label>
                   <div className="relative">
                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                     <input
@@ -171,7 +171,7 @@ export default function LoginPage({ onLogin, force2FA = false }: LoginPageProps)
             {!isSignUp && !is2FARequired && (
               <div className="flex justify-end">
                 <button type="button" className="text-sm text-purple-600 hover:text-purple-700 font-medium transition-colors">
-                  Mot de passe oublié ?
+                  Forgotten password ?
                 </button>
               </div>
             )}
@@ -180,7 +180,7 @@ export default function LoginPage({ onLogin, force2FA = false }: LoginPageProps)
               type="submit"
               className="w-full py-4 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white font-bold shadow-lg hover:shadow-xl hover:from-indigo-600 hover:via-purple-600 hover:to-pink-600 transition-all transform hover:-translate-y-0.5 mt-2"
             >
-              {is2FARequired ? "Vérifier le code" : (isSignUp ? "Créer mon compte" : "Se connecter")}
+              {is2FARequired ? "Verify the code" : (isSignUp ? "Create account" : "Log in")}
             </button>
           </form>
 
@@ -191,7 +191,7 @@ export default function LoginPage({ onLogin, force2FA = false }: LoginPageProps)
                   <div className="w-full border-t border-gray-200"></div>
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-4 bg-white text-gray-400 font-medium">ou continuer avec</span>
+                  <span className="px-4 bg-white text-gray-400 font-medium">or continue with</span>
                 </div>
               </div>
 
@@ -201,14 +201,14 @@ export default function LoginPage({ onLogin, force2FA = false }: LoginPageProps)
                 <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center font-bold shadow-sm">
                   <span className="bg-gradient-to-r from-cyan-500 to-blue-600 bg-clip-text text-transparent">42</span>
                 </div>
-                <span>Se connecter avec l'intra 42</span>
+                <span>Log in with 42 intra</span>
               </a>
 
               <a href="/api/auth/github"
                 className="w-full flex items-center justify-center gap-3 py-4 px-6 rounded-xl bg-gradient-to-r from-gray-800 to-gray-900 hover:from-gray-900 hover:to-black text-decoration-none text-white font-semibold shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5 mt-4"
               >
                 <Github className="w-5 h-5" />
-                <span>Se connecter avec GitHub</span>
+                <span>Log in with GitHub</span>
               </a>
 
               <div className="mt-6 text-center">
@@ -221,9 +221,9 @@ export default function LoginPage({ onLogin, force2FA = false }: LoginPageProps)
                   className="text-gray-500 hover:text-gray-700 font-medium text-sm transition-colors"
                 >
                   {isSignUp ? (
-                    <>Vous avez déjà un compte ? <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent font-bold underline">Se connecter</span></>
+                    <>Already have an account ? <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent font-bold underline">Log in</span></>
                   ) : (
-                    <>Pas encore de compte ? <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent font-bold underline">S'inscrire</span></>
+                    <>No account yet ? <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent font-bold underline">Sign in</span></>
                   )}
                 </button>
               </div>
@@ -231,6 +231,25 @@ export default function LoginPage({ onLogin, force2FA = false }: LoginPageProps)
           )}
         </div>
       </div>
+	  <footer className="mt-6 text-center shrink-0">
+			<div className="flex justify-center gap-3 text-xs text-gray-400">
+				<Link
+					to="/privacy-policy"
+					className="hover:text-gray-600 hover:underline"
+				>
+					Privacy Policy
+				</Link>
+
+				<span>•</span>
+
+				<Link
+					to="/terms-of-service"
+					className="hover:text-gray-600 hover:underline"
+				>
+					Terms of Service
+				</Link>
+			</div>
+		</footer>
     </div>
   );
 }

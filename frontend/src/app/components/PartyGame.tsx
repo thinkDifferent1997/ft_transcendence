@@ -17,31 +17,11 @@ import TournamentWaitingFinal from "../pages/TournamentWaitingFinal";
 
 export default function QuizPage()
 {
-	console.log("PARTY GAME RENDER");
 	const { mode } = useParams<{ mode: string }>();
 	const location = useLocation();
 	const navigate = useNavigate();
 	const [revealedAnswer, setRevealedAnswer] = useState<string | null>(null);
 	const [correctAnswer, setCorrectAnswer] = useState<string | null>(null);
-	const { setIsInGame } = useGame();
-	const joinSentRef = useRef(false);
-	useEffect(() =>
-	{
-		if (mode === "tournament" && location.state)
-		{
-			initializeMatch(location.state);
-		}
-	}, []);
-
-	useEffect(() =>
-	{
-		setIsInGame(true);
-
-		return () =>
-		{
-			setIsInGame(false);
-		};
-	}, []);
 
 	const [questions, setQuestions] = useState<Question[]>([]);
 	const [gameStarted, setGameStarted] = useState(false);
@@ -76,20 +56,9 @@ export default function QuizPage()
 	const bracketTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	useEffect(() =>
-{
-    console.log("PARTY GAME MOUNT");
-
-    return () =>
-    {
-        console.log("PARTY GAME UNMOUNT");
-    };
-}, []);
-	
-	useEffect(() =>
 	{
 		if (mode === "tournament" && !location.state)
 		{
-			console.log("Tournament page loaded without match state, returning to lobby");
 			navigate("/", { replace: true });
 		}
 	}, [mode, location.state, navigate]);
@@ -112,18 +81,6 @@ export default function QuizPage()
 		};
 	}, []);
 
-
-
-	useEffect(() =>
-{
-    console.log("PARTY GAME MOUNT");
-
-    return () =>
-    {
-        console.log("PARTY GAME UNMOUNT");
-    };
-}, []);
-	
 	useEffect(() =>
 	{
 		if (game.gameOver)
@@ -132,6 +89,7 @@ export default function QuizPage()
 
 	function initializeMatch(data: any)
 	{
+		setGameStarted(false);
 		setWaitingForFinal(false);
 		const isPlayer1 = socket.id === data.player1.id;
 
@@ -172,18 +130,8 @@ export default function QuizPage()
 	setSelectedAnswer(answer);
 	setRevealed(true);
 
-	console.log(
-		"BEFORE",
-		game.answeredQuestions.length,
-	);
-
 	setGame(previousGame =>
 	{
-		console.log(
-			"PREVIOUS",
-			previousGame.answeredQuestions.length,
-		);
-
 		return {
 			...previousGame,
 			answeredQuestions: [
@@ -209,16 +157,12 @@ export default function QuizPage()
 
 	useEffect(() =>
 	{
-		socket.on("connect", () =>
-		{
-			console.log("Connected :", socket.id);
-		});
+		socket.on("connect", () => {});
 
 		socket.connect();
 
 		const joinGame = () =>
 		{
-			console.log("JOIN GAME\nmode : ", mode);
 			switch (mode)
 			{
 				case "party":
@@ -226,11 +170,9 @@ export default function QuizPage()
 					break;
 
 				case "tournament":
-					console.log("Tournament mode: no emit");
 					break;
 
 				case "ai":
-					console.log("join_ai emit");
 					if (joinSentRef.current)
 						return;
 
@@ -253,13 +195,9 @@ export default function QuizPage()
 			joinGame();
 		}
 
-		socket.on("connect_error", (error) =>
-		{
-			console.log("Error :", error);
-		});
+		socket.on("connect_error", (error) => {});
 
 		socket.on("match_found", (data) => {
-			console.log("match_found");
 			if (data.isFinal)
 			{
 				setOpponentReady(true);
@@ -277,6 +215,7 @@ export default function QuizPage()
 					setWaitingForFinal(false);
 					setOpponentReady(false);
 					setTournamentBracket(null);
+					setGameStarted(true);
 				}, 5000);
 			}
 			else
@@ -285,7 +224,6 @@ export default function QuizPage()
 
 		socket.on("game_started", (data) =>
 		{
-			console.log("game_started");
 			setQuestions(data.questions);
 			setGame(previousGame => ({
 				...previousGame,
@@ -300,7 +238,9 @@ export default function QuizPage()
 
 		socket.on("start_game", () =>
 		{
-			console.log("start_game");
+			if (bracketTimeoutRef.current)
+				return;
+
 			setGameStarted(true);
 		});
 
@@ -326,7 +266,6 @@ export default function QuizPage()
 
 		socket.on("player_answered", (data) =>
 		{
-			console.log("player_answered", data.correct);
 			setGame(previousGame =>
 			{
 				const answeredQuestions = [...previousGame.answeredQuestions];
@@ -416,14 +355,10 @@ export default function QuizPage()
 		});
 
 		socket.on("tournament_bracket", (bracket) => {
-			console.log("Tournament bracket received:", bracket);
 			setTournamentBracket(bracket);
 		});
 		socket.on("tournament_waiting_final", () =>
 		{
-			console.log("Waiting for final");
-
-			console.log("setGameStarted(false) from waiting_final");
 			setGameStarted(false);
 			setWaitingForFinal(true);
 			setOpponentReady(false);
@@ -445,8 +380,6 @@ export default function QuizPage()
 
 		socket.on("tournament_champion", () =>
 		{
-			console.log("tournament_champion (forfeit)");
-
 			if (bracketTimeoutRef.current)
 			{
 				clearTimeout(bracketTimeoutRef.current);
@@ -467,9 +400,6 @@ export default function QuizPage()
 
 		socket.on("game_over", (data) =>
 		{
-			console.log("GAME_OVER RECEIVED", data);
-			console.log("setGameStarted(false) from game_over");
-
 			// Annule le timer d'affichage du bracket : sinon, s'il se
 			// déclenche après coup, il ré-initialise un match déjà terminé
 			// et bloque le joueur restant sur un écran d'attente sans fin.
@@ -490,30 +420,24 @@ export default function QuizPage()
 				? data.player2Score
 				: data.player1Score;
 
-			console.log("answeredQuestions =", game.answeredQuestions.length);
-setGame(previousGame =>
-{
-	console.log(
-		"GAME OVER PREVIOUS",
-		previousGame.answeredQuestions.length,
-	);
+			setGame(previousGame =>
+			{
+				return {
+					...previousGame,
+					gameOver: true,
+					winner: data.winner,
 
-	return {
-		...previousGame,
-		gameOver: true,
-		winner: data.winner,
+					localPlayer: {
+						...previousGame.localPlayer,
+						score: playerScore,
+					},
 
-		localPlayer: {
-			...previousGame.localPlayer,
-			score: playerScore,
-		},
-
-		enemyPlayer: {
-			...previousGame.enemyPlayer,
-			score: enemyScore,
-		},
-	};
-});
+					enemyPlayer: {
+						...previousGame.enemyPlayer,
+						score: enemyScore,
+					},
+				};
+			});
 		});
 
 		return () =>
@@ -545,15 +469,11 @@ setGame(previousGame =>
 
 	useEffect(() =>
 	{
-		console.log("roomId changed:", game.roomId);
 		if (!game.roomId)
 			return;
-		console.log("EMIT player_ready");
-		console.log("connected ?", socket.connected);
 		socket.emit("player_ready", {
 			roomId: game.roomId,
 		});
-		console.log("EMITTTED player_ready");
 
 	}, [game.roomId]);
 

@@ -1,10 +1,20 @@
-let handled = false;
+const GAME_PATH = /^\/game\//;
 
-export function consumeReload(): boolean {
-  if (handled) return false;
-  handled = true;
+//
+// Après un F5 sur /game/:mode la partie (socket, state) est perdue :
+// on renvoie le joueur à l'accueil. La décision est prise une seule fois,
+// au chargement du bundle, sur l'URL réellement rechargée — le type de
+// navigation reste "reload" pour toute la durée du document, donc le
+// tester plus tard (au montage de GameRoute) rejetait le premier clic
+// sur un mode de jeu après n'importe quel rafraîchissement.
+//
+export function redirectHomeOnGameReload(): void {
   const entry = performance.getEntriesByType("navigation")[0] as
     | PerformanceNavigationTiming
     | undefined;
-  return entry?.type === "reload";
+
+  if (entry?.type !== "reload") return;
+  if (!GAME_PATH.test(window.location.pathname)) return;
+
+  window.history.replaceState(null, "", "/");
 }

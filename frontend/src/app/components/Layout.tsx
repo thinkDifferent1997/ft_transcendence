@@ -1,8 +1,10 @@
 import { Sparkles, MessageCircle, Send, X, Minus, LogOut, Trophy } from "lucide-react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { socket } from "../../socket/socket";
 import { useGame } from "../context/GameContext";
+import Avatar from "./Avatar";
 
 interface LayoutProps {
 	username: string;
@@ -10,8 +12,11 @@ interface LayoutProps {
 }
 
 export default function Layout({ username, onLogout }: LayoutProps) {
-const navigate = useNavigate();
-const location = useLocation();
+	const navigate = useNavigate();
+	const location = useLocation();
+	const hideFooter =
+		location.pathname.startsWith("/game/") ||
+		location.pathname === "/tournament";
 
 const [userAvatar, setUserAvatar] = useState<string | null>(null);
 
@@ -133,7 +138,7 @@ return (
               className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/60 hover:bg-white text-gray-700 hover:text-amber-600 border border-gray-200 transition-all shadow-sm hover:shadow-md"
             >
               <Trophy className="w-4 h-4" />
-              <span className="hidden sm:inline font-medium">Classement</span>
+              <span className="hidden sm:inline font-medium">Ranking</span>
             </button>
 
             {/* Bouton Profil (avec avatar dynamique) */}
@@ -142,13 +147,7 @@ return (
               className="group flex items-center gap-3 px-4 py-2 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 transition-all shadow-md hover:shadow-lg"
             >
               <span className="text-white font-medium">{username}</span>
-              <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-2xl ring-2 ring-white/50 overflow-hidden">
-                {userAvatar ? (
-                  <img src={userAvatar} alt={username} className="w-full h-full object-cover" />
-                ) : (
-                  <span>😊</span>
-                )}
-              </div>
+			  <Avatar src={userAvatar} alt={username} className="w-10 h-10 text-2xl" />
             </button>
 
             {/* Bouton Déconnexion */}
@@ -172,9 +171,30 @@ return (
       </nav>
 
       {/* --- 2. CONTENU PRINCIPAL DE LA PAGE --- */}
-      <div className="pt-20">
-        <Outlet />
-      </div>
+	  <div className="pt-20">
+		  <Outlet />
+			{!hideFooter && (
+				<footer className="py-4 text-center">
+					<div className="flex justify-center gap-4 text-xs text-gray-500">
+						<Link
+							to="/privacy-policy"
+							className="hover:text-gray-700 hover:underline"
+						>
+							Privacy Policy
+						</Link>
+
+						<span>•</span>
+
+						<Link
+							to="/terms-of-service"
+							className="hover:text-gray-700 hover:underline"
+						>
+							Terms of Service
+						</Link>
+					</div>
+				</footer>
+			)}
+	  </div>
 
       {/* --- 3. WIDGET CHAT --- */}
       {!hideChat && (
@@ -186,7 +206,7 @@ return (
             <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-4 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <MessageCircle className="w-5 h-5 text-white" />
-                <span className="text-white font-bold">Chat Global</span>
+                <span className="text-white font-bold">Global Chat</span>
                 <span className="bg-white/30 text-white px-2 py-0.5 rounded-full text-sm">
                 {onlineCount} online
                 </span>
@@ -210,22 +230,18 @@ return (
             {/* Messages (Zone de texte) */}
             <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
               {Array.isArray(messages) && messages.length === 0 ? (
-                <p className="text-gray-500 text-sm text-center mt-4">Aucun message pour l'instant...</p>
+                <p className="text-gray-500 text-sm text-center mt-4">No message for now...</p>
               ) : (
                 Array.isArray(messages) && messages.map((msg, index) => {
                   const authorName = msg.author?.username || msg.user || "Inconnu";
-                  
                   return (
                     <div
                       key={msg.id || index}
                       className="flex gap-3 animate-in fade-in slide-in-from-bottom-2"
                     >
                       {/* Avatar */}
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-purple-400 flex items-center justify-center flex-shrink-0 text-lg">
-                        {msg.avatar || "😊"}
-                      </div>
-                      
-                      <div className="flex-1">
+					  <Avatar src={msg.author?.avatar ?? msg.avatar} alt={authorName} />
+					  <div className="flex-1">
                         <div className="flex items-baseline gap-2">
                           {/* Pseudo Cliquable */}
                           <span
@@ -267,7 +283,7 @@ return (
             <div className="flex gap-2 items-center">
             <input
             type="text"
-            placeholder="Écrire un message..."
+            placeholder="Write a message..."
             value={newMessage}
             maxLength={MAX_MESSAGE_LENGTH}
             onChange={(e) => setNewMessage(e.target.value)}
