@@ -96,15 +96,6 @@ dev-down: ## Stop the dev stack
 test-backend: ## Run backend tests
 	$(COMPOSE) $(COMPOSE_DEV) exec backend npm test
 
-test-frontend: ## Run frontend tests
-	$(COMPOSE) $(COMPOSE_DEV) exec frontend npm test
-
-lint-backend: ## Lint backend
-	$(COMPOSE) $(COMPOSE_DEV) exec backend npm run lint
-
-lint-frontend: ## Lint frontend
-	$(COMPOSE) $(COMPOSE_DEV) exec frontend npm run lint
-
 sh-backend: ## Open a shell inside the backend container
 	$(COMPOSE) $(COMPOSE_DEV) exec backend sh
 
@@ -160,5 +151,4 @@ fclean: clean ## Full clean: also remove certs and prune Docker images
 	docker system prune -af
 
 .PHONY: help env certs up down re dev dev-down migrate migrate-dev studio logs \
-	ps clean fclean test-backend test-frontend lint-backend lint-frontend \
-	sh-backend sh-frontend sh-db
+	ps clean fclean test-backend sh-backend sh-frontend sh-db

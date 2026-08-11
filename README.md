@@ -331,7 +331,7 @@ Our team has implemented the following modules. The subject requires a minimum o
   * Fixed core frontend routing, session persistence (logout clearing), and state synchronization (username updates).
   * Resolved infrastructure bugs, including Docker certificate read rights and profile data persistence after database wipeouts.
   * Docker Compose dev-override setup enabling hot reload through the proxy
-* **Challenges:** Ensuring secure JWT session handling alongside TOTP 2FA, and maintaining stable CI/CD pipelines across differing Node versions and Docker environments.
+* **Challenges:** Ensuring secure JWT session handling alongside TOTP 2FA.
 * **Overcome:** Successfully integrated `otplib` for strict 2FA validation and structured the GitHub workflows and Docker permissions to guarantee secure, reliable deployments.
 
 ### elsikira
@@ -402,6 +402,11 @@ Our team has implemented the following modules. The subject requires a minimum o
   * Designed reusable game logic shared between PvP, AI and Tournament modes.
   * Added robust disconnect and recovery handling to prevent deadlocks and inconsistent game states.
   * Refactored the game architecture to improve modularity, maintainability and scalability.
+
+## Music credits
+“Forest River Spirits” by Tausdei (Evgeny), from OpenGameArt.org.
+Used in this project with attribution to the original creator.
+Source: OpenGameArt.org — Forest River Spirits
 
 ---
 
