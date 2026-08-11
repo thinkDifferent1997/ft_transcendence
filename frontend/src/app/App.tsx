@@ -10,7 +10,6 @@ import GameRoute from "./routes/GameRoute";
 import RequireAuth from "./routes/RequireAuth";
 import QuizCallback from "./routes/QuizCallback";
 import useAuthSession from "./hooks/useAuthSession";
-import { socket } from "../socket/socket";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 
