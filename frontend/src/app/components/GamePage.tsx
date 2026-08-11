@@ -53,10 +53,7 @@ const MODE_CONFIG = {
 
 		if (musicEnabled)
 		{
-			audioRef.current.play().catch(() =>
-			{
-				console.log("Autoplay blocked.");
-			});
+			audioRef.current.play().catch(() => {});
 		}
 
 		return () =>
@@ -72,7 +69,7 @@ const MODE_CONFIG = {
 			return;
 
 		if (musicEnabled)
-			audioRef.current.play().catch(() => console.log("Autoplay blocked."));
+			audioRef.current.play().catch(() => {});
 		else
 			audioRef.current.pause();
 

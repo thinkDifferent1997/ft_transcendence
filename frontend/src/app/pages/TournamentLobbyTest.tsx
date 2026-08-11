@@ -35,12 +35,9 @@ export default function TournamentLobbyTest({
 
 		 if (location.state?.tournamentId)
 		{
-			console.log("Resume tournament", location.state.tournamentId);
-
 			return;
 		}
 
-		console.log("EMIT join_tournament");
 		socket.emit("join_tournament");
 
 		socket.on("tournament_waiting", (data) => {
@@ -48,12 +45,10 @@ export default function TournamentLobbyTest({
 		});
 
 		socket.on("match_found", (data) => {
-			console.log("MATCH FOUND", data);
 			onStartGame(data);
 		});
 
 		return () => {
-			console.log("EMIT leave_tournament");
 			socket.emit("leave_tournament");
 
 			socket.off("connect");

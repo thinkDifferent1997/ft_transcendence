@@ -9,6 +9,7 @@ import GameRoute from "./routes/GameRoute";
 import RequireAuth from "./routes/RequireAuth";
 import QuizCallback from "./routes/QuizCallback";
 import useAuthSession from "./hooks/useAuthSession";
+import { socket } from "../socket/socket";
 
 export default function App() {
   const {
@@ -41,6 +42,7 @@ export default function App() {
       console.error("Erreur lors de la déconnexion backend :", err);
     } finally {
       setIsLoggedIn(false);
+	  socket.disconnect();
       navigate("/");
     }
   };
