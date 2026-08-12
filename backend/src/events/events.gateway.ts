@@ -745,16 +745,19 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 
 		try
 		{
-			await this.gameResultsService.recordMatch({
-				winner,
-				player1Id: game.player1Id,
-				player2Id: game.player2Id,
-				player1Score: game.player1Score,
-				player2Score: game.player2Score,
-				questions: game.questionHistory,
-			});
+			if (!game.ai)
+			{
+				await this.gameResultsService.recordMatch({
+					winner,
+					player1Id: game.player1Id,
+					player2Id: game.player2Id,
+					player1Score: game.player1Score,
+					player2Score: game.player2Score,
+					questions: game.questionHistory,
+				});
 
-			await this.awardGamification(game, winner);
+				await this.awardGamification(game, winner);
+			}
 		}
 		catch (error)
 		{
