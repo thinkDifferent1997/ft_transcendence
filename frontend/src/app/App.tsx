@@ -1,6 +1,5 @@
 import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import { socket, statsSocket } from "../socket/socket";
-import LoginPage from "./components/LoginPage";
 import ProfilePage from "./components/ProfilePage";
 import LeaderboardPage from "./pages/Leaderboard";
 import TournamentLobbyTest from "./pages/TournamentLobbyTest";
@@ -9,6 +8,7 @@ import Home from "./pages/Home";
 import GameRoute from "./routes/GameRoute";
 import RequireAuth from "./routes/RequireAuth";
 import QuizCallback from "./routes/QuizCallback";
+import TwoFactorRoute from "./routes/TwoFactorRoute";
 import useAuthSession from "./hooks/useAuthSession";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
@@ -52,7 +52,17 @@ export default function App() {
   return (
     <Routes>
       <Route path="/quiz" element={<QuizCallback authChecked={authChecked} />} />
-      <Route path="/2fa" element={<LoginPage force2FA onLogin={handleLogin} />} />
+      <Route
+        path="/2fa"
+        element={
+          <TwoFactorRoute
+            authChecked={authChecked}
+            isLoggedIn={isLoggedIn}
+            twoFactorPending={twoFactorPending}
+            onLogin={handleLogin}
+          />
+        }
+      />
 	  <Route path="/privacy-policy" element={<PrivacyPolicy />} />
 	  <Route path="/terms-of-service" element={<TermsOfService />} />
 
