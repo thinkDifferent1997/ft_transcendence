@@ -74,7 +74,7 @@ export class TriviaService
             question: "La Terre est une...",
             correct: "Planète",
             answers: ["Planète", "Étoile", "Lune", "Comète"],
-            difficulty: "normal" as const,
+            difficulty: "medium" as const,
             category: "Science",
         },
         {

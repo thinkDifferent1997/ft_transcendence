@@ -221,18 +221,18 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 				delay = this.random(4000, 14000);
 				break;
 
-			case "normal":
-				accuracy = 0.60;
+			case "medium":
+				accuracy = 0.50;
 				delay = this.random(8000, 16000);
 				break;
 
 			case "hard":
-				accuracy = 0.40;
+				accuracy = 0.25;
 				delay = this.random(10000, 18000);
 				break;
 
 			default:
-				accuracy = 0.55;
+				accuracy = 0.5;
 				delay = this.random(8000, 16000);
 		}
 	game.ai.accuracy = accuracy;
