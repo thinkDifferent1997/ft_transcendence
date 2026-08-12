@@ -181,39 +181,80 @@ The core game logic, the real-time game engine, the backend architecture, and th
 ---
 
 # Database Schema
+## Database Schema
 
-Our database relies on a robust relational PostgreSQL model mapped via Prisma. Here is an overview of the core entities and their relationships:
+Culture Quiz uses **PostgreSQL with Prisma ORM**. The database stores user accounts, quiz content, game sessions, tournament progression, answers, chat messages and gamification data.
 
-* **User (`User`):**
-  * *Key fields:* `id` (String/UUID), `username` (String), `email` (String), `status` (Enum: OFFLINE, ONLINE, IN_GAME), `xp` (Int), `isTwoFactorEnabled` (Boolean).
-  * *Relationships:* One-to-many relationships with `GlobalMessage` (chat), `Friendship` (sent/received), `RoomParticipant` (game history), and `UserBadge`.
+### Entity relationships
 
-* **Game Sessions (`Room` & `Tournament`):**
- * *Key fields:* `id` (String/UUID), `mode` (Enum: SOLO, DUEL, TOURNAMENT), `status` (Enum: WAITING, IN_PROGRESS, FINISHED), `round` (Enum: SEMI_FINAL, FINAL - tournament rooms only).
-  * *Relationships:* A `Tournament` contains multiple `Room` entities and links to its `champion` (RoomParticipant). A `Room` has many `RoomParticipant`s and `RoomQuestion`s (ordered), links to an optional `winner` participant (null = draw), and to a `nextRoom` (self-relation: the winner advances through the bracket).
+```text
+                              ┌──────────────┐
+                              │     User     │
+                              └──────┬───────┘
+                                     │
+                    ┌────────────────┼────────────────┐
+                    │                │                │
+                    ▼                ▼                ▼
+             GlobalMessage      UserBadge       RoomParticipant
+                    │                │                │
+                    │                ▼                │
+                    │              Badge              │
+                    │                                 │
+                    │                    ┌────────────┴────────────┐
+                    │                    │                         │
+                    │                    ▼                         ▼
+                    │              ┌───────────┐              Answer
+                    │              │   Room    │                 │
+                    │              └─────┬─────┘                 │
+                    │                    │                       │
+                    │          ┌─────────┴─────────┐             │
+                    │          │                   │             │
+                    │          ▼                   ▼             │
+                    │    RoomQuestion          Tournament         │
+                    │          │                   │             │
+                    │          ▼                   │             │
+                    │      Question ◄──────────────┘             │
+                    │          │                                 │
+                    │     ┌────┴────┐                            │
+                    │     ▼         ▼                            │
+                    │ Category  AnswerChoice                     │
+                    │                                             │
+                    └─────────────────────────────────────────────┘
 
-* **Answers (`Answer`):**
-  * *Key fields:* `isCorrect` (Boolean), `timeTakenMs` (Int - used for tie-breaking on equal scores).
-  * *Relationships:* Belongs to a `RoomParticipant` and a `Question`.
 
-* **Participants (`RoomParticipant`):**
-  * *Key fields:* `score` (Int), `isBot` (Boolean - AI opponents), `userId` (nullable for bots).
-  * *Relationships:* Links a `User` to a `Room`; unique per `(roomId, userId)`.
+                 Tournament
+                      │
+                      ▼
+              ┌───────────────┐
+              │     Room      │
+              └───────┬───────┘
+                      │
+                 nextRoomId
+                      │
+                      ▼
+              ┌───────────────┐
+              │  Next Room    │
+              └───────────────┘
+```
 
-* **Social (`GlobalMessage` & `Friendship`):**
-  * *Key fields (Message):* `id` (String/UUID), `content` (String), `createdAt` (DateTime).
-  * *Relationships (Message):* Belongs to an `author` (User).
-  * *Key fields (Friendship):* `status` (Enum: PENDING, ACCEPTED, DECLINED).
-  * *Relationships (Friendship):* Links a `sender` (User) to a `receiver` (User).
+### Main entities
 
-* **Trivia (`Question`, `Category`, `AnswerChoice`):**
-  * *Key fields:* `text` (String), `isCorrect` (Boolean for answers).
-  * *Relationships:* A `Category` contains multiple `Question`s. A `Question` contains multiple `AnswerChoice`s and links to game rooms via `RoomQuestion`.
+- **`User`** — Stores account, authentication, OAuth, profile, status and XP information.
+- **`Room`** — Represents a game session. A room can be a `DUEL` or `TOURNAMENT` game. Solo vs AI matches are not persisted in the database, as we do not want them to be included in player statistics.
+- **`RoomParticipant`** — Links a user (or a bot) to a room and stores their score. It is used for regular stats games and tournament matches.
+- **`Tournament`** — Groups tournament rooms and connects them through `nextRoomId` to represent the tournament bracket. The winning `RoomParticipant` is stored as the tournament champion.
+- **`Question`** — Stores the quiz questions and belongs to a `Category`.
+- **`AnswerChoice`** — Stores the possible answers for a question and identifies the correct choice.
+- **`RoomQuestion`** — Links questions to a specific room and stores their order during the game.
+- **`Answer`** — Records a participant's answer, its correctness and the time taken.
+- **`GlobalMessage`** — Stores messages sent in the global chat and their author.
+- **`Badge`** / **`UserBadge`** — Handle the gamification and achievement system.
 
-* **Gamification (`Badge` & `UserBadge`):**
-  * *Key fields:* `code` (String), `name` (String), `description` (String).
-  * *Relationships:* A many-to-many relationship mapping a `User` to their earned `Badge`s through the `UserBadge` join table.
+Game informations are mostly used for the profile page and game stats.
 
+### Data integrity
+
+The schema uses **foreign keys, unique constraints and explicit Prisma relations** to maintain consistency. For example, a user cannot participate twice in the same room, a badge cannot be awarded twice to the same user, and a question has a unique position within a given room.
 *(Note: The full schema is detailed in our `backend/prisma/schema.prisma` file).*
 
 ---
