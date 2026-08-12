@@ -42,7 +42,7 @@ export class GameSession
 		question: string;
 		correct: string;
 		answers: string[];
-		difficulty: "easy" | "normal" | "hard",
+		difficulty: "easy" | "medium" | "hard",
 		category : string,
 	}[] = [];
 

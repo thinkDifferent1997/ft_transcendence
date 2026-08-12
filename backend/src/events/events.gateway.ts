@@ -221,18 +221,18 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 				delay = this.random(4000, 14000);
 				break;
 
-			case "normal":
-				accuracy = 0.60;
+			case "medium":
+				accuracy = 0.50;
 				delay = this.random(8000, 16000);
 				break;
 
 			case "hard":
-				accuracy = 0.40;
+				accuracy = 0.25;
 				delay = this.random(10000, 18000);
 				break;
 
 			default:
-				accuracy = 0.55;
+				accuracy = 0.5;
 				delay = this.random(8000, 16000);
 		}
 	game.ai.accuracy = accuracy;
@@ -745,16 +745,19 @@ implements OnGatewayConnection, OnGatewayDisconnect{
 
 		try
 		{
-			await this.gameResultsService.recordMatch({
-				winner,
-				player1Id: game.player1Id,
-				player2Id: game.player2Id,
-				player1Score: game.player1Score,
-				player2Score: game.player2Score,
-				questions: game.questionHistory,
-			});
+			if (!game.ai)
+			{
+				await this.gameResultsService.recordMatch({
+					winner,
+					player1Id: game.player1Id,
+					player2Id: game.player2Id,
+					player1Score: game.player1Score,
+					player2Score: game.player2Score,
+					questions: game.questionHistory,
+				});
 
-			await this.awardGamification(game, winner);
+				await this.awardGamification(game, winner);
+			}
 		}
 		catch (error)
 		{
